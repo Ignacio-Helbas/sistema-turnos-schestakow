@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Schestakow - Sistema de Turnos V12</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .view { display: none; }
+        .view.active { display: block; }
+        .modal { display: none; }
+        .modal.active { display: flex; }
+        .colapsable-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .colapsable-content.abierto { max-height: 500px; overflow-y: auto; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<!-- FONDO GLOBAL APLICADO AL BODY -->
+<body class="bg-[url('COVID-19-LABORATORIO-HOSPITAL-SCHESTAKOW-6714.jpg')] bg-cover bg-center bg-no-repeat bg-fixed text-gray-800 font-sans min-h-screen flex flex-col">
+
+    <!-- NAVEGACIÓN -->
+    <nav class="bg-white shadow-md text-blue-900 p-3 flex justify-between items-center z-10 relative">
+        <div class="flex items-center gap-3">
+            <!-- LOGO LOCAL APLICADO -->
+            <img src="Diseño_sin_título__1_-removebg-preview.png" alt="Logo Hospital" class="h-12 w-auto rounded bg-white p-1 shadow-sm">
+            
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="hidden sm:flex items-center gap-1 text-xs font-semibold text-green-300">
+                <span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span>
+                Sistema En Vivo
+            </div>
+            <button id="btn-logout" onclick="switchView('public')" class="hidden text-sm bg-red-600 px-3 py-2 rounded font-semibold hover:bg-red-700 transition shadow">Cerrar Sesión</button>
+        </div>
+    </nav>
+
+    <main class="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full relative z-0">
+
+        <!-- ==========================================
+             VISTA 1: PORTAL PÚBLICO
+        =========================================== -->
+        <section id="view-public" class="view active">
+            <!-- Fondo semitransparente (bg-white/95) para que contraste con la imagen de fondo -->
+            <div class="bg-white/95 backdrop-blur-md rounded-lg shadow-2xl p-6 max-w-2xl mx-auto border-t-4 border-blue-800 mt-4 md:mt-8">
+                <div class="flex justify-between items-start mb-6">
+                    <h2 class="text-2xl font-bold text-blue-800">Reserva de Turno Online</h2>
+                    <button onclick="abrirModal('modal-cancelar-paciente')" class="text-sm bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-200 font-semibold transition">
+                        Gestionar mis turnos
+                    </button>
+                </div>
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">1. Especialidad</label>
+                        <select id="select-especialidad" onchange="actualizarMedicos()" class="w-full border rounded p-3 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">-- Elija una especialidad --</option>
+                            <option value="cardiologia">Cardiología</option>
+                            <option value="pediatria">Pediatría</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">2. Profesional</label>
+                        <select id="select-medico" disabled class="w-full border rounded p-3 bg-gray-100 text-gray-500 outline-none">
+                            <option>Primero seleccione especialidad</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">3. Fecha (Lunes a Viernes)</label>
+                        <input type="date" id="input-fecha-paciente" onchange="validarDiaHabil(this); generarHorariosPublicos()" class="w-full border rounded p-3 bg-white outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">4. Horarios Disponibles</label>
+                        <div class="grid grid-cols-3 md:grid-cols-4 gap-2" id="horarios-publicos">
+                            <p class="text-sm text-gray-500 col-span-3">Seleccione una fecha.</p>
+                        </div>
+                    </div>
+                    <hr class="my-6 border-gray-300">
+                    <h3 class="font-semibold text-gray-700 mb-3">Datos del Paciente</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" placeholder="Nombre completo" class="border rounded p-3 w-full bg-white outline-none">
+                        <input type="text" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="DNI (Solo números)" class="border rounded p-3 w-full bg-white outline-none">
+                        <input type="tel" placeholder="Celular (Ej: 2604...)" class="border rounded p-3 w-full bg-white outline-none">
+                        <input type="email" placeholder="Email (Opcional)" class="border rounded p-3 w-full bg-white outline-none">
+                    </div>
+                    <button type="button" onclick="alert('Turno solicitado exitosamente. Revise su WhatsApp.')" class="w-full bg-blue-800 text-white text-lg font-bold py-3 rounded hover:bg-blue-900 mt-4 shadow-md transition">Confirmar Turno</button>
+                    <p class="text-center text-xs text-gray-500 mt-2">Sistema protegido contra SPAM.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             VISTA 2: INICIO DE SESIÓN
+        =========================================== -->
+        <section id="view-login" class="view">
+            <div class="bg-white/95 backdrop-blur-md rounded-lg shadow-2xl p-6 max-w-md mx-auto mt-10 border-t-4 border-gray-800">
+                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Acceso al Sistema</h2>
+                <div class="space-y-4">
+                    <input type="text" placeholder="Nombre de Usuario" class="border rounded p-3 w-full outline-none">
+                    <input type="password" placeholder="Contraseña" class="border rounded p-3 w-full outline-none">
+                    <p class="text-sm text-gray-500 text-center mt-4">Simular ingreso como:</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="loginAs('reception')" class="bg-indigo-700 text-white py-2 rounded hover:bg-indigo-800 text-sm font-semibold transition">Recepción</button>
+                        <button onclick="loginAs('doctor')" class="bg-teal-700 text-white py-2 rounded hover:bg-teal-800 text-sm font-semibold transition">Médico</button>
+                        <button onclick="loginAs('admin')" class="bg-gray-800 text-white py-2 rounded hover:bg-gray-900 text-sm font-semibold transition">Admin.</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             VISTA 3: PANEL ADMIN
+        =========================================== -->
+        <section id="view-admin" class="view">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white drop-shadow-md">Panel de Administración General</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                
+                <div class="bg-white/95 backdrop-blur-md p-5 rounded shadow-xl border-t-4 border-gray-400">
+                    <h3 class="font-bold text-lg text-gray-800 mb-4">Modulación de Turnos</h3>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Duración Global Base</label>
+                    <div class="flex gap-2">
+                        <select class="border rounded p-2 w-full text-sm outline-none">
+                            <option value="15" selected>15 minutos</option>
+                            <option value="20">20 minutos</option>
+                            <option value="30">30 minutos</option>
+                        </select>
+                        <button class="bg-gray-800 text-white px-4 py-2 rounded text-sm font-bold hover:bg-gray-900 transition">Guardar</button>
+                    </div>
+                </div>
+
+                <div class="bg-white/95 backdrop-blur-md p-5 rounded shadow-xl border-t-4 border-gray-700 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-gray-800">Gestión de Usuarios Rápidos</h3>
+                        <button onclick="abrirModalUsuario()" class="bg-gray-800 text-white px-4 py-2 rounded text-sm font-bold hover:bg-gray-900 transition">Nuevo Usuario</button>
+                    </div>
+                    <div class="overflow-y-auto h-24 custom-scroll border rounded">
+                        <table class="w-full text-left text-sm border-collapse">
+                            <thead class="bg-gray-200 sticky top-0">
+                                <tr>
+                                    <th class="p-2 border-b text-gray-700">Nombre</th>
+                                    <th class="p-2 border-b text-gray-700">Rol</th>
+                                    <th class="p-2 border-b text-gray-700">Usuario</th>
+                                    <th class="p-2 border-b text-gray-700">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b hover:bg-gray-50 bg-white">
+                                    <td class="p-2 font-semibold">Juan Pérez</td><td class="p-2">Médico</td><td class="p-2">jperez</td>
+                                    <td class="p-2"><button onclick="abrirModalUsuario('Juan Pérez', 'Médico', 'jperez')" class="text-blue-700 hover:underline font-semibold">Editar</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Métricas Médicos -->
+                <div class="bg-white/95 backdrop-blur-md p-5 rounded shadow-xl">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
+                        <h3 class="font-bold text-lg text-gray-800">Rendimiento y Eficiencia Médica (Mes en curso)</h3>
+                        <button onclick="alert('Descargando archivo Excel...')" class="bg-green-700 text-white px-4 py-2 rounded text-sm font-bold hover:bg-green-800 transition whitespace-nowrap shadow">Descargar Excel</button>
+                    </div>
+                    
+                    <div class="overflow-x-auto border rounded custom-scroll bg-white">
+                        <table class="w-full text-left text-sm border-collapse whitespace-nowrap">
+                            <thead class="bg-gray-200">
+                                <tr>
+                                    <th class="p-3 border-b text-gray-700">Profesional</th>
+                                    <th class="p-3 border-b text-gray-700">Pacientes Atendidos</th>
+                                    <th class="p-3 border-b text-gray-700">Pacientes Ausentes</th>
+                                    <th class="p-3 border-b text-gray-700">Días Trabajados</th>
+                                    <th class="p-3 border-b text-gray-700">Ausencias Prof.</th>
+                                    <th class="p-3 border-b text-gray-700">Canc. Quirófano</th>
+                                    <th class="p-3 border-b text-gray-700">Eficiencia</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b hover:bg-gray-50 cursor-pointer" onclick="abrirModal('modal-detalle-medico')">
+                                    <td class="p-3 font-bold text-blue-800 hover:underline">Dr. Pérez, Juan</td>
+                                    <td class="p-3">145 <span class="text-xs text-gray-500 font-semibold">(85%)</span></td>
+                                    <td class="p-3 text-red-600 font-bold">26 <span class="text-xs text-red-400">(15%)</span></td>
+                                    <td class="p-3">19 / 20 días</td>
+                                    <td class="p-3">1 <span class="text-xs text-gray-500 font-semibold">(5%)</span></td>
+                                    <td class="p-3">Sí</td>
+                                    <td class="p-3 text-green-700 font-bold text-base">92%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Métricas Recepción -->
+                <div class="bg-white/95 backdrop-blur-md p-5 rounded shadow-xl">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
+                        <h3 class="font-bold text-lg text-gray-800">Gestión y Rendimiento de Admisión (Mes en curso)</h3>
+                        <button onclick="alert('Descargando archivo Excel...')" class="bg-green-700 text-white px-4 py-2 rounded text-sm font-bold hover:bg-green-800 transition whitespace-nowrap shadow">Descargar Excel</button>
+                    </div>
+
+                    <div class="overflow-x-auto border rounded custom-scroll bg-white">
+                        <table class="w-full text-left text-sm border-collapse whitespace-nowrap">
+                            <thead class="bg-gray-200">
+                                <tr>
+                                    <th class="p-3 border-b text-gray-700">Recepcionista</th>
+                                    <th class="p-3 border-b text-gray-700">Turnos Dados (Manual)</th>
+                                    <th class="p-3 border-b text-gray-700">Turnos Cancelados</th>
+                                    <th class="p-3 border-b text-gray-700">Días Trabajados</th>
+                                    <th class="p-3 border-b text-gray-700">Ausencias Personal</th>
+                                    <th class="p-3 border-b text-gray-700">Rendimiento Global</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-3 font-semibold">Romina Torres</td>
+                                    <td class="p-3">340</td>
+                                    <td class="p-3 text-red-600 font-bold">12 <span class="text-xs text-red-400">(3.5%)</span></td>
+                                    <td class="p-3">20 / 20 días</td>
+                                    <td class="p-3">0</td>
+                                    <td class="p-3 text-green-700 font-bold text-base">96%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ==========================================
+             VISTA 4: PANEL RECEPCIÓN
+        =========================================== -->
+        <section id="view-reception" class="view">
+            <div class="mb-4 flex flex-col md:flex-row justify-between items-center bg-white/95 backdrop-blur-md p-4 rounded shadow-xl border-l-4 border-indigo-700">
+                <h2 class="text-xl font-bold text-indigo-900">Agenda General - Admisión</h2>
+                <div class="flex flex-wrap gap-2 mt-2 md:mt-0 items-center">
+                    <input type="date" class="border rounded p-2 text-sm outline-none">
+                    <select class="border rounded p-2 text-sm outline-none">
+                        <option>Dr. Pérez (Cardiología)</option>
+                    </select>
+                    <button onclick="abrirModal('modal-ausencia-emergencia')" class="bg-white border border-red-700 text-red-700 text-sm px-4 py-2 rounded font-bold hover:bg-red-50 transition shadow-sm">
+                        Declarar Ausencia / Emergencia
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white/95 backdrop-blur-md rounded shadow-xl overflow-hidden border">
+                <div class="overflow-x-auto h-[60vh] overflow-y-auto">
+                    <table class="w-full text-left border-collapse min-w-[700px] bg-white">
+                        <thead class="sticky top-0 bg-gray-200 text-gray-800 z-10">
+                            <tr>
+                                <th class="p-3 border-b">Hora</th>
+                                <th class="p-3 border-b">Canal</th>
+                                <th class="p-3 border-b">Paciente</th>
+                                <th class="p-3 border-b">Estado</th>
+                                <th class="p-3 border-b">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reception-tbody">
+                            <!-- Inyectado vía JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ==========================================
+             VISTA 5: PANEL MÉDICO
+        =========================================== -->
+        <section id="view-doctor" class="view">
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- Agenda Médico -->
+                <div class="lg:w-1/3 bg-white/95 backdrop-blur-md rounded shadow-xl p-4 border-t-4 border-teal-700 h-[80vh] overflow-y-auto">
+                    <h2 class="text-xl font-bold text-teal-900 mb-4">Pacientes de Hoy</h2>
+                    <div class="space-y-3">
+                        <div class="border-l-4 border-teal-600 bg-teal-50 p-3 rounded shadow-sm border border-teal-200">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-bold text-teal-800">09:00</span>
+                                <span class="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded font-bold">Esperando</span>
+                            </div>
+                            <p class="font-bold text-lg text-gray-800">María López</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historia Clínica -->
+                <div class="lg:w-2/3 bg-white/95 backdrop-blur-md rounded shadow-xl p-6 relative">
+                    <div class="flex justify-between items-end mb-4 border-b pb-3">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">Historia Clínica Digital</h2>
+                            <p class="text-sm text-gray-600 mt-1">Paciente en consultorio: <span class="font-bold text-teal-800">María López</span> (DNI: 40.111.222)</p>
+                        </div>
+                        <button onclick="toggleHistorial()" class="text-teal-800 font-bold text-sm hover:underline flex items-center gap-1 bg-white border border-gray-300 px-3 py-1 rounded shadow-sm">
+                            Ver Historial Anteriores
+                        </button>
+                    </div>
+
+                    <!-- HISTORIAL COLAPSABLE -->
+                    <div id="historial-paciente" class="colapsable-content bg-gray-50 rounded mb-4">
+                        <div class="p-4 border border-gray-300 bg-white">
+                            <h4 class="font-bold text-gray-800 mb-3">Consultas Anteriores</h4>
+                            <div class="text-sm mb-3 border-l-4 border-teal-600 pl-3">
+                                <p class="font-bold text-gray-800">12/08/2026 - Dr. Pérez (Cardiología)</p>
+                                <p class="text-gray-700 mt-1">Chequeo de rutina. Presión arterial normal.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Motivo de la consulta</label>
+                            <input type="text" class="w-full border border-gray-300 rounded p-2 bg-white outline-none focus:ring-1 focus:ring-teal-600 shadow-inner">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Evolución Médica</label>
+                            <textarea id="texto-evolucion" class="w-full border border-gray-300 rounded p-3 bg-white h-40 outline-none focus:ring-1 focus:ring-teal-600 shadow-inner"></textarea>
+                        </div>
+
+                        <div class="flex justify-end pt-4">
+                            <button type="button" class="bg-teal-800 text-white font-bold py-2 px-8 rounded shadow-md hover:bg-teal-900 transition">Guardar Evolución</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-800/95 backdrop-blur text-center py-6 text-sm text-gray-300 mt-auto z-10 relative">
+        <p class="font-bold text-gray-100 mb-2">Hospital Teodoro J. Schestakow</p>
+        <p>Dirección: Comandante Torres 150, San Rafael, Mza. | Tel. 2604 240303</p>
+        <p class="mt-4"><a href="#" onclick="switchView('login')" class="text-gray-400 hover:text-white transition font-semibold">Acceso Personal</a></p>
+    </footer>
+
+
+    <!-- ==========================================
+         MODALES
+    =========================================== -->
+    
+    <!-- Modal: Asignar Turno Recepción -->
+    <div id="modal-dar-turno" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center">
+        <div class="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4 border-t-4 border-indigo-700">
+            <h3 class="text-xl font-bold text-indigo-900 mb-2">Asignar Turno Presencial</h3>
+            <p class="text-sm text-gray-700 mb-4">Horario seleccionado: <strong id="modal-hora-turno">--:--</strong></p>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">DNI del Paciente</label>
+                    <input type="text" id="auto-dni" onkeyup="simularAutocompletado(this.value)" placeholder="Ingrese DNI..." class="border border-gray-300 rounded p-2 w-full outline-none">
+                    <p id="auto-msg" class="text-xs text-green-700 font-bold hidden mt-1">Paciente registrado en el sistema.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Nombre Completo</label>
+                    <input type="text" id="auto-nombre" class="border border-gray-300 rounded p-2 w-full outline-none">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="cerrarModal('modal-dar-turno')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100">Cancelar</button>
+                <button onclick="cerrarModal('modal-dar-turno'); alert('Turno asignado.')" class="px-4 py-2 bg-indigo-700 text-white rounded font-bold hover:bg-indigo-800 shadow">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Cancelar Turno Paciente -->
+    <div id="modal-cancelar-paciente" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center">
+        <div class="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4 border-t-4 border-gray-800">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Gestión de Turnos</h3>
+            <p class="text-sm text-gray-600 mb-4">Ingrese su DNI para visualizar sus turnos activos.</p>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="input-buscar-dni" placeholder="DNI..." class="border border-gray-300 rounded p-2 w-full outline-none">
+                <button onclick="document.getElementById('resultado-turnos-paciente').classList.remove('hidden');" class="bg-blue-800 text-white px-4 py-2 rounded font-bold hover:bg-blue-900 shadow">Buscar</button>
+            </div>
+            <div id="resultado-turnos-paciente" class="hidden space-y-3">
+                <div class="bg-gray-50 border border-gray-200 p-3 rounded flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-gray-800 text-sm">Cardiología - Dr. Pérez</p>
+                        <p class="text-xs text-gray-600 font-semibold">14/10/2026 - 09:00 hs</p>
+                    </div>
+                    <button onclick="alert('Turno cancelado exitosamente.'); cerrarModal('modal-cancelar-paciente')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border border-red-400 hover:bg-red-50 transition shadow-sm">Cancelar Turno</button>
+                </div>
+            </div>
+            <button onclick="cerrarModal('modal-cancelar-paciente')" class="w-full mt-4 py-2 border border-gray-300 rounded text-gray-700 font-bold hover:bg-gray-100">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Modal: Emergencia y Ausencias (Recepción) -->
+    <div id="modal-ausencia-emergencia" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center">
+        <div class="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4 border-t-4 border-red-700">
+            <h3 class="text-xl font-bold text-red-800 mb-2">Declarar Ausencia / Emergencia</h3>
+            <p class="text-sm text-gray-700 mb-4">El sistema liberará la agenda y notificará a los pacientes para reprogramar.</p>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Alcance de la cancelación</label>
+                    <select id="select-alcance-ausencia" onchange="toggleTimeSelector()" class="w-full border border-gray-300 rounded p-2 bg-white outline-none">
+                        <option value="todo_dia">Cancelar toda la agenda del día</option>
+                        <option value="desde_hora">Cancelar a partir de un horario específico</option>
+                    </select>
+                </div>
+                <div id="div-hora-ausencia" class="hidden bg-gray-50 p-3 rounded border border-gray-300">
+                    <label class="block text-sm font-bold text-gray-800 mb-1">Suspender atención a partir de las:</label>
+                    <input type="time" class="w-full border border-gray-300 rounded p-2 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Motivo Interno</label>
+                    <textarea placeholder="Descripción del evento..." class="w-full border border-gray-300 rounded p-2 bg-white h-20 outline-none"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="cerrarModal('modal-ausencia-emergencia')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100">Cancelar</button>
+                <button onclick="cerrarModal('modal-ausencia-emergencia'); alert('Agenda actualizada y notificaciones enviadas.');" class="px-4 py-2 bg-red-700 text-white font-bold rounded shadow hover:bg-red-800">Ejecutar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Formulario Gestión de Usuario (Admin) -->
+    <div id="modal-usuario" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center">
+        <div class="bg-white p-6 rounded-lg shadow-2xl max-w-sm w-full mx-4 border-t-4 border-gray-800">
+            <h3 class="text-xl font-bold text-gray-800 mb-4" id="titulo-modal-usuario">Gestión de Usuario</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Nombre y Apellido</label>
+                    <input type="text" id="input-usuario-nombre" class="border border-gray-300 rounded p-2 w-full outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Rol</label>
+                    <select id="input-usuario-rol" class="border border-gray-300 rounded p-2 w-full outline-none">
+                        <option value="Médico">Médico</option>
+                        <option value="Recepción">Recepción</option>
+                        <option value="Administrador">Administrador</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Nombre de Usuario</label>
+                    <input type="text" id="input-usuario-username" class="border border-gray-300 rounded p-2 w-full outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Contraseña</label>
+                    <input type="password" id="input-usuario-pass" placeholder="(Dejar en blanco para conservar)" class="border border-gray-300 rounded p-2 w-full outline-none">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="cerrarModal('modal-usuario')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100">Cancelar</button>
+                <button onclick="cerrarModal('modal-usuario'); alert('Datos guardados correctamente.');" class="px-4 py-2 bg-gray-800 text-white font-bold rounded shadow hover:bg-gray-900">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Detalle Admin -->
+    <div id="modal-detalle-medico" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center">
+        <div class="bg-white p-6 rounded-lg shadow-2xl max-w-2xl w-full mx-4 border-t-4 border-gray-800 relative">
+            <button onclick="cerrarModal('modal-detalle-medico')" class="absolute top-4 right-4 text-gray-500 text-xl font-bold hover:text-gray-800">×</button>
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Reporte: Dr. Pérez</h3>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="bg-gray-50 p-4 rounded text-center border border-gray-200"><p class="text-sm font-bold text-gray-600">Total Atendidos</p><p class="text-3xl font-bold text-gray-800">145</p></div>
+                <div class="bg-gray-50 p-4 rounded text-center border border-gray-200"><p class="text-sm font-bold text-gray-600">Eficiencia Global</p><p class="text-3xl font-bold text-green-700">92%</p></div>
+            </div>
+            <h4 class="font-bold text-gray-800 mb-2">Atención semanal</h4>
+            <div class="flex items-end gap-4 h-32 border-b border-l border-gray-400 pl-2 pb-2">
+                <div class="w-1/4 bg-blue-800 rounded-t shadow-inner" style="height: 60%;"></div>
+                <div class="w-1/4 bg-blue-800 rounded-t shadow-inner" style="height: 85%;"></div>
+                <div class="w-1/4 bg-blue-800 rounded-t shadow-inner" style="height: 40%;"></div>
+                <div class="w-1/4 bg-blue-800 rounded-t shadow-inner" style="height: 70%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- JS del Portal Público ---
+        const bdMedicos = { 'cardiologia': ['Dr. Pérez'], 'pediatria': ['Dra. Gómez'] };
+
+        function actualizarMedicos() {
+            const esp = document.getElementById('select-especialidad').value;
+            const selectMed = document.getElementById('select-medico');
+            selectMed.innerHTML = '';
+            if (!esp) { selectMed.disabled = true; return; }
+            selectMed.disabled = false;
+            bdMedicos[esp].forEach(m => selectMed.innerHTML += `<option>${m}</option>`);
+        }
+
+        function validarDiaHabil(input) {
+            if (!input.value) return;
+            const fecha = new Date(input.value + 'T12:00:00');
+            if (fecha.getDay() === 0 || fecha.getDay() === 6) {
+                alert("Los turnos por consultorio solo se otorgan de Lunes a Viernes.");
+                input.value = ""; 
+            }
+        }
+
+        function generarHorariosPublicos() {
+            const input = document.getElementById('input-fecha-paciente').value;
+            const container = document.getElementById('horarios-publicos');
+            if(!input) return;
+            
+            let html = '';
+            for (let h = 7; h <= 12; h++) {
+                for (let m = 0; m <= 30; m += 30) {
+                    if (h === 12 && m > 30) continue;
+                    const hs = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                    
+                    if (hs === '09:00') {
+                        html += `<button type="button" class="bg-gray-100 text-gray-400 font-bold rounded p-2 border border-gray-300 cursor-not-allowed" disabled>${hs} (Ocupado)</button>`;
+                    } else {
+                        html += `<button type="button" onclick="seleccionarHorario(this)" class="btn-horario bg-white border border-blue-800 text-blue-900 font-bold rounded p-2 hover:bg-blue-50 transition border-opacity-40 shadow-sm">${hs}</button>`;
+                    }
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        function seleccionarHorario(btnClickeado) {
+            const botones = document.querySelectorAll('.btn-horario');
+            botones.forEach(btn => {
+                btn.classList.remove('bg-blue-800', 'text-white');
+                btn.classList.add('bg-white', 'text-blue-900');
+            });
+            btnClickeado.classList.remove('bg-white', 'text-blue-900');
+            btnClickeado.classList.add('bg-blue-800', 'text-white');
+        }
+
+        // --- JS de Recepción ---
+        function generarAgendaRecepcion() {
+            const tbody = document.getElementById('reception-tbody');
+            if(!tbody) return;
+            let html = '';
+            for (let h = 7; h <= 12; h++) {
+                for (let m = 0; m < 60; m += 15) {
+                    if (h === 12 && m > 30) break; 
+                    const hora = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                    const esWeb = (m === 0 || m === 30);
+                    const canalStr = esWeb ? 'Web' : 'Presencial';
+                    
+                    let htmlPaciente = '<i class="text-gray-400">Libre</i>';
+                    let htmlEstado = '<span class="text-green-700 font-bold text-sm">Disponible</span>';
+                    let htmlAccion = `<button onclick="abrirModal('modal-dar-turno', '${hora}')" class="bg-indigo-700 text-white text-xs px-3 py-2 rounded font-bold hover:bg-indigo-800 shadow-sm transition">Asignar Turno</button>`;
+                    
+                    if (hora === '09:00') {
+                        htmlPaciente = '<span class="font-bold text-gray-800">María López</span>';
+                        htmlEstado = '<span class="text-yellow-700 font-bold text-sm">Reservado (Web)</span>';
+                        htmlAccion = `<button onclick="alert('Turno cancelado por el recepcionista.')" class="bg-white border border-red-500 text-red-700 text-xs px-3 py-2 rounded font-bold hover:bg-red-50 shadow-sm transition">Cancelar</button>`;
+                    }
+
+                    html += `
+                    <tr class="border-b hover:bg-gray-50 bg-white">
+                        <td class="p-3 font-bold text-gray-800">${hora}</td>
+                        <td class="p-3"><span class="text-xs bg-gray-100 px-2 py-1 rounded font-bold text-gray-700 border border-gray-300">${canalStr}</span></td>
+                        <td class="p-3">${htmlPaciente}</td>
+                        <td class="p-3">${htmlEstado}</td>
+                        <td class="p-3">${htmlAccion}</td>
+                    </tr>`;
+                }
+            }
+            tbody.innerHTML = html;
+        }
+
+        function simularAutocompletado(dni) {
+            if(dni === '123456') {
+                document.getElementById('auto-nombre').value = 'Ana Martínez';
+                document.getElementById('auto-msg').classList.remove('hidden');
+            } else {
+                document.getElementById('auto-msg').classList.add('hidden');
+            }
+        }
+
+        function toggleTimeSelector() {
+            const select = document.getElementById('select-alcance-ausencia').value;
+            const divHora = document.getElementById('div-hora-ausencia');
+            if (select === 'desde_hora') {
+                divHora.classList.remove('hidden');
+            } else {
+                divHora.classList.add('hidden');
+            }
+        }
+
+        // --- JS Panel Admin (Gestión de Usuarios) ---
+        function abrirModalUsuario(nombre = '', rol = 'Médico', username = '') {
+            document.getElementById('titulo-modal-usuario').innerText = nombre ? 'Editar Usuario' : 'Crear Nuevo Usuario';
+            document.getElementById('input-usuario-nombre').value = nombre;
+            document.getElementById('input-usuario-rol').value = rol;
+            document.getElementById('input-usuario-username').value = username;
+            document.getElementById('input-usuario-pass').value = ''; 
+            abrirModal('modal-usuario');
+        }
+
+        // --- Navegación General ---
+        function switchView(viewName) {
+            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-' + viewName).classList.add('active');
+            if (viewName !== 'public') document.getElementById('btn-logout').classList.remove('hidden');
+            else document.getElementById('btn-logout').classList.add('hidden');
+        }
+        function loginAs(role) { switchView(role); }
+        function abrirModal(id, extra=null) { 
+            if(extra && document.getElementById('modal-hora-turno')) document.getElementById('modal-hora-turno').innerText = extra;
+            document.getElementById(id).classList.add('active'); 
+        }
+        function cerrarModal(id) { document.getElementById(id).classList.remove('active'); }
+        function toggleHistorial() { document.getElementById('historial-paciente').classList.toggle('abierto'); }
+        
+        window.onload = function() {
+            generarAgendaRecepcion();
+        };
+    </script>
+</body>
+</html>
