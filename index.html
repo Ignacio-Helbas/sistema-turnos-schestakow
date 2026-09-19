@@ -596,7 +596,7 @@
                 return;
             }
 
-            try {
+try {
                 await addDoc(collection(window.db, "turnos"), {
                     especialidad: especialidad,
                     medico: medico,
@@ -610,8 +610,19 @@
                     timestamp: new Date()
                 });
 
-                alert("¡Turno solicitado exitosamente y guardado en la base de datos! Revise su WhatsApp.");
+                // Texto redactado de forma cordial y profesional
+                const mensajeConfirmacion = `Estimado/a ${nombre}, nos comunicamos con Ud. para informarle que ha reservado un turno con el/la ${medico} (${especialidad}) el día ${fecha} a las ${horario} hs. Le recomendamos presentarse 30 minutos antes del horario asignado. ¡Lo esperamos!`;
+
+                // Preguntar si desea enviar notificación por correo si completó el email
+                if (email && confirm(`¡Turno guardado con éxito!\n\n${mensajeConfirmacion}\n\n¿Desea enviar esta confirmación por correo electrónico?`)) {
+                    const asunto = encodeURIComponent("Confirmación de Turno - Hospital Schestakow");
+                    const cuerpo = encodeURIComponent(mensajeConfirmacion);
+                    window.open(`mailto:${email}?subject=${asunto}&body=${cuerpo}`);
+                } else {
+                    alert("¡Turno solicitado exitosamente y guardado en la base de datos!");
+                }
                 
+                // Limpiar formulario completo
                 document.getElementById('paciente-nombre').value = '';
                 document.getElementById('paciente-dni').value = '';
                 document.getElementById('paciente-celular').value = '';
