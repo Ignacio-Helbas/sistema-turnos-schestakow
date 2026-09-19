@@ -36,14 +36,13 @@
 
     <main class="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full relative z-0">
 
-        <!-- ==========================================
+      <!-- ==========================================
              VISTA 1: PORTAL PÚBLICO
         =========================================== -->
         <section id="view-public" class="view active">
             <!-- Fondo semitransparente (bg-white/95) para que contraste con la imagen de fondo -->
             <div class="bg-white/95 backdrop-blur-md rounded-lg shadow-2xl p-6 max-w-2xl mx-auto border-t-4 border-blue-800 mt-4 md:mt-8">
                 
-                <!-- Título limpio sin el botón al lado -->
                 <h2 class="text-2xl font-bold text-blue-800 mb-6 border-b border-gray-200 pb-3">Reserva de Turno Online</h2>
                 
                 <div class="space-y-5">
@@ -51,8 +50,41 @@
                         <label class="block text-sm font-semibold text-gray-700 mb-1">1. Especialidad</label>
                         <select id="select-especialidad" onchange="actualizarMedicos()" class="w-full border rounded p-3 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
                             <option value="">-- Elija una especialidad --</option>
-                            <option value="cardiologia">Cardiología</option>
-                            <option value="pediatria">Pediatría</option>
+                            
+                            <optgroup label="Especialidades Clínicas y Médicas">
+                                <option value="clinica">Clínica Médica (Adultos)</option>
+                                <option value="cardiologia">Cardiología (Corazón)</option>
+                                <option value="pediatria">Pediatría (Niños y adolescentes)</option>
+                                <option value="dermatologia">Dermatología (Piel)</option>
+                                <option value="endocrinologia">Endocrinología (Hormonas y diabetes)</option>
+                                <option value="gastroenterologia">Gastroenterología (Aparato digestivo)</option>
+                                <option value="infectologia">Infectología (Infecciones)</option>
+                                <option value="neurologia">Neurología (Cerebro y sistema nervioso)</option>
+                                <option value="nefrologia">Nefrología (Riñones)</option>
+                                <option value="neumonologia">Neumonología (Pulmones)</option>
+                                <option value="geriatria">Geriatría (Adultos mayores)</option>
+                                <option value="psiquiatria">Psiquiatría (Salud mental)</option>
+                            </optgroup>
+
+                            <optgroup label="Especialidades Quirúrgicas">
+                                <option value="cirugia_general">Cirugía General</option>
+                                <option value="cirugia_cardiovascular">Cirugía Cardiovascular</option>
+                                <option value="cirugia_plastica">Cirugía Plástica y Reparadora</option>
+                                <option value="traumatologia">Traumatología y Ortopedia</option>
+                                <option value="urologia">Urología</option>
+                                <option value="neurocirugia">Neurocirugía</option>
+                                <option value="otorrinolaringologia">Otorrinolaringología (Oídos, nariz, garganta)</option>
+                                <option value="oftalmologia">Oftalmología (Ojos)</option>
+                                <option value="ginecologia">Ginecología y Obstetricia</option>
+                            </optgroup>
+
+                            <optgroup label="Servicios de Diagnóstico y Apoyo">
+                                <option value="diagnostico_imagenes">Diagnóstico por Imágenes</option>
+                                <option value="anatomia_patologica">Anatomía Patológica</option>
+                                <option value="laboratorio">Laboratorio de Análisis Clínicos</option>
+                                <option value="terapia_intensiva">Terapia Intensiva (UTI)</option>
+                                <option value="rehabilitacion">Medicina Física y Rehabilitación</option>
+                            </optgroup>
                         </select>
                     </div>
                     <div>
@@ -77,7 +109,8 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input type="text" placeholder="Nombre completo" class="border rounded p-3 w-full bg-white outline-none">
-                        <input type="text" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="DNI (Solo números)" class="border rounded p-3 w-full bg-white outline-none">
+                        <!-- Restricción de DNI para que no acepte puntos ni comas -->
+                        <input type="text" oninput="this.value = this.value.replace(/[^0-9]/g, '')" maxlength="8" placeholder="DNI (Sin puntos)" class="border rounded p-3 w-full bg-white outline-none">
                         <input type="tel" placeholder="Celular (Ej: 2604...)" class="border rounded p-3 w-full bg-white outline-none">
                         <input type="email" placeholder="Email (Opcional)" class="border rounded p-3 w-full bg-white outline-none">
                     </div>
@@ -496,59 +529,39 @@
         </div>
     </div>
 
-    <script>
+  <script>
         // --- JS del Portal Público ---
-        const bdMedicos = { 'cardiologia': ['Dr. Pérez'], 'pediatria': ['Dra. Gómez'] };
+        const bdMedicos = { 
+            'clinica': ['Dr. Roberto Gómez', 'Dra. Silvia Fernández'],
+            'cardiologia': ['Dr. Juan Pérez', 'Dra. Laura Martínez', 'Dr. Carlos Ruiz'],
+            'pediatria': ['Dra. Ana Gómez', 'Dr. Martín Silva'],
+            'dermatologia': ['Dra. Florencia Castro'],
+            'endocrinologia': ['Dra. Valeria Román', 'Dr. Luis Navarro'],
+            'gastroenterologia': ['Dr. Diego Torres'],
+            'infectologia': ['Dra. Mariana Vega'],
+            'neurologia': ['Dr. Pablo Herrera'],
+            'nefrologia': ['Dra. Claudia Ortiz'],
+            'neumonologia': ['Dr. Jorge Medina'],
+            'geriatria': ['Dra. Susana Paz'],
+            'psiquiatria': ['Dr. Ricardo Luna', 'Dra. Elena Blanco'],
+            'cirugia_general': ['Dr. Guillermo Acosta', 'Dra. Sofía Ríos'],
+            'cirugia_cardiovascular': ['Dr. Héctor Farias'],
+            'cirugia_plastica': ['Dra. Carolina Gil'],
+            'traumatologia': ['Dr. Alejandro Vera', 'Dr. Tomás Cruz'],
+            'urologia': ['Dr. Fernando Sosa'],
+            'neurocirugia': ['Dra. Beatriz Mora'],
+            'otorrinolaringologia': ['Dr. Andrés Pino'],
+            'oftalmologia': ['Dra. Natalia Rey'],
+            'ginecologia': ['Dra. Mónica López', 'Dra. Carmen Díaz'],
+            'diagnostico_imagenes': ['Servicio de Ecografía', 'Servicio de Rayos X', 'Resonancia Magnética'],
+            'anatomia_patologica': ['Laboratorio Central'],
+            'laboratorio': ['Extracción de Sangre', 'Análisis de Orina'],
+            'terapia_intensiva': ['Dr. Jefe de Unidad Quirófano'],
+            'rehabilitacion': ['Lic. Marcos Peña (Fisiatría)', 'Lic. Laura Quintero (Kinesiología)']
+        };
 
         function actualizarMedicos() {
-            const esp = document.getElementById('select-especialidad').value;
-            const selectMed = document.getElementById('select-medico');
-            selectMed.innerHTML = '';
-            if (!esp) { selectMed.disabled = true; return; }
-            selectMed.disabled = false;
-            bdMedicos[esp].forEach(m => selectMed.innerHTML += `<option>${m}</option>`);
-        }
-
-        function validarDiaHabil(input) {
-            if (!input.value) return;
-            const fecha = new Date(input.value + 'T12:00:00');
-            if (fecha.getDay() === 0 || fecha.getDay() === 6) {
-                alert("Los turnos por consultorio solo se otorgan de Lunes a Viernes.");
-                input.value = ""; 
-            }
-        }
-
-        function generarHorariosPublicos() {
-            const input = document.getElementById('input-fecha-paciente').value;
-            const container = document.getElementById('horarios-publicos');
-            if(!input) return;
             
-            let html = '';
-            for (let h = 7; h <= 12; h++) {
-                for (let m = 0; m <= 30; m += 30) {
-                    if (h === 12 && m > 30) continue;
-                    const hs = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-                    
-                    if (hs === '09:00') {
-                        html += `<button type="button" class="bg-gray-100 text-gray-400 font-bold rounded p-2 border border-gray-300 cursor-not-allowed" disabled>${hs} (Ocupado)</button>`;
-                    } else {
-                        html += `<button type="button" onclick="seleccionarHorario(this)" class="btn-horario bg-white border border-blue-800 text-blue-900 font-bold rounded p-2 hover:bg-blue-50 transition border-opacity-40 shadow-sm">${hs}</button>`;
-                    }
-                }
-            }
-            container.innerHTML = html;
-        }
-
-        function seleccionarHorario(btnClickeado) {
-            const botones = document.querySelectorAll('.btn-horario');
-            botones.forEach(btn => {
-                btn.classList.remove('bg-blue-800', 'text-white');
-                btn.classList.add('bg-white', 'text-blue-900');
-            });
-            btnClickeado.classList.remove('bg-white', 'text-blue-900');
-            btnClickeado.classList.add('bg-blue-800', 'text-white');
-        }
-
         // --- JS de Recepción ---
         function generarAgendaRecepcion() {
             const tbody = document.getElementById('reception-tbody');
