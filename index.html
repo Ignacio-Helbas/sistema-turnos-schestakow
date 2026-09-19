@@ -484,12 +484,24 @@
             'rehabilitacion': ['Lic. Marcos Peña (Fisiatría)', 'Lic. Laura Quintero (Kinesiología)']
         };
 
-        function actualizarMedicos() {
+       function actualizarMedicos() {
             const esp = document.getElementById('select-especialidad').value;
             const selectMed = document.getElementById('select-medico');
             selectMed.innerHTML = '';
-            if (!esp) { selectMed.disabled = true; return; }
+            
+            if (!esp) { 
+                selectMed.disabled = true; 
+                // Si no hay especialidad, volvemos al estilo deshabilitado (gris)
+                selectMed.className = "w-full border rounded p-3 bg-gray-100 text-gray-500 outline-none";
+                selectMed.innerHTML = '<option>Primero seleccione especialidad</option>';
+                return; 
+            }
+            
+            // Si elige especialidad, habilitamos y cambiamos el estilo a activo (blanco)
             selectMed.disabled = false;
+            selectMed.className = "w-full border rounded p-3 bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none";
+            
+            // Cargamos los médicos correspondientes
             bdMedicos[esp].forEach(m => selectMed.innerHTML += `<option>${m}</option>`);
         }
 
