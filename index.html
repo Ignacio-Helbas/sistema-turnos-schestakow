@@ -88,7 +88,8 @@
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">2. Profesional</label>
-                        <select id="select-medico" disabled class="w-full border rounded p-3 bg-gray-100 text-gray-500 outline-none">
+                        <!-- ACÁ SE AGREGÓ EL ONCHANGE -->
+                        <select id="select-medico" onchange="generarHorariosPublicos()" disabled class="w-full border rounded p-3 bg-gray-100 text-gray-500 outline-none">
                             <option>Primero seleccione especialidad</option>
                         </select>
                     </div>
@@ -193,21 +194,76 @@
              VISTA 4: PANEL RECEPCIÓN
         =========================================== -->
         <section id="view-reception" class="view">
-            <div class="mb-4 flex flex-col md:flex-row justify-between items-center bg-white/95 backdrop-blur-md p-4 rounded shadow-xl border-l-4 border-indigo-700">
-                <h2 class="text-xl font-bold text-indigo-900">Agenda General - Admisión</h2>
-                <div class="flex flex-wrap gap-2 mt-2 md:mt-0 items-center">
-                    <input type="date" onchange="cambiarFechaRecepcion(this)" class="border rounded p-2 text-sm outline-none">
-                    <select class="border rounded p-2 text-sm outline-none">
-                        <option>Dr. Pérez (Cardiología)</option>
-                    </select>
+            <!-- Bloque de Búsqueda y Filtros -->
+            <div class="mb-6 bg-white/95 backdrop-blur-md p-5 rounded shadow-xl border-l-4 border-indigo-700">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-indigo-900">Agenda General - Admisión</h2>
                     <button onclick="abrirModal('modal-ausencia-emergencia')" class="bg-white border border-red-700 text-red-700 text-sm px-4 py-2 rounded font-bold hover:bg-red-50 transition shadow-sm">
                         Declarar Ausencia / Emergencia
                     </button>
                 </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">1. Especialidad</label>
+                        <select id="reception-especialidad" onchange="actualizarMedicosRecepcion()" class="w-full border border-gray-300 rounded p-2 bg-white outline-none focus:ring-2 focus:ring-indigo-600">
+                            <option value="">-- Elija una especialidad --</option>
+                            <optgroup label="Especialidades Clínicas y Médicas">
+                                <option value="clinica">Clínica Médica (Adultos)</option>
+                                <option value="cardiologia">Cardiología (Corazón)</option>
+                                <option value="pediatria">Pediatría (Niños y adolescentes)</option>
+                                <option value="dermatologia">Dermatología (Piel)</option>
+                                <option value="endocrinologia">Endocrinología (Hormonas y diabetes)</option>
+                                <option value="gastroenterologia">Gastroenterología (Aparato digestivo)</option>
+                                <option value="infectologia">Infectología (Infecciones)</option>
+                                <option value="neurologia">Neurología (Cerebro y sistema nervioso)</option>
+                                <option value="nefrologia">Nefrología (Riñones)</option>
+                                <option value="neumonologia">Neumonología (Pulmones)</option>
+                                <option value="geriatria">Geriatría (Adultos mayores)</option>
+                                <option value="psiquiatria">Psiquiatría (Salud mental)</option>
+                            </optgroup>
+                            <optgroup label="Especialidades Quirúrgicas">
+                                <option value="cirugia_general">Cirugía General</option>
+                                <option value="cirugia_cardiovascular">Cirugía Cardiovascular</option>
+                                <option value="cirugia_plastica">Cirugía Plástica y Reparadora</option>
+                                <option value="traumatologia">Traumatología y Ortopedia</option>
+                                <option value="urologia">Urología</option>
+                                <option value="neurocirugia">Neurocirugía</option>
+                                <option value="otorrinolaringologia">Otorrinolaringología (Oídos, nariz, garganta)</option>
+                                <option value="oftalmologia">Oftalmología (Ojos)</option>
+                                <option value="ginecologia">Ginecología y Obstetricia</option>
+                            </optgroup>
+                            <optgroup label="Servicios de Diagnóstico y Apoyo">
+                                <option value="diagnostico_imagenes">Diagnóstico por Imágenes</option>
+                                <option value="anatomia_patologica">Anatomía Patológica</option>
+                                <option value="laboratorio">Laboratorio de Análisis Clínicos</option>
+                                <option value="terapia_intensiva">Terapia Intensiva (UTI)</option>
+                                <option value="rehabilitacion">Medicina Física y Rehabilitación</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">2. Profesional</label>
+                        <select id="reception-medico" disabled class="w-full border border-gray-300 rounded p-2 bg-gray-100 text-gray-500 outline-none">
+                            <option>Primero seleccione especialidad</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">3. Fecha</label>
+                        <input type="date" id="input-fecha-recepcion" class="w-full border border-gray-300 rounded p-2 bg-white outline-none focus:ring-2 focus:ring-indigo-600">
+                    </div>
+                    <div>
+                        <button onclick="buscarAgendaRecepcion()" class="w-full bg-indigo-700 text-white font-bold py-2 rounded shadow hover:bg-indigo-800 transition">Ver Agenda</button>
+                    </div>
+                </div>
             </div>
 
-            <div class="bg-white/95 backdrop-blur-md rounded shadow-xl overflow-hidden border">
-                <div class="overflow-x-auto h-[60vh] overflow-y-auto">
+            <!-- Grilla Oculta por defecto -->
+            <div id="contenedor-grilla-recepcion" class="hidden bg-white/95 backdrop-blur-md rounded shadow-xl overflow-hidden border">
+                <div class="p-3 bg-indigo-50 border-b flex justify-between items-center">
+                    <p class="text-indigo-900 font-bold" id="titulo-agenda-recepcion">Agenda: --</p>
+                </div>
+                <div class="overflow-x-auto h-[50vh] overflow-y-auto">
                     <table class="w-full text-left border-collapse min-w-[700px] bg-white">
                         <thead class="sticky top-0 bg-gray-200 text-gray-800 z-10">
                             <tr>
@@ -508,25 +564,24 @@
             'rehabilitacion': ['Lic. Marcos Peña (Fisiatría)', 'Lic. Laura Quintero (Kinesiología)']
         };
 
-       function actualizarMedicos() {
+        function actualizarMedicos() {
             const esp = document.getElementById('select-especialidad').value;
             const selectMed = document.getElementById('select-medico');
             selectMed.innerHTML = '';
             
             if (!esp) { 
                 selectMed.disabled = true; 
-                // Si no hay especialidad, volvemos al estilo deshabilitado (gris)
                 selectMed.className = "w-full border rounded p-3 bg-gray-100 text-gray-500 outline-none";
                 selectMed.innerHTML = '<option>Primero seleccione especialidad</option>';
+                generarHorariosPublicos(); // <--- PASO 3
                 return; 
             }
             
-            // Si elige especialidad, habilitamos y cambiamos el estilo a activo (blanco)
             selectMed.disabled = false;
             selectMed.className = "w-full border rounded p-3 bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none";
-            
-            // Cargamos los médicos correspondientes
             bdMedicos[esp].forEach(m => selectMed.innerHTML += `<option>${m}</option>`);
+            
+            generarHorariosPublicos(); // <--- PASO 3
         }
 
         function validarDiaHabil(input) {
@@ -538,16 +593,59 @@
             }
         }
 
-        function generarHorariosPublicos() {
+        // --- PASO 2: GENERADOR DE HORARIOS DINÁMICO ---
+        async function generarHorariosPublicos() {
             const input = document.getElementById('input-fecha-paciente').value;
+            const medico = document.getElementById('select-medico').value;
             const container = document.getElementById('horarios-publicos');
-            if(!input) return;
             
+            if(!input || !medico || medico.includes("Primero seleccione")) {
+                container.innerHTML = '<p class="text-sm text-gray-500 col-span-3">Seleccione Profesional y Fecha.</p>';
+                return;
+            }
+
+            container.innerHTML = '<p class="text-sm text-blue-600 font-bold col-span-3 animate-pulse">Consultando disponibilidad en vivo...</p>';
+
+            let turnosOcupados = {};
+            try {
+                const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                const q = query(collection(window.db, "turnos"), where("fecha", "==", input));
+                const querySnapshot = await getDocs(q);
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.medico === medico) {
+                        turnosOcupados[data.horario] = true; 
+                    }
+                });
+            } catch (error) {
+                console.error("Error al consultar la base de datos:", error);
+            }
+
+            const ahora = new Date();
+            const strHoy = ahora.getFullYear() + "-" + String(ahora.getMonth() + 1).padStart(2, '0') + "-" + String(ahora.getDate()).padStart(2, '0');
+            const esHoy = (input === strHoy);
+            const minutosActuales = ahora.getHours() * 60 + ahora.getMinutes();
+
             let html = '';
             for (let h = 7; h <= 12; h++) {
                 for (let m = 0; m <= 30; m += 30) {
                     if (h === 12 && m > 30) continue;
                     const hs = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                    
+                    if (turnosOcupados[hs]) {
+                        html += `<button type="button" class="bg-gray-100 text-gray-400 font-bold rounded p-2 border border-gray-300 cursor-not-allowed" disabled>${hs} (Ocupado)</button>`;
+                        continue;
+                    }
+
+                    if (esHoy) {
+                        const minutosTurno = h * 60 + m;
+                        if ((minutosTurno - minutosActuales) < 60) {
+                            html += `<button type="button" class="bg-red-50 text-red-400 font-bold rounded p-2 border border-red-200 cursor-not-allowed" title="Cierre de agenda online" disabled>${hs} (Cerrado)</button>`;
+                            continue;
+                        }
+                    }
+
                     html += `<button type="button" onclick="seleccionarHorario(this)" class="btn-horario bg-white border border-blue-800 text-blue-900 font-bold rounded p-2 hover:bg-blue-50 transition border-opacity-40 shadow-sm">${hs}</button>`;
                 }
             }
@@ -596,7 +694,7 @@
                 return;
             }
 
-try {
+            try {
                 await addDoc(collection(window.db, "turnos"), {
                     especialidad: especialidad,
                     medico: medico,
@@ -610,10 +708,8 @@ try {
                     timestamp: new Date()
                 });
 
-                // Texto redactado de forma cordial y profesional
                 const mensajeConfirmacion = `Estimado/a ${nombre}, nos comunicamos con Ud. para informarle que ha reservado un turno con el/la ${medico} (${especialidad}) el día ${fecha} a las ${horario} hs. Le recomendamos presentarse 30 minutos antes del horario asignado. ¡Lo esperamos!`;
 
-                // Preguntar si desea enviar notificación por correo si completó el email
                 if (email && confirm(`¡Turno guardado con éxito!\n\n${mensajeConfirmacion}\n\n¿Desea enviar esta confirmación por correo electrónico?`)) {
                     const asunto = encodeURIComponent("Confirmación de Turno - Hospital Schestakow");
                     const cuerpo = encodeURIComponent(mensajeConfirmacion);
@@ -622,7 +718,6 @@ try {
                     alert("¡Turno solicitado exitosamente y guardado en la base de datos!");
                 }
                 
-                // Limpiar formulario completo
                 document.getElementById('paciente-nombre').value = '';
                 document.getElementById('paciente-dni').value = '';
                 document.getElementById('paciente-celular').value = '';
@@ -697,7 +792,43 @@ try {
         }
         
         // --- PANEL DE RECEPCIÓN ---
-        let fechaRecepcionSeleccionada = new Date().toISOString().split('T')[0];
+        let fechaRecepcionSeleccionada = '';
+        let medicoSeleccionadoRecepcion = '';
+        let especialidadSeleccionadaRecepcion = '';
+
+        function actualizarMedicosRecepcion() {
+            const esp = document.getElementById('reception-especialidad').value;
+            const selectMed = document.getElementById('reception-medico');
+            selectMed.innerHTML = '';
+            
+            if (!esp) { 
+                selectMed.disabled = true; 
+                selectMed.className = "w-full border border-gray-300 rounded p-2 bg-gray-100 text-gray-500 outline-none";
+                selectMed.innerHTML = '<option>Primero seleccione especialidad</option>';
+                return; 
+            }
+            
+            selectMed.disabled = false;
+            selectMed.className = "w-full border border-gray-300 rounded p-2 bg-white text-gray-800 focus:ring-2 focus:ring-indigo-600 outline-none";
+            bdMedicos[esp].forEach(m => selectMed.innerHTML += `<option>${m}</option>`);
+        }
+
+        function buscarAgendaRecepcion() {
+            especialidadSeleccionadaRecepcion = document.getElementById('reception-especialidad').value;
+            medicoSeleccionadoRecepcion = document.getElementById('reception-medico').value;
+            fechaRecepcionSeleccionada = document.getElementById('input-fecha-recepcion').value;
+
+            if (!especialidadSeleccionadaRecepcion || document.getElementById('reception-medico').disabled || !fechaRecepcionSeleccionada) {
+                alert("Por favor, seleccione una Especialidad, un Profesional y una Fecha.");
+                return;
+            }
+
+            const [anio, mes, dia] = fechaRecepcionSeleccionada.split('-');
+            document.getElementById('titulo-agenda-recepcion').innerText = `Agenda: ${medicoSeleccionadoRecepcion} - ${dia}/${mes}/${anio}`;
+            
+            document.getElementById('contenedor-grilla-recepcion').classList.remove('hidden');
+            generarAgendaRecepcion();
+        }
 
         async function generarAgendaRecepcion() {
             const tbody = document.getElementById('reception-tbody');
@@ -711,7 +842,9 @@ try {
                 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
-                    turnosOcupados[data.horario] = { id: doc.id, ...data };
+                    if (data.medico === medicoSeleccionadoRecepcion) {
+                        turnosOcupados[data.horario] = { id: doc.id, ...data };
+                    }
                 });
             } catch (error) {
                 console.error("Error al sincronizar recepción:", error);
@@ -750,12 +883,6 @@ try {
             tbody.innerHTML = html;
         }
 
-        function cambiarFechaRecepcion(inputFecha) {
-            if (!inputFecha.value) return;
-            fechaRecepcionSeleccionada = inputFecha.value;
-            generarAgendaRecepcion();
-        }
-
         let horaSeleccionadaRecepcion = '';
         function abrirModalDarTurno(hora) {
             horaSeleccionadaRecepcion = hora;
@@ -783,8 +910,8 @@ try {
             try {
                 const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 await addDoc(collection(window.db, "turnos"), {
-                    especialidad: "cardiologia",
-                    medico: "Dr. Juan Pérez",
+                    especialidad: especialidadSeleccionadaRecepcion,
+                    medico: medicoSeleccionadoRecepcion,
                     fecha: fechaRecepcionSeleccionada,
                     horario: horaSeleccionadaRecepcion,
                     pacienteNombre: nombre,
@@ -823,7 +950,6 @@ try {
             const lblPacienteActivo = document.getElementById('medico-paciente-activo');
             if(!container) return;
 
-            // Tomamos la fecha de hoy por defecto para el médico
             const hoy = new Date().toISOString().split('T')[0];
 
             try {
@@ -870,7 +996,7 @@ try {
             if (viewName !== 'public') document.getElementById('btn-logout').classList.remove('hidden');
             else document.getElementById('btn-logout').classList.add('hidden');
             
-            if (viewName === 'reception') generarAgendaRecepcion();
+            if (viewName === 'reception' && fechaRecepcionSeleccionada) generarAgendaRecepcion();
             if (viewName === 'doctor') cargarAgendaMedico();
         }
 
@@ -888,7 +1014,13 @@ try {
         function toggleHistorial() { document.getElementById('historial-paciente').classList.toggle('abierto'); }
         
         window.onload = function() {
-            generarAgendaRecepcion();
+            // Ponemos la fecha de hoy por defecto en la recepción
+            const inputFechaRec = document.getElementById('input-fecha-recepcion');
+            if(inputFechaRec) {
+                inputFechaRec.value = new Date().toISOString().split('T')[0];
+            }
+            
+            // Cargamos la agenda del médico por defecto
             cargarAgendaMedico();
         };
     </script>
