@@ -21,7 +21,7 @@
     <!-- NAVEGACIÓN -->
     <nav class="bg-white shadow-md text-blue-900 p-3 flex justify-between items-center z-10 relative">
         <div class="flex items-center gap-3">
-            <!-- Doble clic sigue oculto, pero ahora agregamos el acceso rápido normal -->
+            <!-- PUERTA SECRETA: Doble clic en el logo abre el login -->
             <img src="LogoHospitalSolo.png" alt="Logo Hospital" class="h-12 w-auto rounded bg-white p-1 shadow-sm cursor-pointer" ondblclick="switchView('login')" title="Doble clic para acceso restringido">
         </div>
         <div class="flex items-center gap-4">
@@ -354,7 +354,6 @@
                 2604-240300
             </a>
         </p>
-        <p class="mt-4"><a href="#" onclick="switchView('login')" class="text-gray-400 hover:text-white transition font-semibold">Acceso Personal</a></p>
     </footer>
 
     <!-- ==========================================
@@ -921,13 +920,11 @@
                 
                 let html = '';
                 
-                // Convertimos el snapshot a un array para poder ordenarlo
                 const usuariosArray = [];
                 snap.forEach(doc => {
                     usuariosArray.push({ id: doc.id, ...doc.data() });
                 });
                 
-                // Ordenar por rol y luego por nombre
                 usuariosArray.sort((a, b) => {
                     if(a.rol < b.rol) return -1;
                     if(a.rol > b.rol) return 1;
@@ -1009,7 +1006,7 @@
                 
                 cerrarModal('modal-usuario');
                 cargarUsuariosAdmin(); 
-                cargarEspecialistasFirebase(); // Refrescar listas públicas
+                cargarEspecialistasFirebase(); 
             } catch (error) {
                 console.error("Error al guardar usuario:", error);
                 alert("Hubo un error de base de datos.");
