@@ -30,7 +30,7 @@
                 <span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span>
                 Sistema En Vivo
             </div>
-<button id="btn-logout" onclick="switchView('public')" class="hidden text-sm text-white bg-red-600 px-3 py-2 rounded font-semibold hover:bg-red-700 transition shadow">Cerrar Sesión</button>
+            <button id="btn-logout" onclick="switchView('public')" class="hidden text-sm text-white bg-red-600 px-3 py-2 rounded font-semibold hover:bg-red-700 transition shadow">Cerrar Sesión</button>
         </div>
     </nav>
 
@@ -108,16 +108,16 @@
                     <h3 class="font-semibold text-gray-700 mb-3">Datos del Paciente</h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input type="text" placeholder="Nombre completo" class="border rounded p-3 w-full bg-white outline-none">
+                        <input type="text" id="paciente-nombre" placeholder="Nombre completo" class="border rounded p-3 w-full bg-white outline-none">
                         <!-- Restricción de DNI para que no acepte puntos ni comas -->
-                        <input type="text" oninput="this.value = this.value.replace(/[^0-9]/g, '')" maxlength="8" placeholder="DNI (Sin puntos)" class="border rounded p-3 w-full bg-white outline-none">
-                        <input type="tel" placeholder="Celular (Ej: 2604...)" class="border rounded p-3 w-full bg-white outline-none">
-                        <input type="email" placeholder="Email (Opcional)" class="border rounded p-3 w-full bg-white outline-none">
+                        <input type="text" id="paciente-dni" oninput="this.value = this.value.replace(/[^0-9]/g, '')" maxlength="8" placeholder="DNI (Sin puntos)" class="border rounded p-3 w-full bg-white outline-none">
+                        <input type="tel" id="paciente-celular" placeholder="Celular (Ej: 2604...)" class="border rounded p-3 w-full bg-white outline-none">
+                        <input type="email" id="paciente-email" placeholder="Email (Opcional)" class="border rounded p-3 w-full bg-white outline-none">
                     </div>
 
                     <!-- BOTONERA CENTRALIZADA -->
                     <div class="mt-6 space-y-3">
-                        <button type="button" onclick="alert('Turno solicitado exitosamente. Revise su WhatsApp.')" class="w-full bg-blue-800 text-white text-lg font-bold py-3 rounded hover:bg-blue-900 shadow-md transition">Confirmar Turno</button>
+                        <button type="button" onclick="confirmarTurnoFirebase()" class="w-full bg-blue-800 text-white text-lg font-bold py-3 rounded hover:bg-blue-900 shadow-md transition">Confirmar Turno</button>
                         <button type="button" onclick="abrirModal('modal-cancelar-paciente')" class="w-full bg-white border-2 border-blue-800 text-blue-800 text-lg font-bold py-3 rounded hover:bg-blue-50 shadow-sm transition">Gestionar mis turnos</button>
                     </div>
                     
@@ -529,7 +529,30 @@
         </div>
     </div>
 
-<script>
+    <!-- ==========================================
+         CONEXIÓN A FIREBASE (BASE DE DATOS)
+    =========================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAghXQKrYy6EJGD5IqEdO4c_E-ntozUmz8",
+            authDomain: "sistema-turnos-utn.firebaseapp.com",
+            projectId: "sistema-turnos-utn",
+            storageBucket: "sistema-turnos-utn.firebasestorage.app",
+            messagingSenderId: "588893912264",
+            appId: "1:588893912264:web:c5d56455f06cf178d979fd"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        window.db = db;
+        console.log("¡Firebase conectado exitosamente!");
+    </script>
+
+    <script>
         // --- JS del Portal Público ---
         const bdMedicos = { 
             'clinica': ['Dr. Roberto Gómez', 'Dra. Silvia Fernández'],
@@ -607,6 +630,71 @@
             });
             btnClickeado.classList.remove('bg-white', 'text-blue-900');
             btnClickeado.classList.add('bg-blue-800', 'text-white');
+        }
+
+        // --- FUNCIÓN DE GUARDADO EN FIREBASE CON VALIDACIONES ---
+        async function confirmarTurnoFirebase() {
+            // Importar la función de Firestore desde el CDN de módulos
+            const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+
+            const especialidad = document.getElementById('select-especialidad').value;
+            const medico = document.getElementById('select-medico').value;
+            const fecha = document.getElementById('input-fecha-paciente').value;
+            
+            // Buscar el horario seleccionado actualmente
+            const btnHorarioSeleccionado = document.querySelector('.btn-horario.bg-blue-800');
+            const horario = btnHorarioSeleccionado ? btnHorarioSeleccionado.innerText.replace(' (Ocupado)', '').trim() : '';
+
+            const nombre = document.getElementById('paciente-nombre').value.trim();
+            const dni = document.getElementById('paciente-dni').value.trim();
+            const celular = document.getElementById('paciente-celular').value.trim();
+            const email = document.getElementById('paciente-email').value.trim();
+
+            // 1. Validaciones obligatorias
+            if (!especialidad || !medico || !fecha || !horario) {
+                alert("Por favor, seleccione Especialidad, Profesional, Fecha y un Horario disponible.");
+                return;
+            }
+
+            if (!nombre || !dni || !celular) {
+                alert("Los campos de Nombre Completo, DNI y Celular son obligatorios.");
+                return;
+            }
+
+            // 2. Validación estricta del DNI (sin puntos, solo números, entre 7 y 8 dígitos)
+            const regexDni = /^[0-9]{7,8}$/;
+            if (!regexDni.test(dni)) {
+                alert("El DNI ingresado no es válido. Debe contener entre 7 y 8 dígitos numéricos, sin puntos, comas ni espacios.");
+                return;
+            }
+
+            try {
+                // Guardar en la colección "turnos" de Firestore
+                await addDoc(collection(window.db, "turnos"), {
+                    especialidad: especialidad,
+                    medico: medico,
+                    fecha: fecha,
+                    horario: horario,
+                    pacienteNombre: nombre,
+                    pacienteDni: dni,
+                    pacienteCelular: celular,
+                    pacienteEmail: email,
+                    estado: "Reservado",
+                    timestamp: new Date()
+                });
+
+                alert("¡Turno solicitado exitosamente y guardado en la base de datos! Revise su WhatsApp.");
+                
+                // Limpiar formulario opcionalmente
+                document.getElementById('paciente-nombre').value = '';
+                document.getElementById('paciente-dni').value = '';
+                document.getElementById('paciente-celular').value = '';
+                document.getElementById('paciente-email').value = '';
+
+            } catch (error) {
+                console.error("Error al guardar el turno: ", error);
+                alert("Hubo un error al registrar el turno en la base de datos. Intente nuevamente.");
+            }
         }
 
         // --- JS de Recepción ---
@@ -692,6 +780,5 @@
             generarAgendaRecepcion();
         };
     </script>
-
 </body>
 </html>
