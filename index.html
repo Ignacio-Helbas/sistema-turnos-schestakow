@@ -529,7 +529,7 @@
         </div>
     </div>
 
-  <script>
+ <script>
         // --- JS del Portal Público ---
         const bdMedicos = { 
             'clinica': ['Dr. Roberto Gómez', 'Dra. Silvia Fernández'],
@@ -561,7 +561,54 @@
         };
 
         function actualizarMedicos() {
+            const esp = document.getElementById('select-especialidad').value;
+            const selectMed = document.getElementById('select-medico');
+            selectMed.innerHTML = '';
+            if (!esp) { selectMed.disabled = true; return; }
+            selectMed.disabled = false;
+            bdMedicos[esp].forEach(m => selectMed.innerHTML += `<option>${m}</option>`);
+        }
+
+        function validarDiaHabil(input) {
+            if (!input.value) return;
+            const fecha = new Date(input.value + 'T12:00:00');
+            if (fecha.getDay() === 0 || fecha.getDay() === 6) {
+                alert("Los turnos por consultorio solo se otorgan de Lunes a Viernes.");
+                input.value = ""; 
+            }
+        }
+
+        function generarHorariosPublicos() {
+            const input = document.getElementById('input-fecha-paciente').value;
+            const container = document.getElementById('horarios-publicos');
+            if(!input) return;
             
+            let html = '';
+            for (let h = 7; h <= 12; h++) {
+                for (let m = 0; m <= 30; m += 30) {
+                    if (h === 12 && m > 30) continue;
+                    const hs = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                    
+                    if (hs === '09:00') {
+                        html += `<button type="button" class="bg-gray-100 text-gray-400 font-bold rounded p-2 border border-gray-300 cursor-not-allowed" disabled>${hs} (Ocupado)</button>`;
+                    } else {
+                        html += `<button type="button" onclick="seleccionarHorario(this)" class="btn-horario bg-white border border-blue-800 text-blue-900 font-bold rounded p-2 hover:bg-blue-50 transition border-opacity-40 shadow-sm">${hs}</button>`;
+                    }
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        function seleccionarHorario(btnClickeado) {
+            const botones = document.querySelectorAll('.btn-horario');
+            botones.forEach(btn => {
+                btn.classList.remove('bg-blue-800', 'text-white');
+                btn.classList.add('bg-white', 'text-blue-900');
+            });
+            btnClickeado.classList.remove('bg-white', 'text-blue-900');
+            btnClickeado.classList.add('bg-blue-800', 'text-white');
+        }
+
         // --- JS de Recepción ---
         function generarAgendaRecepcion() {
             const tbody = document.getElementById('reception-tbody');
@@ -645,5 +692,6 @@
             generarAgendaRecepcion();
         };
     </script>
+
 </body>
 </html>
