@@ -21,7 +21,7 @@
     <!-- NAVEGACIÓN -->
     <nav class="bg-white shadow-md text-blue-900 p-3 flex justify-between items-center z-10 relative">
         <div class="flex items-center gap-3">
-            <!-- PUERTA SECRETA: Doble clic en el logo abre el login -->
+            <!-- Doble clic sigue oculto, pero ahora agregamos el acceso rápido normal -->
             <img src="LogoHospitalSolo.png" alt="Logo Hospital" class="h-12 w-auto rounded bg-white p-1 shadow-sm cursor-pointer" ondblclick="switchView('login')" title="Doble clic para acceso restringido">
         </div>
         <div class="flex items-center gap-4">
@@ -120,11 +120,21 @@
         =========================================== -->
         <section id="view-login" class="view">
             <div class="bg-white/95 backdrop-blur-md rounded-lg shadow-2xl p-6 max-w-md mx-auto mt-10 border-t-4 border-gray-800">
-                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Iniciar Sesión</h2>
+                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Acceso Restringido</h2>
                 <div class="space-y-4">
                     <input type="text" id="login-user" placeholder="Nombre de Usuario" class="border rounded p-3 w-full outline-none">
                     <input type="password" id="login-pass" placeholder="Contraseña" class="border rounded p-3 w-full outline-none">
                     <button onclick="iniciarSesionReal()" class="w-full bg-gray-800 text-white font-bold py-3 rounded hover:bg-gray-900 shadow transition mt-2">Ingresar al Sistema</button>
+                    
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <p class="text-xs text-gray-500 text-center mb-2 font-bold uppercase tracking-wider">Atajos de Desarrollador</p>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="loginAs('reception')" class="bg-indigo-700 text-white py-2 rounded hover:bg-indigo-800 text-sm font-semibold transition">Recepción</button>
+                            <button onclick="loginAs('doctor')" class="bg-teal-700 text-white py-2 rounded hover:bg-teal-800 text-sm font-semibold transition">Médico</button>
+                            <button onclick="loginAs('admin')" class="bg-gray-800 text-white py-2 rounded hover:bg-gray-900 text-sm font-semibold transition">Admin</button>
+                        </div>
+                    </div>
+
                     <button onclick="switchView('public')" class="w-full bg-white border border-gray-300 text-gray-600 font-bold py-2 rounded hover:bg-gray-50 transition mt-2">Volver al Portal Público</button>
                 </div>
             </div>
@@ -134,7 +144,9 @@
              VISTA 3: PANEL ADMIN
         =========================================== -->
         <section id="view-admin" class="view">
-            <h2 class="text-3xl font-bold text-white drop-shadow-md mb-6">Panel Administración General</h2>
+            <div class="bg-white/95 backdrop-blur-md p-5 rounded shadow-xl border-l-4 border-gray-800 mb-6 inline-block">
+                <h2 class="text-2xl font-bold text-gray-800">Panel de Administración General</h2>
+            </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 <!-- Modulación de Turnos -->
@@ -168,13 +180,11 @@
                                     <th class="p-3 border-b">Nombre del Profesional / Staff</th>
                                     <th class="p-3 border-b">Rol</th>
                                     <th class="p-3 border-b">Usuario</th>
-                                    <th class="p-3 border-b">Contraseña</th>
                                     <th class="p-3 border-b text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="admin-users-tbody">
-                                <!-- Inyectado vía JS -->
-                                <tr><td colspan="5" class="p-4 text-center text-gray-500">Cargando usuarios desde la base de datos...</td></tr>
+                                <tr><td colspan="4" class="p-4 text-center text-gray-500">Cargando usuarios desde la base de datos...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -272,7 +282,10 @@
              VISTA 5: PANEL MÉDICO
         =========================================== -->
         <section id="view-doctor" class="view h-full">
-            <h2 id="titulo-medico-dashboard" class="text-2xl font-bold text-white drop-shadow-md mb-4 hidden">Agenda de Hoy: --</h2>
+            <div class="bg-white/95 backdrop-blur-md p-5 rounded shadow-xl border-l-4 border-teal-700 mb-6 inline-block hidden" id="titulo-medico-dashboard-container">
+                <h2 id="titulo-medico-dashboard" class="text-2xl font-bold text-gray-800">Agenda de Hoy: --</h2>
+            </div>
+            
             <div class="flex flex-col lg:flex-row gap-6 lg:h-[80vh]">
                 <!-- Agenda Médico -->
                 <div class="lg:w-1/3 bg-white/95 backdrop-blur-md rounded shadow-xl p-4 border-t-4 border-teal-700 flex flex-col h-full">
@@ -341,7 +354,7 @@
                 2604-240300
             </a>
         </p>
-        <!-- ELIMINADO EL BOTON DE ACCESO PERSONAL DEL FOOTER -->
+        <p class="mt-4"><a href="#" onclick="switchView('login')" class="text-gray-400 hover:text-white transition font-semibold">Acceso Personal</a></p>
     </footer>
 
     <!-- ==========================================
@@ -560,12 +573,77 @@
         
         window.db = db;
         console.log("¡Firebase conectado exitosamente!");
+        
+        // Ejecutamos la carga inicial inmediatamente después de conectar
+        iniciarCargaDeDatos();
     </script>
 
     <script>
         // --- BASE DE DATOS DINÁMICA DE MÉDICOS ---
-        // Ahora se llena automáticamente desde Firebase
         let bdMedicosDinamica = {};
+
+        // Lista de médicos por defecto (Seeding) si Firebase está vacío
+        const medicosPorDefecto = [
+            { nombre: 'Dr. Roberto Gómez', especialidad: 'clinica', username: 'rgomez', password: '123' },
+            { nombre: 'Dra. Silvia Fernández', especialidad: 'clinica', username: 'sfernandez', password: '123' },
+            { nombre: 'Dr. Juan Pérez', especialidad: 'cardiologia', username: 'jperez', password: '123' },
+            { nombre: 'Dra. Laura Martínez', especialidad: 'cardiologia', username: 'lmartinez', password: '123' },
+            { nombre: 'Dra. Ana Gómez', especialidad: 'pediatria', username: 'agomez', password: '123' },
+            { nombre: 'Dr. Martín Silva', especialidad: 'pediatria', username: 'msilva', password: '123' },
+            { nombre: 'Dra. Florencia Castro', especialidad: 'dermatologia', username: 'fcastro', password: '123' },
+            { nombre: 'Dra. Valeria Román', especialidad: 'endocrinologia', username: 'vroman', password: '123' },
+            { nombre: 'Dr. Diego Torres', especialidad: 'gastroenterologia', username: 'dtorres', password: '123' },
+            { nombre: 'Dra. Mariana Vega', especialidad: 'infectologia', username: 'mvega', password: '123' },
+            { nombre: 'Dr. Pablo Herrera', especialidad: 'neurologia', username: 'pherrera', password: '123' },
+            { nombre: 'Dra. Claudia Ortiz', especialidad: 'nefrologia', username: 'cortiz', password: '123' },
+            { nombre: 'Dr. Guillermo Acosta', especialidad: 'cirugia_general', username: 'gacosta', password: '123' },
+            { nombre: 'Dr. Alejandro Vera', especialidad: 'traumatologia', username: 'avera', password: '123' },
+            { nombre: 'Dra. Mónica López', especialidad: 'ginecologia', username: 'mlopez', password: '123' }
+        ];
+
+        // Función para autocompletar la base de datos la primera vez
+        async function verificarYCargarMedicosPorDefecto() {
+            try {
+                const { collection, getDocs, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                const snap = await getDocs(collection(window.db, "usuarios"));
+                
+                if (snap.empty) {
+                    console.log("Base de datos de usuarios vacía. Generando médicos por defecto...");
+                    const promesas = medicosPorDefecto.map(medico => {
+                        return addDoc(collection(window.db, "usuarios"), {
+                            nombre: medico.nombre,
+                            rol: "Médico",
+                            username: medico.username,
+                            password: medico.password,
+                            tel: "2604000000",
+                            correo: medico.username + "@hospital.gov.ar",
+                            matricula: Math.floor(Math.random() * 10000) + 1000,
+                            especialidad: medico.especialidad,
+                            timestamp: new Date()
+                        });
+                    });
+                    
+                    // Agregamos también un Administrador y un Recepcionista por defecto
+                    promesas.push(addDoc(collection(window.db, "usuarios"), {
+                        nombre: "Admin Sistema", rol: "Administración", username: "admin", password: "123", tel: "", correo: "", matricula: "", especialidad: "", timestamp: new Date()
+                    }));
+                    promesas.push(addDoc(collection(window.db, "usuarios"), {
+                        nombre: "Recepción Turnos", rol: "Administrativo", username: "recepcion", password: "123", tel: "", correo: "", matricula: "", especialidad: "", timestamp: new Date()
+                    }));
+
+                    await Promise.all(promesas);
+                    console.log("Precarga (Seeding) finalizada.");
+                    
+                    // Volvemos a leer de Firebase para llenar bdMedicosDinamica
+                    await cargarEspecialistasFirebase();
+                } else {
+                    console.log("Ya hay usuarios en Firebase. Leyendo base de datos...");
+                    await cargarEspecialistasFirebase();
+                }
+            } catch (error) {
+                console.error("Error en la inicialización:", error);
+            }
+        }
 
         async function cargarEspecialistasFirebase() {
             try {
@@ -573,7 +651,7 @@
                 const q = query(collection(window.db, "usuarios"), where("rol", "==", "Médico"));
                 const snap = await getDocs(q);
                 
-                bdMedicosDinamica = {}; // Limpiar la lista
+                bdMedicosDinamica = {}; 
                 
                 snap.forEach((doc) => {
                     const u = doc.data();
@@ -584,9 +662,19 @@
                         bdMedicosDinamica[u.especialidad].push(u.nombre);
                     }
                 });
-                console.log("Médicos cargados desde Firebase:", bdMedicosDinamica);
             } catch(e) {
                 console.error("Error al cargar médicos desde Firebase", e);
+            }
+        }
+
+        // Esta función se llama desde el script de Firebase arriba apenas se conecta
+        async function iniciarCargaDeDatos() {
+            await verificarYCargarMedicosPorDefecto();
+            await cargarConfiguracionGlobal();
+            
+            // Si el admin está viendo la pantalla, recargamos su tabla
+            if (document.getElementById('view-admin').classList.contains('active')) {
+                cargarUsuariosAdmin();
             }
         }
 
@@ -635,7 +723,8 @@
             selectMed.className = "w-full border rounded p-3 bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none";
             
             if (bdMedicosDinamica[esp] && bdMedicosDinamica[esp].length > 0) {
-                bdMedicosDinamica[esp].forEach(m => selectMed.innerHTML += `<option value="${m}">${m}</option>`);
+                // Ordenar alfabéticamente
+                bdMedicosDinamica[esp].sort().forEach(m => selectMed.innerHTML += `<option value="${m}">${m}</option>`);
             } else {
                 selectMed.innerHTML = '<option value="">No hay profesionales registrados en esta área</option>';
             }
@@ -684,7 +773,6 @@
 
             let html = '';
             
-            // MOTOR DE ALTERNANCIA (Usa la variable duracionTurnoGlobal)
             let minutosBucle = 7 * 60; 
             const finBucle = 12 * 60 + 30; 
             let esCanalWeb = true; 
@@ -694,7 +782,6 @@
                 let m = minutosBucle % 60;
                 let hsStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
                 
-                // En el portal público SOLO mostramos los turnos web
                 if (esCanalWeb) {
                     if (turnosOcupados[hsStr]) {
                         html += `<button type="button" class="bg-gray-100 text-gray-400 font-bold rounded p-2 border border-gray-300 cursor-not-allowed" disabled>${hsStr} (Ocupado)</button>`;
@@ -805,7 +892,7 @@
                 divMatricula.classList.add('hidden'); 
                 divEspecialidad.classList.add('hidden'); 
                 document.getElementById('input-usuario-matricula').value = ''; 
-                document.getElementById('input-usuario-especialidad').value = ''; 
+                document.getElementById('input-usuario-especialidad').value = 'clinica'; 
             }
         }
 
@@ -833,10 +920,23 @@
                 const snap = await getDocs(collection(window.db, "usuarios"));
                 
                 let html = '';
+                
+                // Convertimos el snapshot a un array para poder ordenarlo
+                const usuariosArray = [];
                 snap.forEach(doc => {
-                    const u = doc.data();
+                    usuariosArray.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Ordenar por rol y luego por nombre
+                usuariosArray.sort((a, b) => {
+                    if(a.rol < b.rol) return -1;
+                    if(a.rol > b.rol) return 1;
+                    return a.nombre.localeCompare(b.nombre);
+                });
+
+                usuariosArray.forEach(u => {
                     let colorRol = u.rol === 'Médico' ? 'text-teal-700' : (u.rol === 'Administración' ? 'text-gray-800' : 'text-indigo-700');
-                    const userJSON = encodeURIComponent(JSON.stringify({id: doc.id, ...u}));
+                    const userJSON = encodeURIComponent(JSON.stringify(u));
 
                     html += `
                     <tr class="border-b hover:bg-gray-50 bg-white">
@@ -845,18 +945,17 @@
                             <p class="text-xs text-gray-500">${u.correo || 'Sin correo'} | ${u.tel || 'Sin teléfono'}</p>
                         </td>
                         <td class="p-3 font-bold ${colorRol}">${u.rol} ${u.matricula ? `<span class="text-xs text-gray-400 block font-normal">MP: ${u.matricula} (${u.especialidad})</span>` : ''}</td>
-                        <td class="p-3 font-mono text-sm">${u.username}</td>
-                        <td class="p-3 font-mono text-sm">${u.password}</td>
+                        <td class="p-3 font-mono text-sm text-gray-600">${u.username}</td>
                         <td class="p-3 text-center">
-                            <button onclick="editarUsuarioAdmin('${userJSON}')" class="text-blue-700 hover:underline font-bold text-sm">Editar</button> |
-                            <button onclick="eliminarUsuarioAdmin('${doc.id}')" class="text-red-600 hover:underline font-bold text-sm">Borrar</button>
+                            <button onclick="editarUsuarioAdmin('${userJSON}')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1 rounded hover:bg-gray-200 font-bold text-xs transition">Editar / Clave</button> 
+                            <button onclick="eliminarUsuarioAdmin('${u.id}')" class="text-red-600 hover:text-red-800 font-bold text-xs ml-2 transition">Borrar</button>
                         </td>
                     </tr>`;
                 });
-                tbody.innerHTML = html || '<tr><td colspan="5" class="p-4 text-center text-gray-500">No hay usuarios registrados.</td></tr>';
+                tbody.innerHTML = html || '<tr><td colspan="4" class="p-4 text-center text-gray-500">No hay usuarios registrados.</td></tr>';
             } catch (error) {
                 console.error("Error al cargar usuarios:", error);
-                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500">Error al conectar con la base de datos.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500">Error al conectar con la base de datos.</td></tr>';
             }
         }
 
@@ -918,7 +1017,7 @@
         }
 
         async function eliminarUsuarioAdmin(id) {
-            if(!confirm("¿Está seguro de eliminar a este usuario del sistema?")) return;
+            if(!confirm("¿Está seguro de eliminar a este usuario del sistema? Todo su historial de conexión se perderá.")) return;
             try {
                 const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 await deleteDoc(doc(window.db, "usuarios", id));
@@ -977,7 +1076,7 @@
             selectMed.className = "w-full border border-gray-300 rounded p-2 bg-white text-gray-800 focus:ring-2 focus:ring-indigo-600 outline-none";
             
             if (bdMedicosDinamica[esp] && bdMedicosDinamica[esp].length > 0) {
-                bdMedicosDinamica[esp].forEach(m => selectMed.innerHTML += `<option value="${m}">${m}</option>`);
+                bdMedicosDinamica[esp].sort().forEach(m => selectMed.innerHTML += `<option value="${m}">${m}</option>`);
             } else {
                 selectMed.innerHTML = '<option value="">No hay profesionales registrados en esta área</option>';
             }
@@ -1171,8 +1270,12 @@
                 const sesion = JSON.parse(sesionStr);
                 if (sesion.rol === "Médico") {
                     nombreFiltro = sesion.nombre;
-                    const titulo = document.getElementById("titulo-medico-dashboard");
-                    if(titulo) { titulo.innerText = `Agenda de Hoy: ${nombreFiltro}`; titulo.classList.remove('hidden'); }
+                    const tituloContenedor = document.getElementById("titulo-medico-dashboard-container");
+                    const tituloTexto = document.getElementById("titulo-medico-dashboard");
+                    if(tituloContenedor && tituloTexto) { 
+                        tituloTexto.innerText = `Agenda de Hoy: ${nombreFiltro}`; 
+                        tituloContenedor.classList.remove('hidden'); 
+                    }
                 }
             }
 
@@ -1305,24 +1408,6 @@
             else { document.getElementById('div-hora-ausencia').classList.add('hidden'); }
         }
 
-        window.onload = async function() {
-            // 1. Cargar Médicos y Configuración
-            await cargarEspecialistasFirebase();
-            await cargarConfiguracionGlobal();
-
-            // 2. Setear fecha
-            const inputFechaRec = document.getElementById('input-fecha-recepcion');
-            if(inputFechaRec) inputFechaRec.value = new Date().toISOString().split('T')[0];
-            
-            // 3. Revisar sesión activa
-            const sesionStr = localStorage.getItem("sesionHospitalActiva");
-            if (sesionStr) {
-                const s = JSON.parse(sesionStr);
-                if (s.rol === "Médico") switchView("doctor");
-                else if (s.rol === "Administrativo" || s.rol === "Recepción") switchView("reception");
-                else if (s.rol === "Administración") switchView("admin");
-            }
-        };
     </script>
 </body>
 </html>
