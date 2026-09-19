@@ -37,18 +37,16 @@
 
     <main class="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full relative z-0">
 
-        <!-- ==========================================
+       <!-- ==========================================
              VISTA 1: PORTAL PÚBLICO
         =========================================== -->
         <section id="view-public" class="view active">
             <!-- Fondo semitransparente (bg-white/95) para que contraste con la imagen de fondo -->
             <div class="bg-white/95 backdrop-blur-md rounded-lg shadow-2xl p-6 max-w-2xl mx-auto border-t-4 border-blue-800 mt-4 md:mt-8">
-                <div class="flex justify-between items-start mb-6">
-                    <h2 class="text-2xl font-bold text-blue-800">Reserva de Turno Online</h2>
-                    <button onclick="abrirModal('modal-cancelar-paciente')" class="text-sm bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-200 font-semibold transition">
-                        Gestionar mis turnos
-                    </button>
-                </div>
+                
+                <!-- Título limpio sin el botón al lado -->
+                <h2 class="text-2xl font-bold text-blue-800 mb-6 border-b border-gray-200 pb-3">Reserva de Turno Online</h2>
+                
                 <div class="space-y-5">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">1. Especialidad</label>
@@ -74,16 +72,24 @@
                             <p class="text-sm text-gray-500 col-span-3">Seleccione una fecha.</p>
                         </div>
                     </div>
+                    
                     <hr class="my-6 border-gray-300">
                     <h3 class="font-semibold text-gray-700 mb-3">Datos del Paciente</h3>
+                    
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input type="text" placeholder="Nombre completo" class="border rounded p-3 w-full bg-white outline-none">
                         <input type="text" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="DNI (Solo números)" class="border rounded p-3 w-full bg-white outline-none">
                         <input type="tel" placeholder="Celular (Ej: 2604...)" class="border rounded p-3 w-full bg-white outline-none">
                         <input type="email" placeholder="Email (Opcional)" class="border rounded p-3 w-full bg-white outline-none">
                     </div>
-                    <button type="button" onclick="alert('Turno solicitado exitosamente. Revise su WhatsApp.')" class="w-full bg-blue-800 text-white text-lg font-bold py-3 rounded hover:bg-blue-900 mt-4 shadow-md transition">Confirmar Turno</button>
-                    <p class="text-center text-xs text-gray-500 mt-2">Sistema protegido contra SPAM (Multiple seleccion de turnos).</p>
+
+                    <!-- BOTONERA CENTRALIZADA -->
+                    <div class="mt-6 space-y-3">
+                        <button type="button" onclick="alert('Turno solicitado exitosamente. Revise su WhatsApp.')" class="w-full bg-blue-800 text-white text-lg font-bold py-3 rounded hover:bg-blue-900 shadow-md transition">Confirmar Turno</button>
+                        <button type="button" onclick="abrirModal('modal-cancelar-paciente')" class="w-full bg-white border-2 border-blue-800 text-blue-800 text-lg font-bold py-3 rounded hover:bg-blue-50 shadow-sm transition">Gestionar mis turnos</button>
+                    </div>
+                    
+                    <p class="text-center text-xs text-gray-500 mt-2">Sistema protegido contra SPAM (Múltiple selección de turnos).</p>
                 </div>
             </div>
         </section>
