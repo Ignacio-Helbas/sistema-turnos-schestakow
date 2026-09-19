@@ -21,7 +21,8 @@
     <!-- NAVEGACIÓN -->
     <nav class="bg-white shadow-md text-blue-900 p-3 flex justify-between items-center z-10 relative">
         <div class="flex items-center gap-3">
-            <img src="LogoHospitalSolo.png" alt="Logo Hospital" class="h-12 w-auto rounded bg-white p-1 shadow-sm">
+            <!-- PUERTA SECRETA: Doble clic en el logo abre el login -->
+            <img src="LogoHospitalSolo.png" alt="Logo Hospital" class="h-12 w-auto rounded bg-white p-1 shadow-sm cursor-pointer" ondblclick="switchView('login')" title="Doble clic para acceso restringido">
         </div>
         <div class="flex items-center gap-4">
             <div class="hidden sm:flex items-center gap-1 text-xs font-semibold text-green-300">
@@ -43,7 +44,7 @@
                 <div class="space-y-5">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">1. Especialidad</label>
-                        <select id="select-especialidad" onchange="actualizarMedicos()" class="w-full border rounded p-3 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <select id="select-especialidad" onchange="actualizarMedicosPublico()" class="w-full border rounded p-3 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
                             <option value="">-- Elija una especialidad --</option>
                             <optgroup label="Especialidades Clínicas y Médicas">
                                 <option value="clinica">Clínica Médica (Adultos)</option>
@@ -119,19 +120,12 @@
         =========================================== -->
         <section id="view-login" class="view">
             <div class="bg-white/95 backdrop-blur-md rounded-lg shadow-2xl p-6 max-w-md mx-auto mt-10 border-t-4 border-gray-800">
-                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Acceso al Sistema</h2>
+                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Acceso Restringido</h2>
                 <div class="space-y-4">
                     <input type="text" id="login-user" placeholder="Nombre de Usuario" class="border rounded p-3 w-full outline-none">
                     <input type="password" id="login-pass" placeholder="Contraseña" class="border rounded p-3 w-full outline-none">
-                    <button onclick="iniciarSesionReal()" class="w-full bg-blue-800 text-white font-bold py-3 rounded hover:bg-blue-900 shadow transition mt-2">Ingresar</button>
-                    
-                    <hr class="my-4 border-gray-300">
-                    <p class="text-xs text-gray-500 text-center">Accesos rápidos (Solo Desarrollo):</p>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button onclick="loginAs('reception')" class="bg-indigo-700 text-white py-2 rounded hover:bg-indigo-800 text-sm font-semibold transition">Recepción</button>
-                        <button onclick="loginAs('doctor')" class="bg-teal-700 text-white py-2 rounded hover:bg-teal-800 text-sm font-semibold transition">Médico</button>
-                        <button onclick="loginAs('admin')" class="bg-gray-800 text-white py-2 rounded hover:bg-gray-900 text-sm font-semibold transition">Admin.</button>
-                    </div>
+                    <button onclick="iniciarSesionReal()" class="w-full bg-gray-800 text-white font-bold py-3 rounded hover:bg-gray-900 shadow transition mt-2">Ingresar al Sistema</button>
+                    <button onclick="switchView('public')" class="w-full bg-white border border-gray-300 text-gray-600 font-bold py-2 rounded hover:bg-gray-50 transition mt-2">Volver al Portal Público</button>
                 </div>
             </div>
         </section>
@@ -347,7 +341,7 @@
                 2604-240300
             </a>
         </p>
-        <p class="mt-4"><a href="#" onclick="switchView('login')" class="text-gray-400 hover:text-white transition font-semibold">Acceso Personal</a></p>
+        <!-- ELIMINADO EL BOTON DE ACCESO PERSONAL DEL FOOTER -->
     </footer>
 
     <!-- ==========================================
@@ -439,12 +433,12 @@
         </div>
     </div>
 
-    <!-- MODAL DE USUARIO (ADMINISTRACIÓN) ACTUALIZADO -->
+    <!-- MODAL DE USUARIO (ADMINISTRACIÓN) ACTUALIZADO PARA ESPECIALIDAD -->
     <div id="modal-usuario" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center">
         <div class="bg-white p-6 rounded-lg shadow-2xl max-w-lg w-full mx-4 border-t-4 border-gray-800">
             <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2" id="titulo-modal-usuario">Registrar Nuevo Usuario</h3>
             
-            <input type="hidden" id="input-usuario-id"> <!-- Oculto, para saber si actualizamos o creamos -->
+            <input type="hidden" id="input-usuario-id"> 
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="md:col-span-2">
@@ -453,16 +447,41 @@
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">Rol en el Sistema</label>
-                    <select id="input-usuario-rol" onchange="toggleMatricula()" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800">
+                    <select id="input-usuario-rol" onchange="toggleCamposMedico()" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800">
                         <option value="Administrativo">Administrativo (Recepción)</option>
                         <option value="Médico">Médico Especialista</option>
                         <option value="Administración">Administración General</option>
                     </select>
                 </div>
-                <!-- Div Matrícula: Se muestra solo si elije "Médico" -->
                 <div id="div-usuario-matricula" class="hidden">
                     <label class="block text-sm font-bold text-teal-700 mb-1">Nº Matrícula Provincial</label>
                     <input type="text" id="input-usuario-matricula" placeholder="MP: 12345" class="border border-teal-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-teal-600 bg-teal-50">
+                </div>
+                <div id="div-usuario-especialidad" class="hidden md:col-span-2">
+                    <label class="block text-sm font-bold text-teal-700 mb-1">Especialidad Médica</label>
+                    <select id="input-usuario-especialidad" class="border border-teal-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-teal-600 bg-teal-50">
+                        <option value="clinica">Clínica Médica (Adultos)</option>
+                        <option value="cardiologia">Cardiología (Corazón)</option>
+                        <option value="pediatria">Pediatría (Niños y adolescentes)</option>
+                        <option value="dermatologia">Dermatología (Piel)</option>
+                        <option value="endocrinologia">Endocrinología (Hormonas y diabetes)</option>
+                        <option value="gastroenterologia">Gastroenterología (Aparato digestivo)</option>
+                        <option value="infectologia">Infectología (Infecciones)</option>
+                        <option value="neurologia">Neurología (Cerebro y sistema nervioso)</option>
+                        <option value="nefrologia">Nefrología (Riñones)</option>
+                        <option value="neumonologia">Neumonología (Pulmones)</option>
+                        <option value="geriatria">Geriatría (Adultos mayores)</option>
+                        <option value="psiquiatria">Psiquiatría (Salud mental)</option>
+                        <option value="cirugia_general">Cirugía General</option>
+                        <option value="cirugia_cardiovascular">Cirugía Cardiovascular</option>
+                        <option value="cirugia_plastica">Cirugía Plástica y Reparadora</option>
+                        <option value="traumatologia">Traumatología y Ortopedia</option>
+                        <option value="urologia">Urología</option>
+                        <option value="neurocirugia">Neurocirugía</option>
+                        <option value="otorrinolaringologia">Otorrinolaringología (Oídos, nariz, garganta)</option>
+                        <option value="oftalmologia">Oftalmología (Ojos)</option>
+                        <option value="ginecologia">Ginecología y Obstetricia</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">Teléfono de Contacto</label>
@@ -544,38 +563,35 @@
     </script>
 
     <script>
-        // --- BASE DE DATOS LOCAL DE MÉDICOS ---
-        const bdMedicos = { 
-            'clinica': ['Dr. Roberto Gómez', 'Dra. Silvia Fernández'],
-            'cardiologia': ['Dr. Juan Pérez', 'Dra. Laura Martínez', 'Dr. Carlos Ruiz'],
-            'pediatria': ['Dra. Ana Gómez', 'Dr. Martín Silva'],
-            'dermatologia': ['Dra. Florencia Castro'],
-            'endocrinologia': ['Dra. Valeria Román', 'Dr. Luis Navarro'],
-            'gastroenterologia': ['Dr. Diego Torres'],
-            'infectologia': ['Dra. Mariana Vega'],
-            'neurologia': ['Dr. Pablo Herrera'],
-            'nefrologia': ['Dra. Claudia Ortiz'],
-            'neumonologia': ['Dr. Jorge Medina'],
-            'geriatria': ['Dra. Susana Paz'],
-            'psiquiatria': ['Dr. Ricardo Luna', 'Dra. Elena Blanco'],
-            'cirugia_general': ['Dr. Guillermo Acosta', 'Dra. Sofía Ríos'],
-            'cirugia_cardiovascular': ['Dr. Héctor Farias'],
-            'cirugia_plastica': ['Dra. Carolina Gil'],
-            'traumatologia': ['Dr. Alejandro Vera', 'Dr. Tomás Cruz'],
-            'urologia': ['Dr. Fernando Sosa'],
-            'neurocirugia': ['Dra. Beatriz Mora'],
-            'otorrinolaringologia': ['Dr. Andrés Pino'],
-            'oftalmologia': ['Dra. Natalia Rey'],
-            'ginecologia': ['Dra. Mónica López', 'Dra. Carmen Díaz'],
-            'diagnostico_imagenes': ['Servicio de Ecografía', 'Servicio de Rayos X', 'Resonancia Magnética'],
-            'anatomia_patologica': ['Laboratorio Central'],
-            'laboratorio': ['Extracción de Sangre', 'Análisis de Orina'],
-            'terapia_intensiva': ['Dr. Jefe de Unidad Quirófano'],
-            'rehabilitacion': ['Lic. Marcos Peña (Fisiatría)', 'Lic. Laura Quintero (Kinesiología)']
-        };
+        // --- BASE DE DATOS DINÁMICA DE MÉDICOS ---
+        // Ahora se llena automáticamente desde Firebase
+        let bdMedicosDinamica = {};
+
+        async function cargarEspecialistasFirebase() {
+            try {
+                const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                const q = query(collection(window.db, "usuarios"), where("rol", "==", "Médico"));
+                const snap = await getDocs(q);
+                
+                bdMedicosDinamica = {}; // Limpiar la lista
+                
+                snap.forEach((doc) => {
+                    const u = doc.data();
+                    if(u.especialidad && u.nombre) {
+                        if (!bdMedicosDinamica[u.especialidad]) {
+                            bdMedicosDinamica[u.especialidad] = [];
+                        }
+                        bdMedicosDinamica[u.especialidad].push(u.nombre);
+                    }
+                });
+                console.log("Médicos cargados desde Firebase:", bdMedicosDinamica);
+            } catch(e) {
+                console.error("Error al cargar médicos desde Firebase", e);
+            }
+        }
 
         // --- MOTOR GLOBAL DE MODULACIÓN DE TURNOS ---
-        let duracionTurnoGlobal = 15; // Por defecto 15 minutos
+        let duracionTurnoGlobal = 15; 
 
         async function cargarConfiguracionGlobal() {
             try {
@@ -587,7 +603,7 @@
                     if(selectAdmin) selectAdmin.value = duracionTurnoGlobal;
                 }
             } catch(e) {
-                console.log("No se encontró configuración previa, usando 15 min por defecto.");
+                console.log("No se encontró configuración previa, usando 15 min.");
             }
         }
 
@@ -598,17 +614,15 @@
                 await setDoc(doc(window.db, "configuracion", "general"), { duracionBase: parseInt(nuevaDuracion) });
                 duracionTurnoGlobal = parseInt(nuevaDuracion);
                 alert(`¡Éxito! La agenda de todo el hospital ha sido modulada a ${nuevaDuracion} minutos por paciente.`);
-            } catch(e) {
-                alert("Error al guardar la configuración.");
-                console.error(e);
-            }
+            } catch(e) { alert("Error al guardar configuración."); console.error(e); }
         }
 
         // --- FUNCIONES DEL PORTAL PÚBLICO ---
-        function actualizarMedicos() {
+        function actualizarMedicosPublico() {
             const esp = document.getElementById('select-especialidad').value;
             const selectMed = document.getElementById('select-medico');
             selectMed.innerHTML = '';
+            
             if (!esp) { 
                 selectMed.disabled = true; 
                 selectMed.className = "w-full border rounded p-3 bg-gray-100 text-gray-500 outline-none";
@@ -616,9 +630,16 @@
                 generarHorariosPublicos(); 
                 return; 
             }
+            
             selectMed.disabled = false;
             selectMed.className = "w-full border rounded p-3 bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none";
-            bdMedicos[esp].forEach(m => selectMed.innerHTML += `<option>${m}</option>`);
+            
+            if (bdMedicosDinamica[esp] && bdMedicosDinamica[esp].length > 0) {
+                bdMedicosDinamica[esp].forEach(m => selectMed.innerHTML += `<option value="${m}">${m}</option>`);
+            } else {
+                selectMed.innerHTML = '<option value="">No hay profesionales registrados en esta área</option>';
+            }
+            
             generarHorariosPublicos(); 
         }
 
@@ -636,7 +657,7 @@
             const medico = document.getElementById('select-medico').value;
             const container = document.getElementById('horarios-publicos');
             
-            if(!input || !medico || medico.includes("Primero seleccione")) {
+            if(!input || !medico || medico.includes("Primero seleccione") || medico.includes("No hay profesionales")) {
                 container.innerHTML = '<p class="text-sm text-gray-500 col-span-3">Seleccione Profesional y Fecha.</p>';
                 return;
             }
@@ -663,17 +684,17 @@
 
             let html = '';
             
-            // EL MOTOR DE ALTERNANCIA (Usa la variable duracionTurnoGlobal)
-            let minutosBucle = 7 * 60; // Arranca 7:00 AM
-            const finBucle = 12 * 60 + 30; // Termina 12:30 PM
-            let esCanalWeb = true; // El primero siempre es Web
+            // MOTOR DE ALTERNANCIA (Usa la variable duracionTurnoGlobal)
+            let minutosBucle = 7 * 60; 
+            const finBucle = 12 * 60 + 30; 
+            let esCanalWeb = true; 
 
             while (minutosBucle <= finBucle) {
                 let h = Math.floor(minutosBucle / 60);
                 let m = minutosBucle % 60;
                 let hsStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
                 
-                // En el portal público SOLO mostramos los turnos que caen en canal Web
+                // En el portal público SOLO mostramos los turnos web
                 if (esCanalWeb) {
                     if (turnosOcupados[hsStr]) {
                         html += `<button type="button" class="bg-gray-100 text-gray-400 font-bold rounded p-2 border border-gray-300 cursor-not-allowed" disabled>${hsStr} (Ocupado)</button>`;
@@ -684,8 +705,8 @@
                     }
                 }
                 
-                esCanalWeb = !esCanalWeb; // Alternamos el canal para el siguiente horario
-                minutosBucle += parseInt(duracionTurnoGlobal); // Avanzamos según la modulación
+                esCanalWeb = !esCanalWeb; 
+                minutosBucle += parseInt(duracionTurnoGlobal); 
             }
 
             container.innerHTML = html || '<p class="text-sm text-gray-500 col-span-3">No hay turnos web disponibles para hoy.</p>';
@@ -724,12 +745,11 @@
                     pacienteNombre: nombre, pacienteDni: dni, pacienteCelular: celular, pacienteEmail: email,
                     estado: "Reservado Web", timestamp: new Date()
                 });
-                const msj = `Estimado/a ${nombre}, su turno con el/la ${medico} (${especialidad}) el ${fecha} a las ${horario} hs está confirmado.`;
+                const msj = `Estimado/a ${nombre}, su turno con el/la ${medico} el ${fecha} a las ${horario} hs está confirmado.`;
                 if (email && confirm(`¡Turno guardado!\n\n${msj}\n\n¿Enviar confirmación por email?`)) {
                     window.open(`mailto:${email}?subject=Confirmación Turno Schestakow&body=${encodeURIComponent(msj)}`);
                 } else { alert("¡Turno guardado exitosamente!"); }
                 
-                // Limpieza
                 document.getElementById('paciente-nombre').value = ''; document.getElementById('paciente-dni').value = '';
                 document.getElementById('paciente-celular').value = ''; document.getElementById('paciente-email').value = '';
                 document.getElementById('input-fecha-paciente').value = ''; document.getElementById('horarios-publicos').innerHTML = '<p class="text-sm text-gray-500 col-span-3">Seleccione una fecha.</p>';
@@ -773,11 +793,20 @@
         }
 
         // --- GESTIÓN DE USUARIOS Y SESIÓN (ADMIN) ---
-        function toggleMatricula() {
+        function toggleCamposMedico() {
             const rol = document.getElementById('input-usuario-rol').value;
             const divMatricula = document.getElementById('div-usuario-matricula');
-            if (rol === 'Médico') divMatricula.classList.remove('hidden');
-            else { divMatricula.classList.add('hidden'); document.getElementById('input-usuario-matricula').value = ''; }
+            const divEspecialidad = document.getElementById('div-usuario-especialidad');
+            
+            if (rol === 'Médico') {
+                divMatricula.classList.remove('hidden');
+                divEspecialidad.classList.remove('hidden');
+            } else { 
+                divMatricula.classList.add('hidden'); 
+                divEspecialidad.classList.add('hidden'); 
+                document.getElementById('input-usuario-matricula').value = ''; 
+                document.getElementById('input-usuario-especialidad').value = ''; 
+            }
         }
 
         function abrirModalUsuarioNulo() {
@@ -790,7 +819,8 @@
             document.getElementById('input-usuario-tel').value = "";
             document.getElementById('input-usuario-correo').value = "";
             document.getElementById('input-usuario-matricula').value = "";
-            toggleMatricula();
+            document.getElementById('input-usuario-especialidad').value = "clinica";
+            toggleCamposMedico();
             abrirModal('modal-usuario');
         }
 
@@ -806,8 +836,6 @@
                 snap.forEach(doc => {
                     const u = doc.data();
                     let colorRol = u.rol === 'Médico' ? 'text-teal-700' : (u.rol === 'Administración' ? 'text-gray-800' : 'text-indigo-700');
-                    
-                    // Convertimos el objeto de usuario a string para pasarlo por parámetro sin romper las comillas
                     const userJSON = encodeURIComponent(JSON.stringify({id: doc.id, ...u}));
 
                     html += `
@@ -816,7 +844,7 @@
                             <p class="font-bold text-gray-800">${u.nombre}</p>
                             <p class="text-xs text-gray-500">${u.correo || 'Sin correo'} | ${u.tel || 'Sin teléfono'}</p>
                         </td>
-                        <td class="p-3 font-bold ${colorRol}">${u.rol} ${u.matricula ? `<span class="text-xs text-gray-400 block font-normal">MP: ${u.matricula}</span>` : ''}</td>
+                        <td class="p-3 font-bold ${colorRol}">${u.rol} ${u.matricula ? `<span class="text-xs text-gray-400 block font-normal">MP: ${u.matricula} (${u.especialidad})</span>` : ''}</td>
                         <td class="p-3 font-mono text-sm">${u.username}</td>
                         <td class="p-3 font-mono text-sm">${u.password}</td>
                         <td class="p-3 text-center">
@@ -843,7 +871,8 @@
             document.getElementById('input-usuario-tel').value = u.tel || '';
             document.getElementById('input-usuario-correo').value = u.correo || '';
             document.getElementById('input-usuario-matricula').value = u.matricula || '';
-            toggleMatricula();
+            document.getElementById('input-usuario-especialidad').value = u.especialidad || 'clinica';
+            toggleCamposMedico();
             abrirModal('modal-usuario');
         }
 
@@ -856,12 +885,15 @@
             const tel = document.getElementById('input-usuario-tel').value.trim();
             const correo = document.getElementById('input-usuario-correo').value.trim();
             const matricula = document.getElementById('input-usuario-matricula').value.trim();
+            const especialidad = document.getElementById('input-usuario-especialidad').value;
 
             if (!nombre || !username || !pass) { alert("Nombre, Usuario y Contraseña son obligatorios."); return; }
 
             const payload = {
                 nombre: nombre, rol: rol, username: username, password: pass,
-                tel: tel, correo: correo, matricula: rol === 'Médico' ? matricula : '',
+                tel: tel, correo: correo, 
+                matricula: rol === 'Médico' ? matricula : '',
+                especialidad: rol === 'Médico' ? especialidad : '',
                 timestamp: new Date()
             };
 
@@ -869,17 +901,16 @@
                 const { collection, addDoc, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 
                 if (id) {
-                    // Actualizar existente
                     await updateDoc(doc(window.db, "usuarios", id), payload);
                     alert(`Datos de ${nombre} actualizados correctamente.`);
                 } else {
-                    // Crear nuevo
                     await addDoc(collection(window.db, "usuarios"), payload);
                     alert(`Usuario ${nombre} creado exitosamente.`);
                 }
                 
                 cerrarModal('modal-usuario');
-                cargarUsuariosAdmin(); // Recargar tabla
+                cargarUsuariosAdmin(); 
+                cargarEspecialistasFirebase(); // Refrescar listas públicas
             } catch (error) {
                 console.error("Error al guardar usuario:", error);
                 alert("Hubo un error de base de datos.");
@@ -892,6 +923,7 @@
                 const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 await deleteDoc(doc(window.db, "usuarios", id));
                 cargarUsuariosAdmin();
+                cargarEspecialistasFirebase(); 
             } catch (error) { console.error(error); alert("Error al eliminar."); }
         }
 
@@ -923,7 +955,7 @@
 
         function cerrarSesionReal() {
             localStorage.removeItem("sesionHospitalActiva");
-            switchView("login");
+            switchView("public");
         }
 
         // --- PANEL DE RECEPCIÓN ---
@@ -943,7 +975,12 @@
             }
             selectMed.disabled = false;
             selectMed.className = "w-full border border-gray-300 rounded p-2 bg-white text-gray-800 focus:ring-2 focus:ring-indigo-600 outline-none";
-            bdMedicos[esp].forEach(m => selectMed.innerHTML += `<option>${m}</option>`);
+            
+            if (bdMedicosDinamica[esp] && bdMedicosDinamica[esp].length > 0) {
+                bdMedicosDinamica[esp].forEach(m => selectMed.innerHTML += `<option value="${m}">${m}</option>`);
+            } else {
+                selectMed.innerHTML = '<option value="">No hay profesionales registrados en esta área</option>';
+            }
         }
 
         function buscarAgendaRecepcion() {
@@ -951,7 +988,7 @@
             medicoSeleccionadoRecepcion = document.getElementById('reception-medico').value;
             fechaRecepcionSeleccionada = document.getElementById('input-fecha-recepcion').value;
 
-            if (!especialidadSeleccionadaRecepcion || document.getElementById('reception-medico').disabled || !fechaRecepcionSeleccionada) {
+            if (!especialidadSeleccionadaRecepcion || document.getElementById('reception-medico').disabled || !fechaRecepcionSeleccionada || medicoSeleccionadoRecepcion.includes("No hay profesionales")) {
                 alert("Seleccione Especialidad, Profesional y Fecha."); return;
             }
 
@@ -973,18 +1010,14 @@
                 
                 snap.forEach((doc) => {
                     const data = doc.data();
-                    if (data.medico === medicoSeleccionadoRecepcion) {
-                        turnosOcupados[data.horario] = { id: doc.id, ...data };
-                    }
+                    if (data.medico === medicoSeleccionadoRecepcion) { turnosOcupados[data.horario] = { id: doc.id, ...data }; }
                 });
             } catch (error) { console.error("Error BD:", error); }
 
             let html = '';
-            
-            // MOTOR DE ALTERNANCIA (Usa la variable duracionTurnoGlobal)
             let minutosBucle = 7 * 60; 
             const finBucle = 12 * 60 + 30; 
-            let esCanalWeb = true; // El primero arranca siendo web
+            let esCanalWeb = true; 
 
             while (minutosBucle <= finBucle) {
                 let h = Math.floor(minutosBucle / 60);
@@ -1021,7 +1054,7 @@
                     <td class="p-3">${htmlAccion}</td>
                 </tr>`;
 
-                esCanalWeb = !esCanalWeb; // Alternamos obligatoriamente
+                esCanalWeb = !esCanalWeb; 
                 minutosBucle += parseInt(duracionTurnoGlobal);
             }
             tbody.innerHTML = html;
@@ -1044,7 +1077,7 @@
             const email = document.getElementById('auto-email').value.trim();
 
             if (!/^[0-9]{7,8}$/.test(dni)) { alert("DNI inválido."); return; }
-            if (!nombre || !celular) { alert("Nombre y celular son obligatorios."); return; }
+            if (!nombre || !celular) { alert("Nombre y celular obligatorios."); return; }
 
             try {
                 const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
@@ -1054,8 +1087,8 @@
                     pacienteNombre: nombre, pacienteDni: dni, pacienteCelular: celular, pacienteEmail: email,
                     estado: "Confirmado Presencial", timestamp: new Date()
                 });
-                alert("¡Turno presencial asignado!"); cerrarModal('modal-dar-turno'); generarAgendaRecepcion();
-            } catch (error) { console.error(error); alert("Error al registrar el turno."); }
+                alert("¡Turno asignado!"); cerrarModal('modal-dar-turno'); generarAgendaRecepcion();
+            } catch (error) { console.error(error); alert("Error al registrar."); }
         }
 
         async function cancelarTurnoRecepcion(idDoc) {
@@ -1068,7 +1101,7 @@
         }
 
         async function ejecutarAusenciaEmergencia() {
-            if (!fechaRecepcionSeleccionada || !medicoSeleccionadoRecepcion) { alert("Seleccione profesional y fecha primero."); return; }
+            if (!fechaRecepcionSeleccionada || !medicoSeleccionadoRecepcion) { alert("Seleccione profesional y fecha."); return; }
             const alcance = document.getElementById('select-alcance-ausencia').value;
             const horaDesde = document.getElementById('hora-desde-ausencia').value;
             const motivo = document.getElementById('motivo-ausencia').value || "Emergencia Médica";
@@ -1097,7 +1130,7 @@
                 alert(`Se han bloqueado ${turnosCancelados} turnos de la agenda.`);
                 
                 if (afectadosEmails.length > 0 && confirm(`¿Desea enviar aviso por email a los ${afectadosEmails.length} afectados?`)) {
-                    const msj = `Estimado paciente, por motivos de fuerza mayor (${motivo}), su turno presencial con el/la ${medicoSeleccionadoRecepcion} ha sido cancelado. Comuníquese para reprogramar.`;
+                    const msj = `Estimado paciente, por motivos de fuerza mayor (${motivo}), su turno con el/la ${medicoSeleccionadoRecepcion} ha sido cancelado. Comuníquese para reprogramar.`;
                     window.open(`mailto:?bcc=${afectadosEmails.join(',')}&subject=Cancelación Turno&body=${encodeURIComponent(msj)}`);
                 }
 
@@ -1235,7 +1268,7 @@
             document.getElementById('view-' + viewName).classList.add('active');
             
             const btnLogout = document.getElementById('btn-logout');
-            if (viewName !== 'public') {
+            if (viewName !== 'public' && viewName !== 'login') {
                 btnLogout.classList.remove('hidden');
                 const sesionStr = localStorage.getItem("sesionHospitalActiva");
                 if (sesionStr) { btnLogout.innerText = `Cerrar Sesión (${JSON.parse(sesionStr).nombre})`; } 
@@ -1273,14 +1306,15 @@
         }
 
         window.onload = async function() {
-            // 1. Cargar configuración de tiempos desde Firebase
+            // 1. Cargar Médicos y Configuración
+            await cargarEspecialistasFirebase();
             await cargarConfiguracionGlobal();
 
-            // 2. Setear fecha por defecto en recepción
+            // 2. Setear fecha
             const inputFechaRec = document.getElementById('input-fecha-recepcion');
             if(inputFechaRec) inputFechaRec.value = new Date().toISOString().split('T')[0];
             
-            // 3. Revisar si hay sesión activa para saltear el login
+            // 3. Revisar sesión activa
             const sesionStr = localStorage.getItem("sesionHospitalActiva");
             if (sesionStr) {
                 const s = JSON.parse(sesionStr);
