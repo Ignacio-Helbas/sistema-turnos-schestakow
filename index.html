@@ -28,7 +28,7 @@
                 <span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span>
                 Sistema En Vivo
             </div>
-            <button id="btn-logout" onclick="switchView('public')" class="hidden text-sm text-white bg-red-600 px-3 py-2 rounded font-semibold hover:bg-red-700 transition shadow">Cerrar Sesión</button>
+            <button id="btn-logout" onclick="cerrarSesionReal()" class="hidden text-sm text-white bg-red-600 px-3 py-2 rounded font-semibold hover:bg-red-700 transition shadow">Cerrar Sesión</button>
         </div>
     </nav>
 
@@ -121,9 +121,12 @@
             <div class="bg-white/95 backdrop-blur-md rounded-lg shadow-2xl p-6 max-w-md mx-auto mt-10 border-t-4 border-gray-800">
                 <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Acceso al Sistema</h2>
                 <div class="space-y-4">
-                    <input type="text" placeholder="Nombre de Usuario" class="border rounded p-3 w-full outline-none">
-                    <input type="password" placeholder="Contraseña" class="border rounded p-3 w-full outline-none">
-                    <p class="text-sm text-gray-500 text-center mt-4">Simular ingreso como:</p>
+                    <input type="text" id="login-user" placeholder="Nombre de Usuario" class="border rounded p-3 w-full outline-none">
+                    <input type="password" id="login-pass" placeholder="Contraseña" class="border rounded p-3 w-full outline-none">
+                    <button onclick="iniciarSesionReal()" class="w-full bg-blue-800 text-white font-bold py-3 rounded hover:bg-blue-900 shadow transition mt-2">Ingresar</button>
+                    
+                    <hr class="my-4 border-gray-300">
+                    <p class="text-xs text-gray-500 text-center">Accesos rápidos (Solo Desarrollo):</p>
                     <div class="grid grid-cols-3 gap-2">
                         <button onclick="loginAs('reception')" class="bg-indigo-700 text-white py-2 rounded hover:bg-indigo-800 text-sm font-semibold transition">Recepción</button>
                         <button onclick="loginAs('doctor')" class="bg-teal-700 text-white py-2 rounded hover:bg-teal-800 text-sm font-semibold transition">Médico</button>
@@ -269,22 +272,19 @@
         </section>
 
         <!-- ==========================================
-             VISTA 5: PANEL MÉDICO (CONECTADO A FIREBASE)
+             VISTA 5: PANEL MÉDICO
         =========================================== -->
         <section id="view-doctor" class="view h-full">
-            <!-- Contenedor padre flex para igualar la altura de las dos columnas en Desktop -->
+            <h2 id="titulo-medico-dashboard" class="text-2xl font-bold text-white drop-shadow-md mb-4 hidden">Agenda de Hoy: --</h2>
             <div class="flex flex-col lg:flex-row gap-6 lg:h-[80vh]">
-                
-                <!-- Agenda Médico (Columna Izquierda) -->
+                <!-- Agenda Médico -->
                 <div class="lg:w-1/3 bg-white/95 backdrop-blur-md rounded shadow-xl p-4 border-t-4 border-teal-700 flex flex-col h-full">
                     <h2 class="text-xl font-bold text-teal-900 mb-4 flex-shrink-0">Pacientes de Hoy</h2>
-                    <!-- Contenedor interior con scroll independiente -->
                     <div id="medico-agenda-container" class="space-y-3 flex-grow overflow-y-auto custom-scroll pr-2 pb-2">
                         <p class="text-sm text-gray-500">Cargando agenda de pacientes...</p>
                     </div>
                 </div>
-
-                <!-- Historia Clínica (Columna Derecha) -->
+                <!-- Historia Clínica -->
                 <div class="lg:w-2/3 bg-white/95 backdrop-blur-md rounded shadow-xl p-6 relative flex flex-col h-full">
                     <div class="flex justify-between items-end mb-4 border-b pb-3 flex-shrink-0">
                         <div>
@@ -296,7 +296,6 @@
                         </button>
                     </div>
 
-                    <!-- Contenedor interior del formulario con scroll propio -->
                     <div class="flex-grow overflow-y-auto custom-scroll pr-2 pb-2">
                         <div id="historial-paciente" class="colapsable-content bg-gray-50 rounded mb-4">
                             <div class="p-4 border border-gray-300 bg-white">
@@ -319,7 +318,6 @@
                         </form>
                     </div>
 
-                    <!-- Botonera fija al fondo -->
                     <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t mt-4 flex-shrink-0">
                         <button type="button" onclick="abrirModal('modal-agendar-medico')" class="bg-white border-2 border-teal-700 text-teal-800 font-bold py-2 px-6 rounded shadow-sm hover:bg-teal-50 transition">Agendar Próxima Visita</button>
                         <button type="button" onclick="guardarEvolucionMedico()" class="bg-teal-800 text-white font-bold py-2 px-8 rounded shadow-md hover:bg-teal-900 transition">Guardar Evolución</button>
@@ -330,7 +328,7 @@
 
     </main>
 
-   <!-- FOOTER: Pie de página interactivo -->
+    <!-- FOOTER: Pie de página interactivo -->
     <footer class="bg-gray-800/95 backdrop-blur text-center py-6 text-sm text-gray-300 mt-auto z-10 relative">
         <p class="font-bold text-gray-100 mb-2">Hospital Teodoro J. Schestakow</p>
         <p class="mb-1">
@@ -465,18 +463,7 @@
             </div>
             <div class="flex justify-end gap-3 mt-6">
                 <button onclick="cerrarModal('modal-usuario')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100">Cancelar</button>
-                <button onclick="cerrarModal('modal-usuario'); alert('Datos guardados correctamente.');" class="px-4 py-2 bg-gray-800 text-white font-bold rounded shadow hover:bg-gray-900">Guardar</button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="modal-detalle-medico" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center">
-        <div class="bg-white p-6 rounded-lg shadow-2xl max-w-2xl w-full mx-4 border-t-4 border-gray-800 relative">
-            <button onclick="cerrarModal('modal-detalle-medico')" class="absolute top-4 right-4 text-gray-500 text-xl font-bold hover:text-gray-800">×</button>
-            <h3 class="text-2xl font-bold text-gray-800 mb-4">Reporte: Dr. Pérez</h3>
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <div class="bg-gray-50 p-4 rounded text-center border border-gray-200"><p class="text-sm font-bold text-gray-600">Total Atendidos</p><p class="text-3xl font-bold text-gray-800">145</p></div>
-                <div class="bg-gray-50 p-4 rounded text-center border border-gray-200"><p class="text-sm font-bold text-gray-600">Eficiencia Global</p><p class="text-3xl font-bold text-green-700">92%</p></div>
+                <button onclick="guardarUsuarioAdminFirebase()" class="px-4 py-2 bg-gray-800 text-white font-bold rounded shadow hover:bg-gray-900">Guardar</button>
             </div>
         </div>
     </div>
@@ -510,7 +497,7 @@
     </div>
 
     <!-- ==========================================
-         CONEXIÓN A FIREBASE Y SCRIPTS
+         CONEXIÓN A FIREBASE Y LOGICA JAVASCRIPT
     =========================================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -533,6 +520,7 @@
     </script>
 
     <script>
+        // --- BASE DE DATOS LOCAL DE MÉDICOS ---
         const bdMedicos = { 
             'clinica': ['Dr. Roberto Gómez', 'Dra. Silvia Fernández'],
             'cardiologia': ['Dr. Juan Pérez', 'Dra. Laura Martínez', 'Dr. Carlos Ruiz'],
@@ -562,6 +550,7 @@
             'rehabilitacion': ['Lic. Marcos Peña (Fisiatría)', 'Lic. Laura Quintero (Kinesiología)']
         };
 
+        // --- FUNCIONES DEL PORTAL PÚBLICO ---
         function actualizarMedicos() {
             const esp = document.getElementById('select-especialidad').value;
             const selectMed = document.getElementById('select-medico');
@@ -667,7 +656,7 @@
             const fecha = document.getElementById('input-fecha-paciente').value;
             
             const btnHorarioSeleccionado = document.querySelector('.btn-horario.bg-blue-800');
-            const horario = btnHorarioSeleccionado ? btnHorarioSeleccionado.innerText.trim() : '';
+            const horario = btnHorarioSeleccionado ? btnHorarioSeleccionado.innerText.replace(' (Ocupado)', '').replace(' (Cerrado)', '').trim() : '';
 
             const nombre = document.getElementById('paciente-nombre').value.trim();
             const dni = document.getElementById('paciente-dni').value.trim();
@@ -778,7 +767,75 @@
                 alert("No se pudo cancelar el turno.");
             }
         }
-        
+
+        // --- GESTIÓN DE USUARIOS Y SESIÓN (LOGIN) ---
+        async function guardarUsuarioAdminFirebase() {
+            const nombre = document.getElementById('input-usuario-nombre').value.trim();
+            const rol = document.getElementById('input-usuario-rol').value;
+            const username = document.getElementById('input-usuario-username').value.trim();
+            const pass = document.getElementById('input-usuario-pass').value.trim();
+
+            if (!nombre || !username || !pass) {
+                alert("Por favor, complete todos los campos."); return;
+            }
+
+            try {
+                const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                await addDoc(collection(window.db, "usuarios"), {
+                    nombre: nombre,
+                    rol: rol,
+                    username: username,
+                    password: pass, 
+                    timestamp: new Date()
+                });
+                alert(`Usuario ${nombre} creado exitosamente como ${rol}.`);
+                cerrarModal('modal-usuario');
+            } catch (error) {
+                console.error("Error al crear usuario:", error);
+                alert("Hubo un error al registrar el usuario en la base de datos.");
+            }
+        }
+
+        async function iniciarSesionReal() {
+            const user = document.getElementById('login-user').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+
+            if (!user || !pass) {
+                alert("Ingrese su nombre de usuario y contraseña."); return;
+            }
+
+            try {
+                const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                const q = query(collection(window.db, "usuarios"), where("username", "==", user), where("password", "==", pass));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    alert("Credenciales incorrectas. Verifique usuario y contraseña."); return;
+                }
+
+                let datosUsuario = {};
+                querySnapshot.forEach((doc) => { datosUsuario = doc.data(); });
+                localStorage.setItem("sesionHospitalActiva", JSON.stringify(datosUsuario));
+
+                document.getElementById('login-user').value = '';
+                document.getElementById('login-pass').value = '';
+
+                if (datosUsuario.rol === "Médico") switchView("doctor");
+                else if (datosUsuario.rol === "Recepción") switchView("reception");
+                else if (datosUsuario.rol === "Administrador") switchView("admin");
+
+            } catch (error) {
+                console.error("Error al iniciar sesión:", error);
+                alert("Error de conexión con la base de datos.");
+            }
+        }
+
+        function cerrarSesionReal() {
+            localStorage.removeItem("sesionHospitalActiva");
+            switchView("login");
+        }
+
+        // --- PANEL DE RECEPCIÓN ---
         let fechaRecepcionSeleccionada = '';
         let medicoSeleccionadoRecepcion = '';
         let especialidadSeleccionadaRecepcion = '';
@@ -1044,39 +1101,72 @@
 
         async function cargarAgendaMedico() {
             const container = document.getElementById('medico-agenda-container');
+            const lblPacienteActivo = document.getElementById('medico-paciente-activo');
             if(!container) return;
+
+            // Verificamos si hay un médico logueado
+            const sesionStr = localStorage.getItem("sesionHospitalActiva");
+            let nombreMedicoFiltro = "";
+            
+            if (sesionStr) {
+                const sesion = JSON.parse(sesionStr);
+                if (sesion.rol === "Médico") {
+                    nombreMedicoFiltro = sesion.nombre;
+                    const tituloActivo = document.getElementById("titulo-medico-dashboard");
+                    if(tituloActivo) {
+                        tituloActivo.innerText = `Agenda de Hoy: ${nombreMedicoFiltro}`;
+                        tituloActivo.classList.remove('hidden');
+                    }
+                }
+            }
 
             const hoy = new Date().toISOString().split('T')[0];
 
             try {
                 const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
-                const q = query(collection(window.db, "turnos"), where("fecha", "==", hoy));
+                
+                // Si está logueado como médico, filtramos por su nombre. Sino, trae todos para pruebas.
+                let q;
+                if (nombreMedicoFiltro) {
+                    q = query(collection(window.db, "turnos"), where("fecha", "==", hoy), where("medico", "==", nombreMedicoFiltro));
+                } else {
+                    q = query(collection(window.db, "turnos"), where("fecha", "==", hoy));
+                }
+                
                 const querySnapshot = await getDocs(q);
 
                 turnosMedicoHoy = [];
                 querySnapshot.forEach((doc) => {
                     const t = doc.data();
-                    // No mostrar turnos cancelados en la agenda del médico
                     if (!t.estado.includes("Cancelado")) {
                         turnosMedicoHoy.push({ id: doc.id, ...t });
                     }
                 });
 
-                // Ordenar por horario
                 turnosMedicoHoy.sort((a, b) => a.horario.localeCompare(b.horario));
 
                 let html = '';
+                let primerPaciente = "Ningún paciente en espera";
+
                 if(turnosMedicoHoy.length === 0) {
-                    html = '<p class="text-sm text-gray-500 p-2">No hay pacientes programados para hoy.</p>';
+                    html = '<p class="text-sm text-gray-500 p-2">No tiene pacientes programados para hoy.</p>';
                 } else {
+                    let contador = 0;
                     turnosMedicoHoy.forEach((t) => {
+                        // Determinar el paciente activo por defecto si no hay ninguno seleccionado manualmente
+                        if (t.estado === "En consultorio" || (contador === 0 && t.estado !== "Atendido" && t.estado !== "Ausente")) {
+                            if (!pacienteActivoId && t.estado === "En consultorio") pacienteActivoId = t.id;
+                            primerPaciente = `${t.pacienteNombre} (DNI: ${t.pacienteDni})`;
+                        }
+                        
+                        if (t.estado !== "Atendido" && t.estado !== "Ausente") contador++;
+
                         let badgeColor = "bg-yellow-200 text-yellow-800";
                         if(t.estado === "En consultorio") badgeColor = "bg-green-200 text-green-800";
                         if(t.estado === "Atendido") badgeColor = "bg-gray-200 text-gray-800";
                         if(t.estado === "Ausente") badgeColor = "bg-red-200 text-red-800";
 
                         let botonesHtml = '';
-                        // Solo mostramos botones si no está ya atendido o ausente
                         if (t.estado !== "Atendido" && t.estado !== "Ausente") {
                             botonesHtml = `
                                 <div class="mt-3 flex gap-2">
@@ -1086,7 +1176,6 @@
                             `;
                         }
 
-                        // Opacidad baja para los que ya pasaron
                         const opacidad = (t.estado === 'Atendido' || t.estado === 'Ausente') ? 'opacity-60' : 'opacity-100';
                         const borderStyle = t.estado === 'En consultorio' ? 'border-green-600 bg-green-50' : 'border-teal-600 bg-teal-50';
 
@@ -1101,9 +1190,11 @@
                             ${botonesHtml}
                         </div>`;
                     });
+                    if(contador === 0) html += '<p class="text-sm text-gray-500 p-2 mt-4 border-t pt-2">No hay más pacientes en espera por ahora.</p>';
                 }
 
                 container.innerHTML = html;
+                lblPacienteActivo.innerText = primerPaciente;
 
             } catch (error) {
                 console.error("Error al cargar agenda del médico:", error);
@@ -1138,10 +1229,8 @@
                     document.getElementById('medico-paciente-activo').innerText = "Ningún paciente seleccionado";
                 }
 
-                // Esperamos que se recargue la agenda para ver quién sigue
                 await cargarAgendaMedico(); 
                 
-                // Buscar el siguiente en la lista que esté esperando
                 const siguiente = turnosMedicoHoy.find(t => t.estado.includes("Reservado") || t.estado.includes("Confirmado"));
                 if (siguiente) {
                     alert(`El paciente anterior fue marcado Ausente. Llamando automáticamente al siguiente en la lista: ${siguiente.pacienteNombre}`);
@@ -1149,7 +1238,6 @@
                 } else {
                     alert("Paciente marcado como Ausente. No hay más pacientes en espera por ahora.");
                 }
-
             } catch (error) {
                 console.error("Error al marcar ausente:", error);
             }
@@ -1157,16 +1245,14 @@
 
         async function guardarEvolucionMedico() {
             if(!pacienteActivoId) {
-                alert("Debe llamar a un paciente primero para poder guardar su evolución.");
-                return;
+                alert("Debe llamar a un paciente primero para poder guardar su evolución."); return;
             }
             
             const motivo = document.getElementById('input-motivo-consulta').value.trim();
             const evolucion = document.getElementById('texto-evolucion').value.trim();
             
             if(!evolucion) {
-                alert("El cuadro de Evolución Médica no puede estar vacío.");
-                return;
+                alert("El cuadro de Evolución Médica no puede estar vacío."); return;
             }
 
             try {
@@ -1184,19 +1270,31 @@
                 document.getElementById('input-motivo-consulta').value = '';
                 document.getElementById('texto-evolucion').value = '';
                 cargarAgendaMedico();
-
             } catch (error) {
                 console.error("Error al guardar evolución:", error);
                 alert("Hubo un error al guardar la evolución en la base de datos.");
             }
         }
 
-        // --- NAVEGACIÓN Y MODALES ---
+        // --- NAVEGACIÓN Y MODALES GLOBALES ---
         function switchView(viewName) {
             document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
             document.getElementById('view-' + viewName).classList.add('active');
-            if (viewName !== 'public') document.getElementById('btn-logout').classList.remove('hidden');
-            else document.getElementById('btn-logout').classList.add('hidden');
+            
+            const btnLogout = document.getElementById('btn-logout');
+            if (viewName !== 'public') {
+                btnLogout.classList.remove('hidden');
+                // Si la sesión real existe, mostramos el nombre
+                const sesionStr = localStorage.getItem("sesionHospitalActiva");
+                if (sesionStr) {
+                    const sesion = JSON.parse(sesionStr);
+                    btnLogout.innerText = `Cerrar Sesión (${sesion.nombre})`;
+                } else {
+                    btnLogout.innerText = "Cerrar Sesión";
+                }
+            } else {
+                btnLogout.classList.add('hidden');
+            }
             
             if (viewName === 'reception' && fechaRecepcionSeleccionada) generarAgendaRecepcion();
             if (viewName === 'doctor') cargarAgendaMedico();
@@ -1214,6 +1312,7 @@
             }
             if (id === 'modal-ausencia-emergencia') {
                 document.getElementById('motivo-ausencia').value = '';
+                document.getElementById('hora-desde-ausencia').value = '';
             }
         }
         function toggleHistorial() { document.getElementById('historial-paciente').classList.toggle('abierto'); }
@@ -1231,11 +1330,8 @@
         function toggleTimeSelector() {
             const select = document.getElementById('select-alcance-ausencia').value;
             const divHora = document.getElementById('div-hora-ausencia');
-            if (select === 'desde_hora') {
-                divHora.classList.remove('hidden');
-            } else {
-                divHora.classList.add('hidden');
-            }
+            if (select === 'desde_hora') { divHora.classList.remove('hidden'); } 
+            else { divHora.classList.add('hidden'); }
         }
 
         window.onload = function() {
@@ -1243,7 +1339,15 @@
             if(inputFechaRec) {
                 inputFechaRec.value = new Date().toISOString().split('T')[0];
             }
-            cargarAgendaMedico();
+            
+            // Si el usuario recarga la página pero tenía una sesión activa, lo llevamos a su panel
+            const sesionStr = localStorage.getItem("sesionHospitalActiva");
+            if (sesionStr) {
+                const sesion = JSON.parse(sesionStr);
+                if (sesion.rol === "Médico") switchView("doctor");
+                else if (sesion.rol === "Recepción") switchView("reception");
+                else if (sesion.rol === "Administrador") switchView("admin");
+            }
         };
     </script>
 </body>
