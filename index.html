@@ -279,17 +279,42 @@
         </section>
 
     </main>
-
-    <!-- FOOTER -->
+   <!-- FOOTER: Pie de página interactivo -->
     <footer class="bg-gray-800/95 backdrop-blur text-center py-6 text-sm text-gray-300 mt-auto z-10 relative">
         <p class="font-bold text-gray-100 mb-2">Hospital Teodoro J. Schestakow</p>
-        <p>Dirección: Comandante Torres 150, San Rafael, Mza. | Tel. 2604 240303</p>
+        <p class="mb-1">
+            Dirección: 
+            <a href="https://maps.app.goo.gl/uJb5aD3gG4zH6u2x6" target="_blank" class="text-blue-300 hover:text-white underline transition font-semibold">
+                Comandante Torres 150, San Rafael, Mza.
+            </a>
+            <button onclick="abrirModal('modal-mapa')" class="ml-2 text-xs bg-blue-700 text-white px-2 py-0.5 rounded hover:bg-blue-800 transition">Ver Mapa</button>
+        </p>
+        <p>
+            Teléfono: 
+            <a href="tel:2604240300" class="text-green-300 hover:text-white underline transition font-semibold">
+                2604-240300
+            </a>
+        </p>
         <p class="mt-4"><a href="#" onclick="switchView('login')" class="text-gray-400 hover:text-white transition font-semibold">Acceso Personal</a></p>
     </footer>
 
     <!-- ==========================================
          MODALES
     =========================================== -->
+<!-- Modal: Ubicación Google Maps -->
+    <div id="modal-mapa" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center">
+        <div class="bg-white p-4 rounded-lg shadow-2xl max-w-xl w-full mx-4 border-t-4 border-blue-800 relative">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-bold text-blue-900">Ubicación - Hospital Schestakow</h3>
+                <button onclick="cerrarModal('modal-mapa')" class="text-gray-500 text-xl font-bold hover:text-gray-800">×</button>
+            </div>
+            <div class="w-full h-80 rounded overflow-hidden border border-gray-300">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1129.9705710175328!2d-68.32639521430004!3d-34.620358039200475!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x967907f865ab0c6b%3A0x67edc97046b88a45!2sHospital%20Teodoro%20J.%20Schestakow!5e1!3m2!1ses-419!2sar!4v1789822156551!5m2!1ses-419!2sar" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            </div>
+            <button onclick="cerrarModal('modal-mapa')" class="w-full mt-4 py-2 bg-gray-800 text-white font-bold rounded hover:bg-gray-900">Cerrar</button>
+        </div>
+    </div>
+    
     <!-- Modal: Asignar Turno Recepción -->
     <div id="modal-dar-turno" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center">
         <div class="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4 border-t-4 border-indigo-700">
