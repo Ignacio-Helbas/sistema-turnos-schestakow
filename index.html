@@ -403,16 +403,10 @@
             <p class="text-sm text-gray-600 mb-4">Ingrese su DNI para visualizar sus turnos activos.</p>
             <div class="flex gap-2 mb-4">
                 <input type="text" id="input-buscar-dni" placeholder="DNI..." class="border border-gray-300 rounded p-2 w-full outline-none">
-                <button onclick="document.getElementById('resultado-turnos-paciente').classList.remove('hidden');" class="bg-blue-800 text-white px-4 py-2 rounded font-bold hover:bg-blue-900 shadow">Buscar</button>
+                <button onclick="buscarTurnosPaciente()" class="bg-blue-800 text-white px-4 py-2 rounded font-bold hover:bg-blue-900 shadow">Buscar</button>
             </div>
             <div id="resultado-turnos-paciente" class="hidden space-y-3">
-                <div class="bg-gray-50 border border-gray-200 p-3 rounded flex justify-between items-center">
-                    <div>
-                        <p class="font-bold text-gray-800 text-sm">Cardiología - Dr. Pérez</p>
-                        <p class="text-xs text-gray-600 font-semibold">14/10/2026 - 09:00 hs</p>
-                    </div>
-                    <button onclick="alert('Turno cancelado exitosamente.'); cerrarModal('modal-cancelar-paciente')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border border-red-400 hover:bg-red-50 transition shadow-sm">Cancelar Turno</button>
-                </div>
+                <!-- Inyectado por JS -->
             </div>
             <button onclick="cerrarModal('modal-cancelar-paciente')" class="w-full mt-4 py-2 border border-gray-300 rounded text-gray-700 font-bold hover:bg-gray-100">Cerrar</button>
         </div>
@@ -634,14 +628,12 @@
 
         // --- FUNCIÓN DE GUARDADO EN FIREBASE CON VALIDACIONES ---
         async function confirmarTurnoFirebase() {
-            // Importar la función de Firestore desde el CDN de módulos
             const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
 
             const especialidad = document.getElementById('select-especialidad').value;
             const medico = document.getElementById('select-medico').value;
             const fecha = document.getElementById('input-fecha-paciente').value;
             
-            // Buscar el horario seleccionado actualmente
             const btnHorarioSeleccionado = document.querySelector('.btn-horario.bg-blue-800');
             const horario = btnHorarioSeleccionado ? btnHorarioSeleccionado.innerText.replace(' (Ocupado)', '').trim() : '';
 
@@ -650,7 +642,6 @@
             const celular = document.getElementById('paciente-celular').value.trim();
             const email = document.getElementById('paciente-email').value.trim();
 
-            // 1. Validaciones obligatorias
             if (!especialidad || !medico || !fecha || !horario) {
                 alert("Por favor, seleccione Especialidad, Profesional, Fecha y un Horario disponible.");
                 return;
@@ -661,7 +652,6 @@
                 return;
             }
 
-            // 2. Validación estricta del DNI (sin puntos, solo números, entre 7 y 8 dígitos)
             const regexDni = /^[0-9]{7,8}$/;
             if (!regexDni.test(dni)) {
                 alert("El DNI ingresado no es válido. Debe contener entre 7 y 8 dígitos numéricos, sin puntos, comas ni espacios.");
@@ -669,7 +659,6 @@
             }
 
             try {
-                // Guardar en la colección "turnos" de Firestore
                 await addDoc(collection(window.db, "turnos"), {
                     especialidad: especialidad,
                     medico: medico,
@@ -685,11 +674,17 @@
 
                 alert("¡Turno solicitado exitosamente y guardado en la base de datos! Revise su WhatsApp.");
                 
-                // Limpiar formulario opcionalmente
+                // Limpiar formulario completo
                 document.getElementById('paciente-nombre').value = '';
                 document.getElementById('paciente-dni').value = '';
                 document.getElementById('paciente-celular').value = '';
                 document.getElementById('paciente-email').value = '';
+                document.getElementById('input-fecha-paciente').value = '';
+                document.getElementById('horarios-publicos').innerHTML = '<p class="text-sm text-gray-500 col-span-3">Seleccione una fecha.</p>';
+                document.getElementById('select-especialidad').value = '';
+                const selectMed = document.getElementById('select-medico');
+                selectMed.innerHTML = '<option>Primero seleccione especialidad</option>';
+                selectMed.disabled = true;
 
             } catch (error) {
                 console.error("Error al guardar el turno: ", error);
@@ -697,6 +692,70 @@
             }
         }
 
+        // --- FUNCIÓN REAL DE BÚSQUEDA EN FIREBASE ---
+        async function buscarTurnosPaciente() {
+            const dniIngresado = document.getElementById('input-buscar-dni').value.trim();
+            const contenedorResultados = document.getElementById('resultado-turnos-paciente');
+            
+            if (!dniIngresado) {
+                alert("Por favor, ingrese un DNI.");
+                return;
+            }
+
+            try {
+                const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                
+                const q = query(collection(window.db, "turnos"), where("pacienteDni", "==", dniIngresado));
+                const querySnapshot = await getDocs(q);
+
+                let htmlTurnos = '';
+
+                if (querySnapshot.empty) {
+                    htmlTurnos = `<p class="text-sm text-red-600 font-semibold text-center py-2">No se encontraron turnos activos para el DNI ${dniIngresado}.</p>`;
+                } else {
+                    querySnapshot.forEach((doc) => {
+                        const turno = doc.data();
+                        const idDoc = doc.id;
+                        
+                        htmlTurnos += `
+                        <div class="bg-gray-50 border border-gray-200 p-3 rounded flex justify-between items-center mb-2">
+                            <div>
+                                <p class="font-bold text-gray-800 text-sm capitalize">${turno.especialidad} - ${turno.medico}</p>
+                                <p class="text-xs text-gray-600 font-semibold">${turno.fecha} - ${turno.horario} hs</p>
+                                <p class="text-xs text-blue-700">Paciente: ${turno.pacienteNombre}</p>
+                            </div>
+                            <button onclick="cancelarTurnoFirebase('${idDoc}')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border border-red-400 hover:bg-red-50 transition shadow-sm">Cancelar Turno</button>
+                        </div>`;
+                    });
+                }
+
+                contenedorResultados.innerHTML = htmlTurnos;
+                contenedorResultados.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error al buscar turnos: ", error);
+                alert("Hubo un error al consultar la base de datos.");
+            }
+        }
+
+        // --- FUNCIÓN PARA CANCELAR UN TURNO DESDE LA GESTIÓN ---
+        async function cancelarTurnoFirebase(idDoc) {
+            if (!confirm("¿Está seguro que desea cancelar este turno?")) return;
+
+            try {
+                const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                await deleteDoc(doc(window.db, "turnos", idDoc));
+                
+                alert("Turno cancelado correctamente.");
+                document.getElementById('resultado-turnos-paciente').classList.add('hidden');
+                document.getElementById('input-buscar-dni').value = '';
+                cerrarModal('modal-cancelar-paciente');
+            } catch (error) {
+                console.error("Error al cancelar: ", error);
+                alert("No se pudo cancelar el turno.");
+            }
+        }
+        
         // --- JS de Recepción ---
         function generarAgendaRecepcion() {
             const tbody = document.getElementById('reception-tbody');
@@ -773,7 +832,18 @@
             if(extra && document.getElementById('modal-hora-turno')) document.getElementById('modal-hora-turno').innerText = extra;
             document.getElementById(id).classList.add('active'); 
         }
-        function cerrarModal(id) { document.getElementById(id).classList.remove('active'); }
+        function cerrarModal(id) { 
+            document.getElementById(id).classList.remove('active'); 
+            if (id === 'modal-cancelar-paciente') {
+                const inputDni = document.getElementById('input-buscar-dni');
+                const resultados = document.getElementById('resultado-turnos-paciente');
+                if (inputDni) inputDni.value = '';
+                if (resultados) {
+                    resultados.innerHTML = '';
+                    resultados.classList.add('hidden');
+                }
+            }
+        }
         function toggleHistorial() { document.getElementById('historial-paciente').classList.toggle('abierto'); }
         
         window.onload = function() {
