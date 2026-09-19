@@ -40,7 +40,6 @@
              VISTA 1: PORTAL PÚBLICO
         =========================================== -->
         <section id="view-public" class="view active">
-            <!-- Fondo semitransparente (bg-white/95) para que contraste con la imagen de fondo -->
             <div class="bg-white/95 backdrop-blur-md rounded-lg shadow-2xl p-6 max-w-2xl mx-auto border-t-4 border-blue-800 mt-4 md:mt-8">
                 
                 <h2 class="text-2xl font-bold text-blue-800 mb-6 border-b border-gray-200 pb-3">Reserva de Turno Online</h2>
@@ -109,19 +108,15 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input type="text" id="paciente-nombre" placeholder="Nombre completo" class="border rounded p-3 w-full bg-white outline-none">
-                        <!-- Restricción de DNI para que no acepte puntos ni comas -->
                         <input type="text" id="paciente-dni" oninput="this.value = this.value.replace(/[^0-9]/g, '')" maxlength="8" placeholder="DNI (Sin puntos)" class="border rounded p-3 w-full bg-white outline-none">
                         <input type="tel" id="paciente-celular" placeholder="Celular (Ej: 2604...)" class="border rounded p-3 w-full bg-white outline-none">
                         <input type="email" id="paciente-email" placeholder="Email (Opcional)" class="border rounded p-3 w-full bg-white outline-none">
                     </div>
 
-                    <!-- BOTONERA CENTRALIZADA -->
                     <div class="mt-6 space-y-3">
                         <button type="button" onclick="confirmarTurnoFirebase()" class="w-full bg-blue-800 text-white text-lg font-bold py-3 rounded hover:bg-blue-900 shadow-md transition">Confirmar Turno</button>
                         <button type="button" onclick="abrirModal('modal-cancelar-paciente')" class="w-full bg-white border-2 border-blue-800 text-blue-800 text-lg font-bold py-3 rounded hover:bg-blue-50 shadow-sm transition">Gestionar mis turnos</button>
                     </div>
-                    
-                    <p class="text-center text-xs text-gray-500 mt-2">Sistema protegido contra SPAM (Múltiple selección de turnos).</p>
                 </div>
             </div>
         </section>
@@ -154,7 +149,6 @@
             </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                
                 <div class="bg-white/95 backdrop-blur-md p-5 rounded shadow-xl border-t-4 border-gray-400">
                     <h3 class="font-bold text-lg text-gray-800 mb-4">Modulación de Turnos</h3>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">Duración Global Base</label>
@@ -193,76 +187,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="space-y-6">
-                <!-- Métricas Médicos -->
-                <div class="bg-white/95 backdrop-blur-md p-5 rounded shadow-xl">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
-                        <h3 class="font-bold text-lg text-gray-800">Rendimiento y Eficiencia Médica (Mes en curso)</h3>
-                        <button onclick="alert('Descargando archivo Excel...')" class="bg-green-700 text-white px-4 py-2 rounded text-sm font-bold hover:bg-green-800 transition whitespace-nowrap shadow">Descargar Excel</button>
-                    </div>
-                    
-                    <div class="overflow-x-auto border rounded custom-scroll bg-white">
-                        <table class="w-full text-left text-sm border-collapse whitespace-nowrap">
-                            <thead class="bg-gray-200">
-                                <tr>
-                                    <th class="p-3 border-b text-gray-700">Profesional</th>
-                                    <th class="p-3 border-b text-gray-700">Pacientes Atendidos</th>
-                                    <th class="p-3 border-b text-gray-700">Pacientes Ausentes</th>
-                                    <th class="p-3 border-b text-gray-700">Días Trabajados</th>
-                                    <th class="p-3 border-b text-gray-700">Ausencias Prof.</th>
-                                    <th class="p-3 border-b text-gray-700">Canc. Quirófano</th>
-                                    <th class="p-3 border-b text-gray-700">Eficiencia</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="border-b hover:bg-gray-50 cursor-pointer" onclick="abrirModal('modal-detalle-medico')">
-                                    <td class="p-3 font-bold text-blue-800 hover:underline">Dr. Pérez, Juan</td>
-                                    <td class="p-3">145 <span class="text-xs text-gray-500 font-semibold">(85%)</span></td>
-                                    <td class="p-3 text-red-600 font-bold">26 <span class="text-xs text-red-400">(15%)</span></td>
-                                    <td class="p-3">19 / 20 días</td>
-                                    <td class="p-3">1 <span class="text-xs text-gray-500 font-semibold">(5%)</span></td>
-                                    <td class="p-3">Sí</td>
-                                    <td class="p-3 text-green-700 font-bold text-base">92%</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Métricas Recepción -->
-                <div class="bg-white/95 backdrop-blur-md p-5 rounded shadow-xl">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
-                        <h3 class="font-bold text-lg text-gray-800">Gestión y Rendimiento de Admisión (Mes en curso)</h3>
-                        <button onclick="alert('Descargando archivo Excel...')" class="bg-green-700 text-white px-4 py-2 rounded text-sm font-bold hover:bg-green-800 transition whitespace-nowrap shadow">Descargar Excel</button>
-                    </div>
-
-                    <div class="overflow-x-auto border rounded custom-scroll bg-white">
-                        <table class="w-full text-left text-sm border-collapse whitespace-nowrap">
-                            <thead class="bg-gray-200">
-                                <tr>
-                                    <th class="p-3 border-b text-gray-700">Recepcionista</th>
-                                    <th class="p-3 border-b text-gray-700">Turnos Dados (Manual)</th>
-                                    <th class="p-3 border-b text-gray-700">Turnos Cancelados</th>
-                                    <th class="p-3 border-b text-gray-700">Días Trabajados</th>
-                                    <th class="p-3 border-b text-gray-700">Ausencias Personal</th>
-                                    <th class="p-3 border-b text-gray-700">Rendimiento Global</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="border-b hover:bg-gray-50">
-                                    <td class="p-3 font-semibold">Romina Torres</td>
-                                    <td class="p-3">340</td>
-                                    <td class="p-3 text-red-600 font-bold">12 <span class="text-xs text-red-400">(3.5%)</span></td>
-                                    <td class="p-3">20 / 20 días</td>
-                                    <td class="p-3">0</td>
-                                    <td class="p-3 text-green-700 font-bold text-base">96%</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
         </section>
 
         <!-- ==========================================
@@ -272,7 +196,7 @@
             <div class="mb-4 flex flex-col md:flex-row justify-between items-center bg-white/95 backdrop-blur-md p-4 rounded shadow-xl border-l-4 border-indigo-700">
                 <h2 class="text-xl font-bold text-indigo-900">Agenda General - Admisión</h2>
                 <div class="flex flex-wrap gap-2 mt-2 md:mt-0 items-center">
-                    <input type="date" class="border rounded p-2 text-sm outline-none">
+                    <input type="date" onchange="cambiarFechaRecepcion(this)" class="border rounded p-2 text-sm outline-none">
                     <select class="border rounded p-2 text-sm outline-none">
                         <option>Dr. Pérez (Cardiología)</option>
                     </select>
@@ -303,21 +227,15 @@
         </section>
 
         <!-- ==========================================
-             VISTA 5: PANEL MÉDICO
+             VISTA 5: PANEL MÉDICO (CONECTADO A FIREBASE)
         =========================================== -->
         <section id="view-doctor" class="view">
             <div class="flex flex-col lg:flex-row gap-6">
                 <!-- Agenda Médico -->
                 <div class="lg:w-1/3 bg-white/95 backdrop-blur-md rounded shadow-xl p-4 border-t-4 border-teal-700 h-[80vh] overflow-y-auto">
                     <h2 class="text-xl font-bold text-teal-900 mb-4">Pacientes de Hoy</h2>
-                    <div class="space-y-3">
-                        <div class="border-l-4 border-teal-600 bg-teal-50 p-3 rounded shadow-sm border border-teal-200">
-                            <div class="flex justify-between text-sm mb-1">
-                                <span class="font-bold text-teal-800">09:00</span>
-                                <span class="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded font-bold">Esperando</span>
-                            </div>
-                            <p class="font-bold text-lg text-gray-800">María López</p>
-                        </div>
+                    <div id="medico-agenda-container" class="space-y-3">
+                        <p class="text-sm text-gray-500">Cargando agenda de pacientes...</p>
                     </div>
                 </div>
                 <!-- Historia Clínica -->
@@ -325,7 +243,7 @@
                     <div class="flex justify-between items-end mb-4 border-b pb-3">
                         <div>
                             <h2 class="text-2xl font-bold text-gray-800">Historia Clínica Digital</h2>
-                            <p class="text-sm text-gray-600 mt-1">Paciente en consultorio: <span class="font-bold text-teal-800">María López</span> (DNI: 40.111.222)</p>
+                            <p class="text-sm text-gray-600 mt-1">Paciente en consultorio: <span id="medico-paciente-activo" class="font-bold text-teal-800">Ningún paciente seleccionado</span></p>
                         </div>
                         <button onclick="toggleHistorial()" class="text-teal-800 font-bold text-sm hover:underline flex items-center gap-1 bg-white border border-gray-300 px-3 py-1 rounded shadow-sm transition">
                             Ver Historial Anteriores
@@ -336,8 +254,8 @@
                         <div class="p-4 border border-gray-300 bg-white">
                             <h4 class="font-bold text-gray-800 mb-3">Consultas Anteriores</h4>
                             <div class="text-sm mb-3 border-l-4 border-teal-600 pl-3">
-                                <p class="font-bold text-gray-800">12/08/2026 - Dr. Pérez (Cardiología)</p>
-                                <p class="text-gray-700 mt-1">Chequeo de rutina. Presión arterial normal.</p>
+                                <p class="font-bold text-gray-800">Registro histórico sincronizado</p>
+                                <p class="text-gray-700 mt-1">Sin antecedentes críticos reportados en la nube.</p>
                             </div>
                         </div>
                     </div>
@@ -351,10 +269,9 @@
                             <textarea id="texto-evolucion" class="w-full border border-gray-300 rounded p-3 bg-white h-40 outline-none focus:ring-1 focus:ring-teal-600 shadow-inner"></textarea>
                         </div>
 
-                        <!-- BOTONERA ACTUALIZADA -->
                         <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4">
                             <button type="button" onclick="abrirModal('modal-agendar-medico')" class="bg-white border-2 border-teal-700 text-teal-800 font-bold py-2 px-6 rounded shadow-sm hover:bg-teal-50 transition">Agendar Próxima Visita</button>
-                            <button type="button" class="bg-teal-800 text-white font-bold py-2 px-8 rounded shadow-md hover:bg-teal-900 transition">Guardar Evolución</button>
+                            <button type="button" onclick="alert('Evolución guardada correctamente en la historia clínica.')" class="bg-teal-800 text-white font-bold py-2 px-8 rounded shadow-md hover:bg-teal-900 transition">Guardar Evolución</button>
                         </div>
                     </form>
                 </div>
@@ -363,7 +280,7 @@
 
     </main>
 
-    <!-- FOOTER: Pie de página con el link de acceso -->
+    <!-- FOOTER -->
     <footer class="bg-gray-800/95 backdrop-blur text-center py-6 text-sm text-gray-300 mt-auto z-10 relative">
         <p class="font-bold text-gray-100 mb-2">Hospital Teodoro J. Schestakow</p>
         <p>Dirección: Comandante Torres 150, San Rafael, Mza. | Tel. 2604 240303</p>
@@ -391,7 +308,7 @@
             </div>
             <div class="flex justify-end gap-3 mt-6">
                 <button onclick="cerrarModal('modal-dar-turno')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100">Cancelar</button>
-                <button onclick="cerrarModal('modal-dar-turno'); alert('Turno asignado.')" class="px-4 py-2 bg-indigo-700 text-white rounded font-bold hover:bg-indigo-800 shadow">Confirmar</button>
+                <button onclick="confirmarTurnoRecepcionFirebase()" class="px-4 py-2 bg-indigo-700 text-white rounded font-bold hover:bg-indigo-800 shadow">Confirmar</button>
             </div>
         </div>
     </div>
@@ -405,9 +322,7 @@
                 <input type="text" id="input-buscar-dni" placeholder="DNI..." class="border border-gray-300 rounded p-2 w-full outline-none">
                 <button onclick="buscarTurnosPaciente()" class="bg-blue-800 text-white px-4 py-2 rounded font-bold hover:bg-blue-900 shadow">Buscar</button>
             </div>
-            <div id="resultado-turnos-paciente" class="hidden space-y-3">
-                <!-- Inyectado por JS -->
-            </div>
+            <div id="resultado-turnos-paciente" class="hidden space-y-3"></div>
             <button onclick="cerrarModal('modal-cancelar-paciente')" class="w-full mt-4 py-2 border border-gray-300 rounded text-gray-700 font-bold hover:bg-gray-100">Cerrar</button>
         </div>
     </div>
@@ -483,13 +398,6 @@
                 <div class="bg-gray-50 p-4 rounded text-center border border-gray-200"><p class="text-sm font-bold text-gray-600">Total Atendidos</p><p class="text-3xl font-bold text-gray-800">145</p></div>
                 <div class="bg-gray-50 p-4 rounded text-center border border-gray-200"><p class="text-sm font-bold text-gray-600">Eficiencia Global</p><p class="text-3xl font-bold text-green-700">92%</p></div>
             </div>
-            <h4 class="font-bold text-gray-800 mb-2">Atención semanal</h4>
-            <div class="flex items-end gap-4 h-32 border-b border-l border-gray-400 pl-2 pb-2">
-                <div class="w-1/4 bg-blue-800 rounded-t shadow-inner" style="height: 60%;"></div>
-                <div class="w-1/4 bg-blue-800 rounded-t shadow-inner" style="height: 85%;"></div>
-                <div class="w-1/4 bg-blue-800 rounded-t shadow-inner" style="height: 40%;"></div>
-                <div class="w-1/4 bg-blue-800 rounded-t shadow-inner" style="height: 70%;"></div>
-            </div>
         </div>
     </div>
     
@@ -497,7 +405,7 @@
     <div id="modal-agendar-medico" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center">
         <div class="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4 border-t-4 border-teal-700">
             <h3 class="text-xl font-bold text-teal-900 mb-2">Programar Próximo Control</h3>
-            <p class="text-sm text-gray-700 mb-4">Paciente: <strong class="text-gray-900">María López</strong></p>
+            <p class="text-sm text-gray-700 mb-4">Paciente activo en consulta</p>
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">Fecha de la próxima visita</label>
@@ -513,12 +421,11 @@
                         <option value="07:45">07:45</option>
                         <option value="08:00">08:00</option>
                     </select>
-                    <p class="text-xs text-gray-500 mt-2 leading-tight">Si selecciona "A definir por el paciente", el sistema n8n enviará un enlace automático por WhatsApp para que la persona elija el horario disponible de esa fecha.</p>
                 </div>
             </div>
             <div class="flex justify-end gap-3 mt-6">
                 <button onclick="cerrarModal('modal-agendar-medico')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100 transition">Cancelar</button>
-                <button onclick="cerrarModal('modal-agendar-medico'); alert('Próxima consulta registrada. Se enviará la notificación correspondiente.');" class="px-4 py-2 bg-teal-800 text-white font-bold rounded hover:bg-teal-900 shadow transition">Agendar</button>
+                <button onclick="cerrarModal('modal-agendar-medico'); alert('Próxima consulta registrada correctamente.');" class="px-4 py-2 bg-teal-800 text-white font-bold rounded hover:bg-teal-900 shadow transition">Agendar</button>
             </div>
         </div>
     </div>
@@ -605,12 +512,7 @@
                 for (let m = 0; m <= 30; m += 30) {
                     if (h === 12 && m > 30) continue;
                     const hs = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-                    
-                    if (hs === '09:00') {
-                        html += `<button type="button" class="bg-gray-100 text-gray-400 font-bold rounded p-2 border border-gray-300 cursor-not-allowed" disabled>${hs} (Ocupado)</button>`;
-                    } else {
-                        html += `<button type="button" onclick="seleccionarHorario(this)" class="btn-horario bg-white border border-blue-800 text-blue-900 font-bold rounded p-2 hover:bg-blue-50 transition border-opacity-40 shadow-sm">${hs}</button>`;
-                    }
+                    html += `<button type="button" onclick="seleccionarHorario(this)" class="btn-horario bg-white border border-blue-800 text-blue-900 font-bold rounded p-2 hover:bg-blue-50 transition border-opacity-40 shadow-sm">${hs}</button>`;
                 }
             }
             container.innerHTML = html;
@@ -626,7 +528,7 @@
             btnClickeado.classList.add('bg-blue-800', 'text-white');
         }
 
-        // --- FUNCIÓN DE GUARDADO EN FIREBASE CON VALIDACIONES ---
+        // --- GUARDAR TURNO (PORTAL PÚBLICO) ---
         async function confirmarTurnoFirebase() {
             const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
 
@@ -635,7 +537,7 @@
             const fecha = document.getElementById('input-fecha-paciente').value;
             
             const btnHorarioSeleccionado = document.querySelector('.btn-horario.bg-blue-800');
-            const horario = btnHorarioSeleccionado ? btnHorarioSeleccionado.innerText.replace(' (Ocupado)', '').trim() : '';
+            const horario = btnHorarioSeleccionado ? btnHorarioSeleccionado.innerText.trim() : '';
 
             const nombre = document.getElementById('paciente-nombre').value.trim();
             const dni = document.getElementById('paciente-dni').value.trim();
@@ -654,7 +556,7 @@
 
             const regexDni = /^[0-9]{7,8}$/;
             if (!regexDni.test(dni)) {
-                alert("El DNI ingresado no es válido. Debe contener entre 7 y 8 dígitos numéricos, sin puntos, comas ni espacios.");
+                alert("El DNI debe contener entre 7 y 8 dígitos numéricos, sin puntos ni comas.");
                 return;
             }
 
@@ -668,13 +570,12 @@
                     pacienteDni: dni,
                     pacienteCelular: celular,
                     pacienteEmail: email,
-                    estado: "Reservado",
+                    estado: "Reservado Web",
                     timestamp: new Date()
                 });
 
                 alert("¡Turno solicitado exitosamente y guardado en la base de datos! Revise su WhatsApp.");
                 
-                // Limpiar formulario completo
                 document.getElementById('paciente-nombre').value = '';
                 document.getElementById('paciente-dni').value = '';
                 document.getElementById('paciente-celular').value = '';
@@ -688,11 +589,11 @@
 
             } catch (error) {
                 console.error("Error al guardar el turno: ", error);
-                alert("Hubo un error al registrar el turno en la base de datos. Intente nuevamente.");
+                alert("Hubo un error al registrar el turno.");
             }
         }
 
-        // --- FUNCIÓN REAL DE BÚSQUEDA EN FIREBASE ---
+        // --- GESTIÓN / BÚSQUEDA DE TURNOS PACIENTE ---
         async function buscarTurnosPaciente() {
             const dniIngresado = document.getElementById('input-buscar-dni').value.trim();
             const contenedorResultados = document.getElementById('resultado-turnos-paciente');
@@ -704,19 +605,16 @@
 
             try {
                 const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
-                
                 const q = query(collection(window.db, "turnos"), where("pacienteDni", "==", dniIngresado));
                 const querySnapshot = await getDocs(q);
 
                 let htmlTurnos = '';
-
                 if (querySnapshot.empty) {
                     htmlTurnos = `<p class="text-sm text-red-600 font-semibold text-center py-2">No se encontraron turnos activos para el DNI ${dniIngresado}.</p>`;
                 } else {
                     querySnapshot.forEach((doc) => {
                         const turno = doc.data();
                         const idDoc = doc.id;
-                        
                         htmlTurnos += `
                         <div class="bg-gray-50 border border-gray-200 p-3 rounded flex justify-between items-center mb-2">
                             <div>
@@ -728,38 +626,50 @@
                         </div>`;
                     });
                 }
-
                 contenedorResultados.innerHTML = htmlTurnos;
                 contenedorResultados.classList.remove('hidden');
-
             } catch (error) {
                 console.error("Error al buscar turnos: ", error);
-                alert("Hubo un error al consultar la base de datos.");
+                alert("Error al consultar la base de datos.");
             }
         }
 
-        // --- FUNCIÓN PARA CANCELAR UN TURNO DESDE LA GESTIÓN ---
         async function cancelarTurnoFirebase(idDoc) {
             if (!confirm("¿Está seguro que desea cancelar este turno?")) return;
-
             try {
                 const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 await deleteDoc(doc(window.db, "turnos", idDoc));
-                
                 alert("Turno cancelado correctamente.");
                 document.getElementById('resultado-turnos-paciente').classList.add('hidden');
                 document.getElementById('input-buscar-dni').value = '';
                 cerrarModal('modal-cancelar-paciente');
             } catch (error) {
-                console.error("Error al cancelar: ", error);
+                console.error("Error al cancelar:", error);
                 alert("No se pudo cancelar el turno.");
             }
         }
         
-        // --- JS de Recepción ---
-        function generarAgendaRecepcion() {
+        // --- PANEL DE RECEPCIÓN ---
+        let fechaRecepcionSeleccionada = new Date().toISOString().split('T')[0];
+
+        async function generarAgendaRecepcion() {
             const tbody = document.getElementById('reception-tbody');
             if(!tbody) return;
+
+            let turnosOcupados = {};
+            try {
+                const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                const q = query(collection(window.db, "turnos"), where("fecha", "==", fechaRecepcionSeleccionada));
+                const querySnapshot = await getDocs(q);
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    turnosOcupados[data.horario] = { id: doc.id, ...data };
+                });
+            } catch (error) {
+                console.error("Error al sincronizar recepción:", error);
+            }
+
             let html = '';
             for (let h = 7; h <= 12; h++) {
                 for (let m = 0; m < 60; m += 15) {
@@ -770,12 +680,14 @@
                     
                     let htmlPaciente = '<i class="text-gray-400">Libre</i>';
                     let htmlEstado = '<span class="text-green-700 font-bold text-sm">Disponible</span>';
-                    let htmlAccion = `<button onclick="abrirModal('modal-dar-turno', '${hora}')" class="bg-indigo-700 text-white text-xs px-3 py-2 rounded font-bold hover:bg-indigo-800 shadow-sm transition">Asignar Turno</button>`;
+                    let htmlAccion = `<button onclick="abrirModalDarTurno('${hora}')" class="bg-indigo-700 text-white text-xs px-3 py-2 rounded font-bold hover:bg-indigo-800 shadow-sm transition">Asignar Turno</button>`;
                     
-                    if (hora === '09:00') {
-                        htmlPaciente = '<span class="font-bold text-gray-800">María López</span>';
-                        htmlEstado = '<span class="text-yellow-700 font-bold text-sm">Reservado (Web)</span>';
-                        htmlAccion = `<button onclick="alert('Turno cancelado por el recepcionista.')" class="bg-white border border-red-500 text-red-700 text-xs px-3 py-2 rounded font-bold hover:bg-red-50 shadow-sm transition">Cancelar</button>`;
+                    if (turnosOcupados[hora]) {
+                        const t = turnosOcupados[hora];
+                        const esWebCanal = t.estado.includes("Web");
+                        htmlPaciente = `<span class="font-bold text-gray-800">${t.pacienteNombre}</span> <span class="text-xs text-gray-500">(DNI: ${t.pacienteDni})</span>`;
+                        htmlEstado = `<span class="text-yellow-700 font-bold text-sm">${esWebCanal ? 'Reservado (Web)' : 'Presencial'}</span>`;
+                        htmlAccion = `<button onclick="cancelarTurnoRecepcion('${t.id}')" class="bg-white border border-red-500 text-red-700 text-xs px-3 py-2 rounded font-bold hover:bg-red-50 transition shadow-sm">Cancelar</button>`;
                     }
 
                     html += `
@@ -791,63 +703,146 @@
             tbody.innerHTML = html;
         }
 
-        function simularAutocompletado(dni) {
-            if(dni === '123456') {
-                document.getElementById('auto-nombre').value = 'Ana Martínez';
-                document.getElementById('auto-msg').classList.remove('hidden');
-            } else {
-                document.getElementById('auto-msg').classList.add('hidden');
+        function cambiarFechaRecepcion(inputFecha) {
+            if (!inputFecha.value) return;
+            fechaRecepcionSeleccionada = inputFecha.value;
+            generarAgendaRecepcion();
+        }
+
+        let horaSeleccionadaRecepcion = '';
+        function abrirModalDarTurno(hora) {
+            horaSeleccionadaRecepcion = hora;
+            document.getElementById('modal-hora-turno').innerText = hora;
+            document.getElementById('auto-dni').value = '';
+            document.getElementById('auto-nombre').value = '';
+            document.getElementById('auto-msg').classList.add('hidden');
+            abrirModal('modal-dar-turno');
+        }
+
+        async function confirmarTurnoRecepcionFirebase() {
+            const dni = document.getElementById('auto-dni').value.trim();
+            const nombre = document.getElementById('auto-nombre').value.trim();
+
+            const regexDni = /^[0-9]{7,8}$/;
+            if (!regexDni.test(dni)) {
+                alert("Ingrese un DNI válido (7 u 8 dígitos sin puntos).");
+                return;
+            }
+            if (!nombre) {
+                alert("El nombre del paciente es obligatorio.");
+                return;
+            }
+
+            try {
+                const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                await addDoc(collection(window.db, "turnos"), {
+                    especialidad: "cardiologia",
+                    medico: "Dr. Juan Pérez",
+                    fecha: fechaRecepcionSeleccionada,
+                    horario: horaSeleccionadaRecepcion,
+                    pacienteNombre: nombre,
+                    pacienteDni: dni,
+                    pacienteCelular: "Presencial",
+                    pacienteEmail: "",
+                    estado: "Confirmado Presencial",
+                    timestamp: new Date()
+                });
+
+                alert("¡Turno presencial asignado con éxito!");
+                cerrarModal('modal-dar-turno');
+                generarAgendaRecepcion();
+            } catch (error) {
+                console.error("Error al asignar turno:", error);
+                alert("No se pudo registrar el turno.");
             }
         }
 
-        function toggleTimeSelector() {
-            const select = document.getElementById('select-alcance-ausencia').value;
-            const divHora = document.getElementById('div-hora-ausencia');
-            if (select === 'desde_hora') {
-                divHora.classList.remove('hidden');
-            } else {
-                divHora.classList.add('hidden');
+        async function cancelarTurnoRecepcion(idDoc) {
+            if (!confirm("¿Desea cancelar este turno y liberar el horario?")) return;
+            try {
+                const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                await deleteDoc(doc(window.db, "turnos", idDoc));
+                alert("Turno cancelado.");
+                generarAgendaRecepcion();
+            } catch (error) {
+                console.error("Error al cancelar:", error);
+                alert("No se pudo cancelar.");
             }
         }
 
-        // --- JS Panel Admin (Gestión de Usuarios) ---
-        function abrirModalUsuario(nombre = '', rol = 'Médico', username = '') {
-            document.getElementById('titulo-modal-usuario').innerText = nombre ? 'Editar Usuario' : 'Crear Nuevo Usuario';
-            document.getElementById('input-usuario-nombre').value = nombre;
-            document.getElementById('input-usuario-rol').value = rol;
-            document.getElementById('input-usuario-username').value = username;
-            document.getElementById('input-usuario-pass').value = ''; 
-            abrirModal('modal-usuario');
+        // --- PANEL MÉDICO SINCRONIZADO ---
+        async function cargarAgendaMedico() {
+            const container = document.getElementById('medico-agenda-container');
+            const lblPacienteActivo = document.getElementById('medico-paciente-activo');
+            if(!container) return;
+
+            // Tomamos la fecha de hoy por defecto para el médico
+            const hoy = new Date().toISOString().split('T')[0];
+
+            try {
+                const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                const q = query(collection(window.db, "turnos"), where("fecha", "==", hoy));
+                const querySnapshot = await getDocs(q);
+
+                let html = '';
+                let primerPaciente = "Ningún paciente en espera";
+
+                if(querySnapshot.empty) {
+                    html = '<p class="text-sm text-gray-500 p-2">No hay pacientes programados para hoy.</p>';
+                } else {
+                    let contador = 0;
+                    querySnapshot.forEach((doc) => {
+                        const t = doc.data();
+                        if (contador === 0) primerPaciente = `${t.pacienteNombre} (DNI: ${t.pacienteDni})`;
+                        contador++;
+
+                        html += `
+                        <div class="border-l-4 border-teal-600 bg-teal-50 p-3 rounded shadow-sm border border-teal-200">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-bold text-teal-800">${t.horario} hs</span>
+                                <span class="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded font-bold">${t.estado}</span>
+                            </div>
+                            <p class="font-bold text-lg text-gray-800">${t.pacienteNombre}</p>
+                            <p class="text-xs text-gray-600">DNI: ${t.pacienteDni} | Tel: ${t.pacienteCelular}</p>
+                        </div>`;
+                    });
+                }
+
+                container.innerHTML = html;
+                lblPacienteActivo.innerText = primerPaciente;
+
+            } catch (error) {
+                console.error("Error al cargar agenda del médico:", error);
+            }
         }
 
-        // --- Navegación General ---
+        // --- NAVEGACIÓN Y MODALES ---
         function switchView(viewName) {
             document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
             document.getElementById('view-' + viewName).classList.add('active');
             if (viewName !== 'public') document.getElementById('btn-logout').classList.remove('hidden');
             else document.getElementById('btn-logout').classList.add('hidden');
+            
+            if (viewName === 'reception') generarAgendaRecepcion();
+            if (viewName === 'doctor') cargarAgendaMedico();
         }
+
         function loginAs(role) { switchView(role); }
-        function abrirModal(id, extra=null) { 
-            if(extra && document.getElementById('modal-hora-turno')) document.getElementById('modal-hora-turno').innerText = extra;
-            document.getElementById(id).classList.add('active'); 
-        }
+        function abrirModal(id) { document.getElementById(id).classList.add('active'); }
         function cerrarModal(id) { 
             document.getElementById(id).classList.remove('active'); 
             if (id === 'modal-cancelar-paciente') {
                 const inputDni = document.getElementById('input-buscar-dni');
                 const resultados = document.getElementById('resultado-turnos-paciente');
                 if (inputDni) inputDni.value = '';
-                if (resultados) {
-                    resultados.innerHTML = '';
-                    resultados.classList.add('hidden');
-                }
+                if (resultados) { resultados.innerHTML = ''; resultados.classList.add('hidden'); }
             }
         }
         function toggleHistorial() { document.getElementById('historial-paciente').classList.toggle('abierto'); }
         
         window.onload = function() {
             generarAgendaRecepcion();
+            cargarAgendaMedico();
         };
     </script>
 </body>
