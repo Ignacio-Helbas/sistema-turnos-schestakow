@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Turnos - Hospital Schestakow</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Librería SheetJS para exportar a Excel nativo (.xlsx) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         .view { display: none; }
@@ -16,8 +15,6 @@
         .colapsable-content.abierto { max-height: 500px; overflow-y: auto; }
         .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
-        
-        /* Estilos para pestañas del Admin */
         .admin-tab { cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
         .admin-tab.active { border-bottom-color: #1f2937; color: #1f2937; font-weight: bold; }
     </style>
@@ -27,6 +24,7 @@
     <!-- NAVEGACIÓN -->
     <nav class="bg-white shadow-md text-blue-900 p-3 flex justify-between items-center z-10 relative">
         <div class="flex items-center gap-3">
+            <!-- Doble clic en el logo para acceso restringido -->
             <img src="LogoHospitalSolo.png" alt="Logo Hospital" class="h-12 w-auto rounded bg-white p-1 shadow-sm cursor-pointer" ondblclick="switchView('login')" title="Doble clic para acceso restringido">
         </div>
         <div class="flex items-center gap-4">
@@ -133,10 +131,11 @@
                     
                     <div class="mt-4 pt-4 border-t border-gray-200">
                         <p class="text-xs text-gray-500 text-center mb-2 font-bold uppercase tracking-wider">Atajos de Desarrollador</p>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button onclick="loginAs('reception')" class="bg-indigo-700 text-white py-2 rounded hover:bg-indigo-800 text-sm font-semibold transition">Recepción</button>
-                            <button onclick="loginAs('doctor')" class="bg-teal-700 text-white py-2 rounded hover:bg-teal-800 text-sm font-semibold transition">Médico</button>
-                            <button onclick="loginAs('admin')" class="bg-gray-800 text-white py-2 rounded hover:bg-gray-900 text-sm font-semibold transition">Admin</button>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button onclick="loginAs('reception')" class="bg-indigo-700 text-white py-2 rounded hover:bg-indigo-800 text-sm font-semibold transition shadow-sm">Rec.</button>
+                            <button onclick="loginAs('doctor')" class="bg-teal-700 text-white py-2 rounded hover:bg-teal-800 text-sm font-semibold transition shadow-sm">Med.</button>
+                            <button onclick="loginAs('admin')" class="bg-gray-800 text-white py-2 rounded hover:bg-gray-900 text-sm font-semibold transition shadow-sm">Admin</button>
+                            <button onclick="forzarReseedDB()" class="bg-red-700 text-white py-2 rounded hover:bg-red-800 text-xs font-bold transition shadow-sm border border-red-900" title="Borrar y recargar base de datos">RESET DB</button>
                         </div>
                     </div>
 
@@ -289,6 +288,13 @@
                                 <option value="otorrinolaringologia">Otorrinolaringología (Oídos, nariz, garganta)</option>
                                 <option value="oftalmologia">Oftalmología (Ojos)</option>
                                 <option value="ginecologia">Ginecología y Obstetricia</option>
+                            </optgroup>
+                            <optgroup label="Servicios de Diagnóstico y Apoyo">
+                                <option value="diagnostico_imagenes">Diagnóstico por Imágenes</option>
+                                <option value="anatomia_patologica">Anatomía Patológica</option>
+                                <option value="laboratorio">Laboratorio de Análisis Clínicos</option>
+                                <option value="terapia_intensiva">Terapia Intensiva (UTI)</option>
+                                <option value="rehabilitacion">Medicina Física y Rehabilitación</option>
                             </optgroup>
                         </select>
                     </div>
@@ -447,7 +453,7 @@
     
     <div id="modal-ausencia-emergencia" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center"><div class="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4 border-t-4 border-red-700"><h3 class="text-xl font-bold text-red-800 mb-2">Declarar Ausencia / Emergencia</h3><p class="text-sm text-gray-700 mb-4">Se suspenderá la agenda del profesional seleccionado y se bloquearán los turnos afectados.</p><div class="space-y-4"><div><label class="block text-sm font-bold text-gray-700 mb-1">Alcance</label><select id="select-alcance-ausencia" onchange="toggleTimeSelector()" class="w-full border border-gray-300 rounded p-2 bg-white outline-none"><option value="todo_dia">Cancelar toda la agenda del día</option><option value="desde_hora">Cancelar a partir de un horario específico</option></select></div><div id="div-hora-ausencia" class="hidden bg-gray-50 p-3 rounded border border-gray-300"><label class="block text-sm font-bold text-gray-800 mb-1">A partir de las:</label><input type="time" id="hora-desde-ausencia" class="w-full border border-gray-300 rounded p-2 outline-none"></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Motivo / Causa</label><textarea id="motivo-ausencia" placeholder="Ej: Emergencia Médica en Quirófano" class="w-full border border-gray-300 rounded p-2 bg-white h-20 outline-none"></textarea></div></div><div class="flex justify-end gap-3 mt-6"><button onclick="cerrarModal('modal-ausencia-emergencia')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100">Cancelar</button><button onclick="ejecutarAusenciaEmergencia()" class="px-4 py-2 bg-red-700 text-white font-bold rounded shadow hover:bg-red-800">Ejecutar Suspensión</button></div></div></div>
 
-    <div id="modal-usuario" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center"><div class="bg-white p-6 rounded-lg shadow-2xl max-w-lg w-full mx-4 border-t-4 border-gray-800"><h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2" id="titulo-modal-usuario">Registrar Nuevo Usuario</h3><input type="hidden" id="input-usuario-id"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="md:col-span-2"><label class="block text-sm font-bold text-gray-700 mb-1">Nombre Completo del Staff</label><input type="text" id="input-usuario-nombre" placeholder="Ej: Dr. Juan Pérez" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Rol en el Sistema</label><select id="input-usuario-rol" onchange="toggleCamposMedico()" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"><option value="Administrativo">Administrativo (Recepción)</option><option value="Médico">Médico Especialista</option><option value="Administración">Administración General</option></select></div><div id="div-usuario-matricula" class="hidden"><label class="block text-sm font-bold text-teal-700 mb-1">Nº Matrícula Provincial</label><input type="text" id="input-usuario-matricula" placeholder="MP: 12345" class="border border-teal-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-teal-600 bg-teal-50"></div><div id="div-usuario-especialidad" class="hidden md:col-span-2"><label class="block text-sm font-bold text-teal-700 mb-1">Especialidad Médica</label><select id="input-usuario-especialidad" class="border border-teal-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-teal-600 bg-teal-50"><option value="clinica">Clínica Médica (Adultos)</option><option value="cardiologia">Cardiología (Corazón)</option><option value="pediatria">Pediatría (Niños y adolescentes)</option><option value="dermatologia">Dermatología (Piel)</option><option value="endocrinologia">Endocrinología (Hormonas y diabetes)</option><option value="gastroenterologia">Gastroenterología (Aparato digestivo)</option><option value="infectologia">Infectología (Infecciones)</option><option value="neurologia">Neurología (Cerebro y sistema nervioso)</option><option value="nefrologia">Nefrología (Riñones)</option><option value="neumonologia">Neumonología (Pulmones)</option><option value="geriatria">Geriatría (Adultos mayores)</option><option value="psiquiatria">Psiquiatría (Salud mental)</option><option value="cirugia_general">Cirugía General</option><option value="cirugia_cardiovascular">Cirugía Cardiovascular</option><option value="cirugia_plastica">Cirugía Plástica y Reparadora</option><option value="traumatologia">Traumatología y Ortopedia</option><option value="urologia">Urología</option><option value="neurocirugia">Neurocirugía</option><option value="otorrinolaringologia">Otorrinolaringología (Oídos, nariz, garganta)</option><option value="oftalmologia">Oftalmología (Ojos)</option><option value="ginecologia">Ginecología y Obstetricia</option></select></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Teléfono de Contacto</label><input type="tel" id="input-usuario-tel" placeholder="2604..." class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Correo Electrónico</label><input type="email" id="input-usuario-correo" placeholder="@hospital.gov.ar" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"></div><div class="md:col-span-2 mt-2"><hr class="border-gray-200"></div><div><label class="block text-sm font-bold text-blue-900 mb-1">Usuario de Acceso</label><input type="text" id="input-usuario-username" placeholder="jperez" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-blue-600 bg-blue-50"></div><div><label class="block text-sm font-bold text-blue-900 mb-1">Contraseña</label><input type="text" id="input-usuario-pass" placeholder="Clave segura..." class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-blue-600 bg-blue-50"></div></div><div class="flex justify-end gap-3 mt-6"><button onclick="cerrarModal('modal-usuario')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100 transition">Cancelar</button><button onclick="guardarUsuarioAdminFirebase()" class="px-6 py-2 bg-gray-800 text-white font-bold rounded shadow-md hover:bg-gray-900 transition">Guardar Usuario</button></div></div></div>
+    <div id="modal-usuario" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center"><div class="bg-white p-6 rounded-lg shadow-2xl max-w-lg w-full mx-4 border-t-4 border-gray-800"><h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2" id="titulo-modal-usuario">Registrar Nuevo Usuario</h3><input type="hidden" id="input-usuario-id"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="md:col-span-2"><label class="block text-sm font-bold text-gray-700 mb-1">Nombre Completo del Staff</label><input type="text" id="input-usuario-nombre" placeholder="Ej: Dr. Juan Pérez" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Rol en el Sistema</label><select id="input-usuario-rol" onchange="toggleCamposMedico()" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"><option value="Administrativo">Administrativo (Recepción)</option><option value="Médico">Médico Especialista</option><option value="Administración">Administración General</option></select></div><div id="div-usuario-matricula" class="hidden"><label class="block text-sm font-bold text-teal-700 mb-1">Nº Matrícula Provincial</label><input type="text" id="input-usuario-matricula" placeholder="MP: 12345" class="border border-teal-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-teal-600 bg-teal-50"></div><div id="div-usuario-especialidad" class="hidden md:col-span-2"><label class="block text-sm font-bold text-teal-700 mb-1">Especialidad Médica</label><select id="input-usuario-especialidad" class="border border-teal-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-teal-600 bg-teal-50"><option value="clinica">Clínica Médica (Adultos)</option><option value="cardiologia">Cardiología (Corazón)</option><option value="pediatria">Pediatría (Niños y adolescentes)</option><option value="dermatologia">Dermatología (Piel)</option><option value="endocrinologia">Endocrinología (Hormonas y diabetes)</option><option value="gastroenterologia">Gastroenterología (Aparato digestivo)</option><option value="infectologia">Infectología (Infecciones)</option><option value="neurologia">Neurología (Cerebro y sistema nervioso)</option><option value="nefrologia">Nefrología (Riñones)</option><option value="neumonologia">Neumonología (Pulmones)</option><option value="geriatria">Geriatría (Adultos mayores)</option><option value="psiquiatria">Psiquiatría (Salud mental)</option><option value="cirugia_general">Cirugía General</option><option value="cirugia_cardiovascular">Cirugía Cardiovascular</option><option value="cirugia_plastica">Cirugía Plástica y Reparadora</option><option value="traumatologia">Traumatología y Ortopedia</option><option value="urologia">Urología</option><option value="neurocirugia">Neurocirugía</option><option value="otorrinolaringologia">Otorrinolaringología (Oídos, nariz, garganta)</option><option value="oftalmologia">Oftalmología (Ojos)</option><option value="ginecologia">Ginecología y Obstetricia</option><option value="diagnostico_imagenes">Diagnóstico por Imágenes</option><option value="anatomia_patologica">Anatomía Patológica</option><option value="laboratorio">Laboratorio de Análisis Clínicos</option><option value="terapia_intensiva">Terapia Intensiva (UTI)</option><option value="rehabilitacion">Medicina Física y Rehabilitación</option></select></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Teléfono de Contacto</label><input type="tel" id="input-usuario-tel" placeholder="2604..." class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Correo Electrónico</label><input type="email" id="input-usuario-correo" placeholder="@hospital.gov.ar" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"></div><div class="md:col-span-2 mt-2"><hr class="border-gray-200"></div><div><label class="block text-sm font-bold text-blue-900 mb-1">Usuario de Acceso</label><input type="text" id="input-usuario-username" placeholder="jperez" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-blue-600 bg-blue-50"></div><div><label class="block text-sm font-bold text-blue-900 mb-1">Contraseña</label><input type="text" id="input-usuario-pass" placeholder="Clave segura..." class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-blue-600 bg-blue-50"></div></div><div class="flex justify-end gap-3 mt-6"><button onclick="cerrarModal('modal-usuario')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100 transition">Cancelar</button><button onclick="guardarUsuarioAdminFirebase()" class="px-6 py-2 bg-gray-800 text-white font-bold rounded shadow-md hover:bg-gray-900 transition">Guardar Usuario</button></div></div></div>
     
     <div id="modal-agendar-medico" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center"><div class="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4 border-t-4 border-teal-700"><h3 class="text-xl font-bold text-teal-900 mb-2">Programar Próximo Control</h3><p class="text-sm text-gray-700 mb-4">Paciente activo en consulta</p><div class="space-y-4"><div><label class="block text-sm font-bold text-gray-700 mb-1">Fecha de la próxima visita</label><input type="date" class="w-full border border-gray-300 rounded p-2 bg-white outline-none focus:ring-2 focus:ring-teal-600"></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Horario del turno</label><select class="w-full border border-gray-300 rounded p-2 bg-white outline-none focus:ring-2 focus:ring-teal-600"><option value="paciente_define" class="font-bold text-teal-700">-- A definir por el paciente --</option><option value="07:00">07:00</option><option value="07:15">07:15</option><option value="07:30">07:30</option><option value="07:45">07:45</option><option value="08:00">08:00</option></select></div></div><div class="flex justify-end gap-3 mt-6"><button onclick="cerrarModal('modal-agendar-medico')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100 transition">Cancelar</button><button onclick="cerrarModal('modal-agendar-medico'); alert('Próxima consulta registrada correctamente.');" class="px-4 py-2 bg-teal-800 text-white font-bold rounded hover:bg-teal-900 shadow transition">Agendar</button></div></div></div>
 
@@ -479,6 +485,7 @@
         let modulacionPorMedico = {}; 
         let datosMetricasCache = []; 
 
+        // MEGA DICCIONARIO DE MEDICOS (Cubre todas las especialidades)
         const medicosPorDefecto = [
             { nombre: 'Dr. Roberto Gómez', especialidad: 'clinica', username: 'rgomez', password: '123' },
             { nombre: 'Dra. Silvia Fernández', especialidad: 'clinica', username: 'sfernandez', password: '123' },
@@ -492,16 +499,60 @@
             { nombre: 'Dra. Mariana Vega', especialidad: 'infectologia', username: 'mvega', password: '123' },
             { nombre: 'Dr. Pablo Herrera', especialidad: 'neurologia', username: 'pherrera', password: '123' },
             { nombre: 'Dra. Claudia Ortiz', especialidad: 'nefrologia', username: 'cortiz', password: '123' },
+            { nombre: 'Dr. Jorge Medina', especialidad: 'neumonologia', username: 'jmedina', password: '123' },
+            { nombre: 'Dra. Susana Paz', especialidad: 'geriatria', username: 'spaz', password: '123' },
+            { nombre: 'Dr. Ricardo Luna', especialidad: 'psiquiatria', username: 'rluna', password: '123' },
             { nombre: 'Dr. Guillermo Acosta', especialidad: 'cirugia_general', username: 'gacosta', password: '123' },
+            { nombre: 'Dra. Sofía Ríos', especialidad: 'cirugia_general', username: 'srios', password: '123' },
+            { nombre: 'Dr. Héctor Farias', especialidad: 'cirugia_cardiovascular', username: 'hfarias', password: '123' },
+            { nombre: 'Dra. Carolina Gil', especialidad: 'cirugia_plastica', username: 'cgil', password: '123' },
             { nombre: 'Dr. Alejandro Vera', especialidad: 'traumatologia', username: 'avera', password: '123' },
-            { nombre: 'Dra. Mónica López', especialidad: 'ginecologia', username: 'mlopez', password: '123' }
+            { nombre: 'Dr. Tomás Cruz', especialidad: 'traumatologia', username: 'tcruz', password: '123' },
+            { nombre: 'Dr. Fernando Sosa', especialidad: 'urologia', username: 'fsosa', password: '123' },
+            { nombre: 'Dra. Beatriz Mora', especialidad: 'neurocirugia', username: 'bmora', password: '123' },
+            { nombre: 'Dr. Andrés Pino', especialidad: 'otorrinolaringologia', username: 'apino', password: '123' },
+            { nombre: 'Dra. Natalia Rey', especialidad: 'oftalmologia', username: 'nrey', password: '123' },
+            { nombre: 'Dra. Mónica López', especialidad: 'ginecologia', username: 'mlopez', password: '123' },
+            { nombre: 'Dr. Carlos Imagen', especialidad: 'diagnostico_imagenes', username: 'cimagen', password: '123' },
+            { nombre: 'Dra. Elena Lab', especialidad: 'anatomia_patologica', username: 'elab', password: '123' },
+            { nombre: 'Dr. Luis Sangre', especialidad: 'laboratorio', username: 'lsangre', password: '123' },
+            { nombre: 'Dra. UTI Jefe', especialidad: 'terapia_intensiva', username: 'ujefe', password: '123' },
+            { nombre: 'Lic. Marcos Peña', especialidad: 'rehabilitacion', username: 'mpena', password: '123' }
         ];
+
+        // FUNCIÓN SECRETA PARA EL DESARROLLADOR: BORRAR Y RECARGAR TODO
+        async function forzarReseedDB() {
+            if(!confirm("⚠️ ATENCIÓN: Esto borrará TODOS los usuarios actuales y cargará la nueva lista de 30+ médicos en Firebase. ¿Continuar?")) return;
+            try {
+                const { collection, getDocs, deleteDoc, doc, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                const snap = await getDocs(collection(window.db, "usuarios"));
+                
+                // Borrar viejos
+                const deletePromises = [];
+                snap.forEach(d => deletePromises.push(deleteDoc(doc(window.db, "usuarios", d.id))));
+                await Promise.all(deletePromises);
+
+                // Cargar nuevos
+                const promesas = medicosPorDefecto.map(medico => {
+                    return addDoc(collection(window.db, "usuarios"), {
+                        nombre: medico.nombre, rol: "Médico", username: medico.username, password: medico.password,
+                        tel: "2604000000", correo: medico.username + "@hospital.gov.ar", matricula: Math.floor(Math.random() * 10000) + 1000,
+                        especialidad: medico.especialidad, timestamp: new Date()
+                    });
+                });
+                promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Admin Sistema", rol: "Administración", username: "admin", password: "123", tel: "", correo: "", matricula: "", especialidad: "", timestamp: new Date() }));
+                promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Recepción Turnos", rol: "Administrativo", username: "recepcion", password: "123", tel: "", correo: "", matricula: "", especialidad: "", timestamp: new Date() }));
+                
+                await Promise.all(promesas);
+                alert("Base de datos reiniciada con éxito con TODOS los especialistas.");
+                window.location.reload();
+            } catch (e) { console.error(e); alert("Error al reiniciar BD."); }
+        }
 
         async function verificarYCargarMedicosPorDefecto() {
             try {
                 const { collection, getDocs, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 const snap = await getDocs(collection(window.db, "usuarios"));
-                
                 if (snap.empty) {
                     const promesas = medicosPorDefecto.map(medico => {
                         return addDoc(collection(window.db, "usuarios"), {
@@ -552,6 +603,7 @@
         async function iniciarCargaDeDatos() {
             await verificarYCargarMedicosPorDefecto(); await cargarConfiguracionModulacion();
             if (document.getElementById('view-admin').classList.contains('active')) cargarUsuariosAdmin();
+            if (document.getElementById('view-public').classList.contains('active')) actualizarMedicosPublico();
         }
 
         function cambiarTabAdmin(tabId) {
@@ -585,7 +637,6 @@
             } catch(e) { alert("Error al guardar."); }
         }
 
-        // --- SISTEMA DE MÉTRICAS CON SHEETJS EXPORT ---
         let segmentoMetricasActual = 'todos';
 
         async function cargarMetricas(segmento) {
@@ -648,25 +699,16 @@
             document.getElementById('rendimiento-detalle-contenido').innerHTML = html; window.datosMetricasIndividualActivo = d; abrirModal('modal-rendimiento-detalle');
         }
 
-        // FUNCIONES DE EXPORTACIÓN CON SHEETJS (.xlsx)
         function descargarReporteMetricas() {
             if(datosMetricasCache.length === 0) { alert("No hay datos para exportar."); return; }
-            let dataExcel = datosMetricasCache.map(d => ({
-                "Nombre del Profesional": d.nombre, "Rol": d.rol, "Total Turnos / Acciones": d.totalTurnos, "Completados / Atendidos": d.atendidos, "Cancelados": d.cancelados, "Ausentes": d.ausentes
-            }));
-            let ws = XLSX.utils.json_to_sheet(dataExcel);
-            let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Rendimiento");
-            XLSX.writeFile(wb, `Reporte_Rendimiento_${segmentoMetricasActual}.xlsx`);
+            let dataExcel = datosMetricasCache.map(d => ({ "Nombre del Profesional": d.nombre, "Rol": d.rol, "Total Turnos / Acciones": d.totalTurnos, "Completados / Atendidos": d.atendidos, "Cancelados": d.cancelados, "Ausentes": d.ausentes }));
+            let ws = XLSX.utils.json_to_sheet(dataExcel); let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Rendimiento"); XLSX.writeFile(wb, `Reporte_Rendimiento_${segmentoMetricasActual}.xlsx`);
         }
 
         function descargarReporteMetricasIndividual() {
             const d = window.datosMetricasIndividualActivo; if(!d) return;
-            let dataExcel = [
-                ["Concepto", "Valor"], ["Profesional", d.nombre], ["Rol", d.rol], ["Total Agendados/Acciones", d.totalTurnos], ["Atendidos/Exitosos", d.atendidos], ["Ausentes", d.ausentes], ["Cancelados", d.cancelados]
-            ];
-            let ws = XLSX.utils.aoa_to_sheet(dataExcel);
-            let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Individual");
-            XLSX.writeFile(wb, `Reporte_Individual_${d.nombre.replace(/ /g, '_')}.xlsx`);
+            let dataExcel = [ ["Concepto", "Valor"], ["Profesional", d.nombre], ["Rol", d.rol], ["Total Agendados/Acciones", d.totalTurnos], ["Atendidos/Exitosos", d.atendidos], ["Ausentes", d.ausentes], ["Cancelados", d.cancelados] ];
+            let ws = XLSX.utils.aoa_to_sheet(dataExcel); let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Individual"); XLSX.writeFile(wb, `Reporte_Individual_${d.nombre.replace(/ /g, '_')}.xlsx`);
         }
 
         async function descargarExcelRecepcion() {
@@ -676,33 +718,53 @@
                 const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", fechaRecepcionSeleccionada)));
                 let turnos = []; snap.forEach((doc) => { if (doc.data().medico === medicoSeleccionadoRecepcion) turnos.push(doc.data()); });
                 turnos.sort((a, b) => a.horario.localeCompare(b.horario));
-                
-                let dataExcel = turnos.map(t => ({
-                    "Hora": t.horario, "Paciente": t.pacienteNombre, "DNI": t.pacienteDni, "Celular": t.pacienteCelular, "Estado": t.estado, "Canal": t.estado.includes("Web") ? "Web" : "Presencial"
-                }));
-                let ws = XLSX.utils.json_to_sheet(dataExcel);
-                let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Agenda");
-                XLSX.writeFile(wb, `Agenda_${medicoSeleccionadoRecepcion}_${fechaRecepcionSeleccionada}.xlsx`);
+                let dataExcel = turnos.map(t => ({ "Hora": t.horario, "Paciente": t.pacienteNombre, "DNI": t.pacienteDni, "Celular": t.pacienteCelular, "Estado": t.estado, "Canal": t.estado.includes("Web") ? "Web" : "Presencial" }));
+                let ws = XLSX.utils.json_to_sheet(dataExcel); let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Agenda"); XLSX.writeFile(wb, `Agenda_${medicoSeleccionadoRecepcion}_${fechaRecepcionSeleccionada}.xlsx`);
             } catch (error) { console.error(error); alert("Error al exportar."); } 
         }
 
-        // --- FUNCIONES RESTANTES ---
         function actualizarMedicosPublico() { const esp = document.getElementById('select-especialidad').value; const selectMed = document.getElementById('select-medico'); selectMed.innerHTML = ''; if (!esp) { selectMed.disabled = true; selectMed.className = "w-full border rounded p-3 bg-gray-100 text-gray-500 outline-none"; selectMed.innerHTML = '<option>Primero seleccione especialidad</option>'; generarHorariosPublicos(); return; } selectMed.disabled = false; selectMed.className = "w-full border rounded p-3 bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none"; if (bdMedicosDinamica[esp] && bdMedicosDinamica[esp].length > 0) { bdMedicosDinamica[esp].sort().forEach(m => selectMed.innerHTML += `<option value="${m}">${m}</option>`); } else { selectMed.innerHTML = '<option value="">No hay profesionales registrados</option>'; } generarHorariosPublicos(); }
         function validarDiaHabil(input) { if (!input.value) return; const f = new Date(input.value + 'T12:00:00'); if (f.getDay() === 0 || f.getDay() === 6) { alert("Solo Lunes a Viernes."); input.value = ""; } }
+        
         async function generarHorariosPublicos() { const input = document.getElementById('input-fecha-paciente').value; const medico = document.getElementById('select-medico').value; const container = document.getElementById('horarios-publicos'); if(!input || !medico || medico.includes("Primero") || medico.includes("No hay")) { container.innerHTML = '<p class="text-sm text-gray-500 col-span-3">Seleccione Profesional y Fecha.</p>'; return; } container.innerHTML = '<p class="text-sm text-blue-600 font-bold col-span-3 animate-pulse">Consultando disponibilidad en vivo...</p>'; let turnosOcupados = {}; try { const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"); const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", input))); snap.forEach((doc) => { const data = doc.data(); if (data.medico === medico && !data.estado.includes("Cancelado") && data.estado !== "Ausente") { turnosOcupados[data.horario] = true; } }); } catch (error) {} const ahora = new Date(); const esHoy = (input === (ahora.getFullYear() + "-" + String(ahora.getMonth() + 1).padStart(2, '0') + "-" + String(ahora.getDate()).padStart(2, '0'))); const minActuales = ahora.getHours() * 60 + ahora.getMinutes(); let duracionActual = modulacionPorMedico[medico] ? modulacionPorMedico[medico] : duracionTurnoGlobal; let html = ''; let minBucle = 7 * 60; const finBucle = 12 * 60 + 30; let esCanalWeb = true; while (minBucle <= finBucle) { let h = Math.floor(minBucle / 60); let m = minBucle % 60; let hsStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`; if (esCanalWeb) { if (turnosOcupados[hsStr]) html += `<button type="button" class="bg-gray-100 text-gray-400 font-bold rounded p-2 border cursor-not-allowed" disabled>${hsStr} (Ocupado)</button>`; else if (esHoy && (minBucle - minActuales) < 60) html += `<button type="button" class="bg-red-50 text-red-400 font-bold rounded p-2 border border-red-200 cursor-not-allowed" disabled>${hsStr} (Cerrado)</button>`; else html += `<button type="button" onclick="seleccionarHorario(this)" class="btn-horario bg-white border border-blue-800 text-blue-900 font-bold rounded p-2 hover:bg-blue-50 shadow-sm transition">${hsStr}</button>`; } esCanalWeb = !esCanalWeb; minBucle += parseInt(duracionActual); } container.innerHTML = html || '<p class="text-sm text-gray-500 col-span-3">No hay turnos web disponibles.</p>'; }
         function seleccionarHorario(btnClickeado) { document.querySelectorAll('.btn-horario').forEach(btn => { btn.classList.remove('bg-blue-800', 'text-white'); btn.classList.add('bg-white', 'text-blue-900'); }); btnClickeado.classList.remove('bg-white', 'text-blue-900'); btnClickeado.classList.add('bg-blue-800', 'text-white'); }
         async function confirmarTurnoFirebase() { const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"); const esp = document.getElementById('select-especialidad').value; const med = document.getElementById('select-medico').value; const fec = document.getElementById('input-fecha-paciente').value; const btn = document.querySelector('.btn-horario.bg-blue-800'); const hor = btn ? btn.innerText.replace(' (Ocupado)', '').replace(' (Cerrado)', '').trim() : ''; const nom = document.getElementById('paciente-nombre').value.trim(); const dni = document.getElementById('paciente-dni').value.trim(); const cel = document.getElementById('paciente-celular').value.trim(); const email = document.getElementById('paciente-email').value.trim(); if (!esp || !med || !fec || !hor) { alert("Seleccione Especialidad, Profesional, Fecha y Horario."); return; } if (!nom || !dni || !cel) { alert("Nombre, DNI y Celular obligatorios."); return; } if (!/^[0-9]{7,8}$/.test(dni)) { alert("DNI inválido."); return; } try { await addDoc(collection(window.db, "turnos"), { especialidad: esp, medico: med, fecha: fec, horario: hor, pacienteNombre: nom, pacienteDni: dni, pacienteCelular: cel, pacienteEmail: email, estado: "Reservado Web", timestamp: new Date() }); const msj = `Estimado/a ${nom}, su turno con el/la ${med} el ${fec} a las ${hor} hs está confirmado.`; if (email && confirm(`¡Turno guardado!\n\n${msj}\n\n¿Enviar confirmación por email?`)) window.open(`mailto:${email}?subject=Confirmación Turno&body=${encodeURIComponent(msj)}`); else alert("¡Turno guardado exitosamente!"); document.getElementById('paciente-nombre').value = ''; document.getElementById('paciente-dni').value = ''; document.getElementById('paciente-celular').value = ''; document.getElementById('paciente-email').value = ''; document.getElementById('input-fecha-paciente').value = ''; document.getElementById('select-especialidad').value = ''; document.getElementById('horarios-publicos').innerHTML = '<p class="text-sm text-gray-500 col-span-3">Seleccione una fecha.</p>'; document.getElementById('select-medico').innerHTML = '<option>Primero seleccione especialidad</option>'; document.getElementById('select-medico').disabled = true; } catch (error) { alert("Error al registrar."); } }
         async function buscarTurnosPaciente() { const dni = document.getElementById('input-buscar-dni').value.trim(); const res = document.getElementById('resultado-turnos-paciente'); if (!dni) { alert("Ingrese DNI."); return; } try { const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"); const snap = await getDocs(query(collection(window.db, "turnos"), where("pacienteDni", "==", dni))); let html = ''; if (snap.empty) { html = `<p class="text-sm text-red-600 font-semibold text-center">No hay turnos activos.</p>`; } else { snap.forEach((doc) => { const t = doc.data(); const cancelado = t.estado.includes("Cancelado"); const badge = cancelado ? `<span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${t.estado}</span>` : ''; const btn = cancelado || t.estado==="Atendido" || t.estado==="Ausente" ? '' : `<button onclick="cancelarTurnoFirebase('${doc.id}')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50">Cancelar</button>`; html += `<div class="bg-gray-50 border p-3 rounded flex justify-between items-center mb-2"><div><p class="font-bold text-sm">${t.especialidad} - ${t.medico}</p><p class="text-xs text-gray-600">${t.fecha} - ${t.horario} hs ${badge}</p></div>${btn}</div>`; }); } res.innerHTML = html; res.classList.remove('hidden'); } catch (error) { alert("Error de base de datos."); } }
         async function cancelarTurnoFirebase(id) { if (!confirm("¿Cancelar este turno?")) return; try { const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"); await deleteDoc(doc(window.db, "turnos", id)); alert("Turno cancelado."); buscarTurnosPaciente(); } catch (error) { alert("No se pudo cancelar."); } }
+
+        function actualizarMedicosRecepcion() { const esp = document.getElementById('reception-especialidad').value; const selectMed = document.getElementById('reception-medico'); selectMed.innerHTML = ''; if (!esp) { selectMed.disabled = true; selectMed.className = "w-full border border-gray-300 rounded p-2 bg-gray-100 text-gray-500 outline-none"; selectMed.innerHTML = '<option>Primero seleccione especialidad</option>'; return; } selectMed.disabled = false; selectMed.className = "w-full border border-gray-300 rounded p-2 bg-white text-gray-800 focus:ring-2 focus:ring-indigo-600 outline-none"; if (bdMedicosDinamica[esp] && bdMedicosDinamica[esp].length > 0) { bdMedicosDinamica[esp].sort().forEach(m => selectMed.innerHTML += `<option value="${m}">${m}</option>`); } else { selectMed.innerHTML = '<option value="">No hay profesionales registrados en esta área</option>'; } }
+
+        // --- NAVEGACIÓN Y SINCRONIZACIÓN DE INTERFAZ ---
+        function switchView(viewName) { 
+            document.querySelectorAll('.view').forEach(el => el.classList.remove('active')); 
+            document.getElementById('view-' + viewName).classList.add('active'); 
+            const btnLogout = document.getElementById('btn-logout'); 
+            if (viewName !== 'public' && viewName !== 'login') { 
+                btnLogout.classList.remove('hidden'); 
+                const sesionStr = localStorage.getItem("sesionHospitalActiva"); 
+                if (sesionStr) { btnLogout.innerText = `Cerrar Sesión (${JSON.parse(sesionStr).nombre})`; } 
+                else { btnLogout.innerText = "Cerrar Sesión"; } 
+            } else { btnLogout.classList.add('hidden'); } 
+            
+            // LA CORRECCIÓN DEL BUG: Sincronizar menús al entrar a las vistas
+            if (viewName === 'reception') {
+                actualizarMedicosRecepcion(); 
+                if (fechaRecepcionSeleccionada) generarAgendaRecepcion(); 
+            }
+            if (viewName === 'public') actualizarMedicosPublico();
+            if (viewName === 'doctor') cargarAgendaMedico(); 
+            if (viewName === 'admin') cargarUsuariosAdmin(); 
+        }
+
+        // Resto de utilidades
         function toggleCamposMedico() { const rol = document.getElementById('input-usuario-rol').value; const divMatricula = document.getElementById('div-usuario-matricula'); const divEspecialidad = document.getElementById('div-usuario-especialidad'); if (rol === 'Médico') { divMatricula.classList.remove('hidden'); divEspecialidad.classList.remove('hidden'); } else { divMatricula.classList.add('hidden'); divEspecialidad.classList.add('hidden'); document.getElementById('input-usuario-matricula').value = ''; document.getElementById('input-usuario-especialidad').value = 'clinica'; } }
         function abrirModalUsuarioNulo() { document.getElementById('titulo-modal-usuario').innerText = "Registrar Nuevo Usuario"; document.getElementById('input-usuario-id').value = ""; document.getElementById('input-usuario-nombre').value = ""; document.getElementById('input-usuario-rol').value = "Administrativo"; document.getElementById('input-usuario-username').value = ""; document.getElementById('input-usuario-pass').value = ""; document.getElementById('input-usuario-tel').value = ""; document.getElementById('input-usuario-correo').value = ""; document.getElementById('input-usuario-matricula').value = ""; document.getElementById('input-usuario-especialidad').value = "clinica"; toggleCamposMedico(); abrirModal('modal-usuario'); }
         async function cargarUsuariosAdmin() { const tbody = document.getElementById('admin-users-tbody'); if(!tbody) return; try { const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"); const snap = await getDocs(collection(window.db, "usuarios")); let html = ''; const arr = []; snap.forEach(doc => { arr.push({ id: doc.id, ...doc.data() }); }); arr.sort((a, b) => { if(a.rol < b.rol) return -1; if(a.rol > b.rol) return 1; return a.nombre.localeCompare(b.nombre); }); arr.forEach(u => { let color = u.rol === 'Médico' ? 'text-teal-700' : (u.rol === 'Administración' ? 'text-gray-800' : 'text-indigo-700'); const j = encodeURIComponent(JSON.stringify(u)); html += `<tr class="border-b hover:bg-gray-50 bg-white"><td class="p-3"><p class="font-bold text-gray-800">${u.nombre}</p><p class="text-xs text-gray-500">${u.correo || 'Sin correo'} | ${u.tel || 'Sin teléfono'}</p></td><td class="p-3 font-bold ${color}">${u.rol} ${u.matricula ? `<span class="text-xs text-gray-400 block font-normal">MP: ${u.matricula} (${u.especialidad})</span>` : ''}</td><td class="p-3 font-mono text-sm text-gray-600">${u.username}</td><td class="p-3 text-center"><button onclick="editarUsuarioAdmin('${j}')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1 rounded hover:bg-gray-200 font-bold text-xs transition">Editar / Clave</button> <button onclick="eliminarUsuarioAdmin('${u.id}')" class="text-red-600 hover:text-red-800 font-bold text-xs ml-2 transition">Borrar</button></td></tr>`; }); tbody.innerHTML = html || '<tr><td colspan="4" class="p-4 text-center text-gray-500">No hay usuarios registrados.</td></tr>'; } catch (error) { tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500">Error al conectar.</td></tr>'; } }
         function editarUsuarioAdmin(userJSONEncoded) { const u = JSON.parse(decodeURIComponent(userJSONEncoded)); document.getElementById('titulo-modal-usuario').innerText = "Actualizar Datos de Usuario"; document.getElementById('input-usuario-id').value = u.id; document.getElementById('input-usuario-nombre').value = u.nombre || ''; document.getElementById('input-usuario-rol').value = u.rol || 'Administrativo'; document.getElementById('input-usuario-username').value = u.username || ''; document.getElementById('input-usuario-pass').value = u.password || ''; document.getElementById('input-usuario-tel').value = u.tel || ''; document.getElementById('input-usuario-correo').value = u.correo || ''; document.getElementById('input-usuario-matricula').value = u.matricula || ''; document.getElementById('input-usuario-especialidad').value = u.especialidad || 'clinica'; toggleCamposMedico(); abrirModal('modal-usuario'); }
         async function guardarUsuarioAdminFirebase() { const id = document.getElementById('input-usuario-id').value; const nom = document.getElementById('input-usuario-nombre').value.trim(); const rol = document.getElementById('input-usuario-rol').value; const user = document.getElementById('input-usuario-username').value.trim(); const pass = document.getElementById('input-usuario-pass').value.trim(); const tel = document.getElementById('input-usuario-tel').value.trim(); const cor = document.getElementById('input-usuario-correo').value.trim(); const mat = document.getElementById('input-usuario-matricula').value.trim(); const esp = document.getElementById('input-usuario-especialidad').value; if (!nom || !user || !pass) { alert("Nombre, Usuario y Contraseña son obligatorios."); return; } const payload = { nombre: nom, rol: rol, username: user, password: pass, tel: tel, correo: cor, matricula: rol === 'Médico' ? mat : '', especialidad: rol === 'Médico' ? esp : '', timestamp: new Date() }; try { const { collection, addDoc, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"); if (id) { await updateDoc(doc(window.db, "usuarios", id), payload); alert(`Datos actualizados.`); } else { await addDoc(collection(window.db, "usuarios"), payload); alert(`Usuario creado.`); } cerrarModal('modal-usuario'); cargarUsuariosAdmin(); cargarEspecialistasFirebase(); } catch (error) { alert("Error de base de datos."); } }
-        async function eliminarUsuarioAdmin(id) { if(!confirm("¿Está seguro de eliminar a este usuario del sistema?")) return; try { const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"); await deleteDoc(doc(window.db, "usuarios", id)); cargarUsuariosAdmin(); cargarEspecialistasFirebase(); } catch (error) {} }
+        async function eliminarUsuarioAdmin(id) { if(!confirm("¿Está seguro de eliminar a este usuario del sistema? Todo su historial de conexión se perderá.")) return; try { const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"); await deleteDoc(doc(window.db, "usuarios", id)); cargarUsuariosAdmin(); cargarEspecialistasFirebase(); } catch (error) {} }
         async function iniciarSesionReal() { const user = document.getElementById('login-user').value.trim(); const pass = document.getElementById('login-pass').value.trim(); if (!user || !pass) { alert("Ingrese usuario y contraseña."); return; } try { const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"); const snap = await getDocs(query(collection(window.db, "usuarios"), where("username", "==", user), where("password", "==", pass))); if (snap.empty) { alert("Credenciales incorrectas."); return; } let datosUser = {}; snap.forEach((doc) => { datosUser = doc.data(); }); localStorage.setItem("sesionHospitalActiva", JSON.stringify(datosUser)); document.getElementById('login-user').value = ''; document.getElementById('login-pass').value = ''; if (datosUser.rol === "Médico") switchView("doctor"); else if (datosUser.rol === "Administrativo" || datosUser.rol === "Recepción") switchView("reception"); else if (datosUser.rol === "Administración") switchView("admin"); } catch (error) { alert("Error de conexión."); } }
         function cerrarSesionReal() { localStorage.removeItem("sesionHospitalActiva"); switchView("public"); }
-        function switchView(viewName) { document.querySelectorAll('.view').forEach(el => el.classList.remove('active')); document.getElementById('view-' + viewName).classList.add('active'); const btnLogout = document.getElementById('btn-logout'); if (viewName !== 'public' && viewName !== 'login') { btnLogout.classList.remove('hidden'); const sesionStr = localStorage.getItem("sesionHospitalActiva"); if (sesionStr) { btnLogout.innerText = `Cerrar Sesión (${JSON.parse(sesionStr).nombre})`; } else { btnLogout.innerText = "Cerrar Sesión"; } } else { btnLogout.classList.add('hidden'); } if (viewName === 'reception' && fechaRecepcionSeleccionada) generarAgendaRecepcion(); if (viewName === 'doctor') cargarAgendaMedico(); if (viewName === 'admin') cargarUsuariosAdmin(); }
         function loginAs(role) { switchView(role); }
         function abrirModal(id) { document.getElementById(id).classList.add('active'); }
         function cerrarModal(id) { document.getElementById(id).classList.remove('active'); if (id === 'modal-cancelar-paciente') { document.getElementById('input-buscar-dni').value = ''; document.getElementById('resultado-turnos-paciente').innerHTML = ''; document.getElementById('resultado-turnos-paciente').classList.add('hidden'); } if (id === 'modal-ausencia-emergencia') { document.getElementById('motivo-ausencia').value = ''; document.getElementById('hora-desde-ausencia').value = ''; } }
