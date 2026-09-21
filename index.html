@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Librería SheetJS para exportar a Excel nativo (.xlsx) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Librería EmailJS (¡Fundamental para enviar los correos!) -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         .view { display: none; }
         .view.active { display: block; }
@@ -479,6 +481,33 @@
 
     <script>
         // ==========================================
+        // CONFIGURACIÓN DE EMAILJS
+        // ==========================================
+        const EMAILJS_PUBLIC_KEY = "eXBPLCSkZcKDBBz9h"; 
+        const EMAILJS_SERVICE_ID = "service_xitx594"; 
+        const EMAILJS_TEMPLATE_CONFIRMACION = "template_confirmacion"; 
+        const EMAILJS_TEMPLATE_CANCELACION = "template_cancelacion"; 
+
+        if(EMAILJS_PUBLIC_KEY) {
+            emailjs.init(EMAILJS_PUBLIC_KEY);
+        }
+
+        // Función reutilizable para enviar correos silenciosamente
+        function enviarCorreoNotificacion(templateId, templateParams) {
+            if (!templateParams.email_destino) {
+                console.log("No se envía correo: falta email del paciente.");
+                return;
+            }
+            
+            emailjs.send(EMAILJS_SERVICE_ID, templateId, templateParams)
+                .then(function() {
+                    console.log("¡Correo enviado con éxito a " + templateParams.email_destino + "!");
+                }, function(error) {
+                    console.error("Fallo al enviar el correo:", error);
+                });
+        }
+
+        // ==========================================
         // 1. VARIABLES GLOBALES
         // ==========================================
         let bdMedicosDinamica = {};
@@ -802,12 +831,17 @@
                 await addDoc(collection(window.db, "turnos"), {
                     especialidad: esp, medico: med, fecha: fec, horario: hor, pacienteNombre: nom, pacienteDni: dni, pacienteCelular: cel, pacienteEmail: email, estado: "Reservado Web", timestamp: new Date()
                 });
-                const msj = `Estimado/a ${nom}, su turno con el/la ${med} el ${fec} a las ${hor} hs está confirmado.`;
-                if (email && confirm(`¡Turno guardado!\n\n${msj}\n\n¿Enviar confirmación por email?`)) {
-                    window.open(`mailto:${email}?subject=Confirmación Turno&body=${encodeURIComponent(msj)}`);
-                } else { 
-                    alert("¡Turno guardado exitosamente!"); 
-                }
+                
+                enviarCorreoNotificacion(EMAILJS_TEMPLATE_CONFIRMACION, {
+                    nombre_paciente: nom,
+                    medico: med,
+                    especialidad: esp,
+                    fecha: fec,
+                    hora: hor,
+                    email_destino: email
+                });
+                
+                alert("¡Turno guardado exitosamente!"); 
                 
                 document.getElementById('paciente-nombre').value = ''; 
                 document.getElementById('paciente-dni').value = ''; 
@@ -850,7 +884,21 @@
         async function cancelarTurnoFirebase(id) {
             if (!confirm("¿Cancelar este turno?")) return;
             try {
-                const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                const { doc, getDoc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                
+                const docSnap = await getDoc(doc(window.db, "turnos", id));
+                if (docSnap.exists()) {
+                    const t = docSnap.data();
+                    enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
+                        nombre_paciente: t.pacienteNombre,
+                        medico: t.medico,
+                        especialidad: t.especialidad,
+                        fecha: t.fecha,
+                        hora: t.horario,
+                        email_destino: t.pacienteEmail
+                    });
+                }
+
                 await deleteDoc(doc(window.db, "turnos", id));
                 alert("Turno cancelado.");
                 buscarTurnosPaciente(); 
@@ -996,6 +1044,16 @@
                     pacienteNombre: nombre, pacienteDni: dni, pacienteCelular: celular, pacienteEmail: email,
                     estado: "Confirmado Presencial", timestamp: new Date()
                 });
+                
+                enviarCorreoNotificacion(EMAILJS_TEMPLATE_CONFIRMACION, {
+                    nombre_paciente: nombre,
+                    medico: medicoSeleccionadoRecepcion,
+                    especialidad: especialidadSeleccionadaRecepcion,
+                    fecha: fechaRecepcionSeleccionada,
+                    hora: horaSeleccionadaRecepcion,
+                    email_destino: email
+                });
+
                 alert("¡Turno asignado!"); 
                 cerrarModal('modal-dar-turno'); 
                 generarAgendaRecepcion();
@@ -1005,7 +1063,21 @@
         async function cancelarTurnoRecepcion(idDoc) {
             if (!confirm("¿Desea cancelar este turno y liberar el horario?")) return;
             try {
-                const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                const { doc, getDoc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                
+                const docSnap = await getDoc(doc(window.db, "turnos", idDoc));
+                if (docSnap.exists()) {
+                    const t = docSnap.data();
+                    enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
+                        nombre_paciente: t.pacienteNombre,
+                        medico: t.medico,
+                        especialidad: t.especialidad,
+                        fecha: t.fecha,
+                        hora: t.horario,
+                        email_destino: t.pacienteEmail
+                    });
+                }
+
                 await deleteDoc(doc(window.db, "turnos", idDoc));
                 alert("Turno cancelado."); 
                 generarAgendaRecepcion();
@@ -1024,7 +1096,6 @@
                 const { collection, query, where, getDocs, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", fechaRecepcionSeleccionada)));
 
-                let afectadosEmails = []; 
                 let turnosCancelados = 0; 
                 const promesas = [];
 
@@ -1035,18 +1106,21 @@
                         if (cancelar) {
                             promesas.push(updateDoc(doc(window.db, "turnos", documento.id), { estado: "Cancelado: " + motivo }));
                             turnosCancelados++;
-                            if (t.pacienteEmail) afectadosEmails.push(t.pacienteEmail);
+                            
+                            enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
+                                nombre_paciente: t.pacienteNombre,
+                                medico: t.medico,
+                                especialidad: t.especialidad,
+                                fecha: t.fecha,
+                                hora: t.horario,
+                                email_destino: t.pacienteEmail
+                            });
                         }
                     }
                 });
 
                 await Promise.all(promesas);
-                alert(`Se han bloqueado ${turnosCancelados} turnos de la agenda.`);
-                
-                if (afectadosEmails.length > 0 && confirm(`¿Desea enviar aviso por email a los ${afectadosEmails.length} afectados?`)) {
-                    const msj = `Estimado paciente, por motivos de fuerza mayor (${motivo}), su turno con el/la ${medicoSeleccionadoRecepcion} ha sido cancelado. Comuníquese para reprogramar.`;
-                    window.open(`mailto:?bcc=${afectadosEmails.join(',')}&subject=Cancelación Turno&body=${encodeURIComponent(msj)}`);
-                }
+                alert(`Se han bloqueado y notificado a los pacientes de ${turnosCancelados} turnos de la agenda.`);
 
                 cerrarModal('modal-ausencia-emergencia'); 
                 generarAgendaRecepcion(); 
