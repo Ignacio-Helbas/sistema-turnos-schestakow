@@ -1,1 +1,35 @@
+/* Clases para cambiar entre pantallas (Single Page Application) */
+.view { display: none; }
+.view.active { display: block; }
 
+/* Clases para mostrar/ocultar los modales flotantes */
+.modal { display: none; }
+.modal.active { display: flex; }
+
+/* Efectos visuales para el historial clínico (acordeón) */
+.colapsable-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+.colapsable-content.abierto { max-height: 500px; overflow-y: auto; }
+
+/* Barra de scroll personalizada para que no se vea la nativa de Windows */
+.custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+
+/* Estilos de las pestañas en el panel de administrador */
+.admin-tab { cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.admin-tab.active { border-bottom-color: #1f2937; color: #1f2937; font-weight: bold; }
+
+/* Animación de "rebote" (pop) para los iconos de los modales (Éxito, Error, Alerta) */
+@keyframes scaleCheck {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.animate-check { animation: scaleCheck 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+/* Animación para que los paneles entren flotando desde abajo suavemente */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+.animate-fade-in-up-fast { animation: fadeInUp 0.3s ease-out forwards; }
