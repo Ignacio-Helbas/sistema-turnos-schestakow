@@ -154,7 +154,7 @@
                             <button onclick="loginAs('reception')" class="bg-indigo-700 text-white py-2 rounded hover:bg-indigo-800 text-sm font-semibold transition shadow-sm">Rec.</button>
                             <button onclick="loginAs('doctor')" class="bg-teal-700 text-white py-2 rounded hover:bg-teal-800 text-sm font-semibold transition shadow-sm">Med.</button>
                             <button onclick="loginAs('admin')" class="bg-gray-800 text-white py-2 rounded hover:bg-gray-900 text-sm font-semibold transition shadow-sm">Admin</button>
-                            <!-- El botón RESET DB se oculta visualmente pero sigue activo en el código -->
+                            <!-- Botón RESET DB (Oculto visualmente pero funciona si se quita el 'hidden') -->
                             <button onclick="forzarReseedDB()" class="hidden bg-red-700 text-white py-2 rounded hover:bg-red-800 text-xs font-bold transition shadow-sm border border-red-900" title="Borrar y recargar base de datos">RESET DB</button>
                         </div>
                     </div>
@@ -885,7 +885,7 @@
             if (!/^[0-9]{7,8}$/.test(dni)) { alert("DNI inválido."); return; }
 
             const btnConfirmar = document.getElementById('btn-confirm-turno');
-            const textoOriginal = btnConfirmar.innerHTML;
+            const textoOriginal = btnConfirmar ? btnConfirmar.innerHTML : 'Confirmar Turno';
             if (btnConfirmar) {
                 btnConfirmar.disabled = true;
                 btnConfirmar.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Procesando...`;
