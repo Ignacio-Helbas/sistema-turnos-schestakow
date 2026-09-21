@@ -113,9 +113,9 @@
                     </div>
 
                     <div class="mt-6 space-y-3">
-                        <button type="button" onclick="confirmarTurnoFirebase()" class="w-full bg-blue-800 text-white text-lg font-bold py-3 rounded hover:bg-blue-900 shadow-md transition">Confirmar Turno</button>
-                        <button type="button" onclick="abrirModal('modal-cancelar-paciente')" class="w-full bg-white border-2 border-blue-800 text-blue-800 text-lg font-bold py-3 rounded hover:bg-blue-50 shadow-sm transition">Gestionar mis turnos</button>
-                    </div>
+    <button type="button" id="btn-confirmar-turno" onclick="confirmarTurnoFirebase()" class="w-full bg-blue-800 text-white text-lg font-bold py-3 rounded hover:bg-blue-900 shadow-md transition">Confirmar Turno</button>
+    <button type="button" onclick="abrirModal('modal-cancelar-paciente')" class="w-full bg-white border-2 border-blue-800 text-blue-800 text-lg font-bold py-3 rounded hover:bg-blue-50 shadow-sm transition">Gestionar mis turnos</button>
+</div>
                 </div>
             </div>
         </section>
@@ -811,8 +811,7 @@
             btnClickeado.classList.add('bg-blue-800', 'text-white');
         }
 
-        async function confirmarTurnoFirebase() {
-            const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+async function confirmarTurnoFirebase() {
             const esp = document.getElementById('select-especialidad').value;
             const med = document.getElementById('select-medico').value;
             const fec = document.getElementById('input-fecha-paciente').value;
@@ -827,7 +826,18 @@
             if (!nom || !dni || !cel) { alert("Nombre, DNI y Celular son obligatorios."); return; }
             if (!/^[0-9]{7,8}$/.test(dni)) { alert("DNI inválido."); return; }
 
+            // ==========================================
+            // BLOQUEO DEL BOTÓN: Prevención de doble clic
+            // ==========================================
+            const btnConfirmar = document.getElementById('btn-confirmar-turno');
+            if (btnConfirmar) {
+                btnConfirmar.disabled = true; // Desactiva el clic
+                btnConfirmar.innerText = "Procesando... ⏳"; // Cambia el texto
+                btnConfirmar.classList.add("opacity-50", "cursor-not-allowed"); // Lo pone semitransparente
+            }
+
             try {
+                const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 await addDoc(collection(window.db, "turnos"), {
                     especialidad: esp, medico: med, fecha: fec, horario: hor, pacienteNombre: nom, pacienteDni: dni, pacienteCelular: cel, pacienteEmail: email, estado: "Reservado Web", timestamp: new Date()
                 });
@@ -843,6 +853,7 @@
                 
                 alert("¡Turno guardado exitosamente!"); 
                 
+                // Limpieza del formulario
                 document.getElementById('paciente-nombre').value = ''; 
                 document.getElementById('paciente-dni').value = ''; 
                 document.getElementById('paciente-celular').value = ''; 
@@ -852,7 +863,20 @@
                 document.getElementById('horarios-publicos').innerHTML = '<p class="text-sm text-gray-500 col-span-3">Seleccione una fecha.</p>'; 
                 document.getElementById('select-medico').innerHTML = '<option>Primero seleccione especialidad</option>'; 
                 document.getElementById('select-medico').disabled = true;
-            } catch (error) { console.error(error); alert("Error al registrar."); }
+
+            } catch (error) { 
+                console.error(error); 
+                alert("Error al registrar."); 
+            } finally {
+                // ==========================================
+                // DESBLOQUEO DEL BOTÓN (Se ejecuta siempre)
+                // ==========================================
+                if (btnConfirmar) {
+                    btnConfirmar.disabled = false; // Vuelve a activar el clic
+                    btnConfirmar.innerText = "Confirmar Turno"; // Restaura el texto
+                    btnConfirmar.classList.remove("opacity-50", "cursor-not-allowed"); // Restaura el color
+                }
+            }
         }
 
         async function buscarTurnosPaciente() {
