@@ -1203,3 +1203,5 @@ window.toggleHistorial = toggleHistorial;
 window.simularAutocompletado = simularAutocompletado;
 window.toggleTimeSelector = toggleTimeSelector;
 window.forzarReseedDB = forzarReseedDB;
+// Arrancar el motor del sistema y buscar los datos en Firebase
+iniciarCargaDeDatos();
