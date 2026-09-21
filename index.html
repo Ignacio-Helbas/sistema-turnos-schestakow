@@ -154,7 +154,7 @@
                             <button onclick="loginAs('reception')" class="bg-indigo-700 text-white py-2 rounded hover:bg-indigo-800 text-sm font-semibold transition shadow-sm">Rec.</button>
                             <button onclick="loginAs('doctor')" class="bg-teal-700 text-white py-2 rounded hover:bg-teal-800 text-sm font-semibold transition shadow-sm">Med.</button>
                             <button onclick="loginAs('admin')" class="bg-gray-800 text-white py-2 rounded hover:bg-gray-900 text-sm font-semibold transition shadow-sm">Admin</button>
-                            <!-- El botón RESET DB se oculta visualmente pero sigue activo en el código por si lo necesitás (quitale el 'hidden' si querés verlo) -->
+                            <!-- El botón RESET DB se oculta visualmente pero sigue activo en el código -->
                             <button onclick="forzarReseedDB()" class="hidden bg-red-700 text-white py-2 rounded hover:bg-red-800 text-xs font-bold transition shadow-sm border border-red-900" title="Borrar y recargar base de datos">RESET DB</button>
                         </div>
                     </div>
@@ -437,6 +437,7 @@
     <!-- ==========================================
          MODALES
     =========================================== -->
+    
     <!-- MODAL DE ÉXITO PERSONALIZADO -->
     <div id="modal-exito" class="modal fixed inset-0 bg-black/60 z-[100] justify-center items-center">
         <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 border-t-8 border-green-500 text-center relative">
@@ -451,6 +452,27 @@
             <button onclick="cerrarModal('modal-exito')" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-green-700 shadow-lg transition-colors">
                 Excelente
             </button>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMACIÓN PERSONALIZADO -->
+    <div id="modal-confirmacion" class="modal fixed inset-0 bg-black/60 z-[100] justify-center items-center">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 border-t-8 border-red-500 text-center relative animate-fade-in-up-fast">
+            <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-red-100 mb-5">
+                <svg class="h-12 w-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 id="confirm-titulo" class="text-2xl font-extrabold text-gray-800 mb-2">¿Estás seguro?</h3>
+            <p id="confirm-mensaje" class="text-gray-600 mb-8 font-medium">Esta acción no se puede deshacer.</p>
+            <div class="flex justify-center gap-4">
+                <button id="btn-confirm-cancelar" class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-xl hover:bg-gray-300 transition-colors">
+                    Volver
+                </button>
+                <button id="btn-confirm-aceptar" class="w-full bg-red-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-red-700 shadow-lg transition-colors">
+                    Aceptar
+                </button>
+            </div>
         </div>
     </div>
 
@@ -488,9 +510,9 @@
     
     <div id="modal-ausencia-emergencia" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center"><div class="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4 border-t-4 border-red-700"><h3 class="text-xl font-bold text-red-800 mb-2">Declarar Ausencia / Emergencia</h3><p class="text-sm text-gray-700 mb-4">Se suspenderá la agenda del profesional seleccionado y se bloquearán los turnos afectados.</p><div class="space-y-4"><div><label class="block text-sm font-bold text-gray-700 mb-1">Alcance</label><select id="select-alcance-ausencia" onchange="toggleTimeSelector()" class="w-full border border-gray-300 rounded p-2 bg-white outline-none focus:ring-2 focus:ring-red-500"><option value="todo_dia">Cancelar toda la agenda del día</option><option value="desde_hora">Cancelar a partir de un horario específico</option></select></div><div id="div-hora-ausencia" class="hidden bg-gray-50 p-3 rounded border border-gray-300"><label class="block text-sm font-bold text-gray-800 mb-1">A partir de las:</label><input type="time" id="hora-desde-ausencia" class="w-full border border-gray-300 rounded p-2 outline-none focus:ring-2 focus:ring-red-500"></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Motivo / Causa</label><textarea id="motivo-ausencia" placeholder="Ej: Emergencia Médica en Quirófano" class="w-full border border-gray-300 rounded p-2 bg-white h-20 outline-none focus:ring-2 focus:ring-red-500"></textarea></div></div><div class="flex justify-end gap-3 mt-6"><button onclick="cerrarModal('modal-ausencia-emergencia')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100 transition">Cancelar</button><button onclick="ejecutarAusenciaEmergencia()" class="px-4 py-2 bg-red-700 text-white font-bold rounded shadow hover:bg-red-800 transition">Ejecutar Suspensión</button></div></div></div>
 
-    <div id="modal-usuario" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center"><div class="bg-white p-6 rounded-lg shadow-2xl max-w-lg w-full mx-4 border-t-4 border-gray-800"><h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2" id="titulo-modal-usuario">Registrar Nuevo Usuario</h3><input type="hidden" id="input-usuario-id"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="md:col-span-2"><label class="block text-sm font-bold text-gray-700 mb-1">Nombre Completo del Staff</label><input type="text" id="input-usuario-nombre" placeholder="Ej: Dr. Juan Pérez" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Rol en el Sistema</label><select id="input-usuario-rol" onchange="toggleCamposMedico()" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"><option value="Administrativo">Administrativo (Recepción)</option><option value="Médico">Médico Especialista</option><option value="Administración">Administración General</option></select></div><div id="div-usuario-matricula" class="hidden"><label class="block text-sm font-bold text-teal-700 mb-1">Nº Matrícula Provincial</label><input type="text" id="input-usuario-matricula" placeholder="MP: 12345" class="border border-teal-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-teal-600 bg-teal-50"></div><div id="div-usuario-especialidad" class="hidden md:col-span-2"><label class="block text-sm font-bold text-teal-700 mb-1">Especialidad Médica</label><select id="input-usuario-especialidad" class="border border-teal-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-teal-600 bg-teal-50"><option value="clinica">Clínica Médica (Adultos)</option><option value="cardiologia">Cardiología (Corazón)</option><option value="pediatria">Pediatría (Niños y adolescentes)</option><option value="dermatologia">Dermatología (Piel)</option><option value="endocrinologia">Endocrinología (Hormonas y diabetes)</option><option value="gastroenterologia">Gastroenterología (Aparato digestivo)</option><option value="infectologia">Infectología (Infecciones)</option><option value="neurologia">Neurología (Cerebro y sistema nervioso)</option><option value="nefrologia">Nefrología (Riñones)</option><option value="neumonologia">Neumonología (Pulmones)</option><option value="geriatria">Geriatría (Adultos mayores)</option><option value="psiquiatria">Psiquiatría (Salud mental)</option><option value="cirugia_general">Cirugía General</option><option value="cirugia_cardiovascular">Cirugía Cardiovascular</option><option value="cirugia_plastica">Cirugía Plástica y Reparadora</option><option value="traumatologia">Traumatología y Ortopedia</option><option value="urologia">Urología</option><option value="neurocirugia">Neurocirugía</option><option value="otorrinolaringologia">Otorrinolaringología (Oídos, nariz, garganta)</option><option value="oftalmologia">Oftalmología (Ojos)</option><option value="ginecologia">Ginecología y Obstetricia</option><option value="diagnostico_imagenes">Diagnóstico por Imágenes</option><option value="anatomia_patologica">Anatomía Patológica</option><option value="laboratorio">Laboratorio de Análisis Clínicos</option><option value="terapia_intensiva">Terapia Intensiva (UTI)</option><option value="rehabilitacion">Medicina Física y Rehabilitación</option></select></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Teléfono de Contacto</label><input type="tel" id="input-usuario-tel" placeholder="2604..." class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Correo Electrónico</label><input type="email" id="input-usuario-correo" placeholder="@hospital.gov.ar" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"></div><div class="md:col-span-2 mt-2"><hr class="border-gray-200"></div><div><label class="block text-sm font-bold text-blue-900 mb-1">Usuario de Acceso</label><input type="text" id="input-usuario-username" placeholder="jperez" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-blue-600 bg-blue-50"></div><div><label class="block text-sm font-bold text-blue-900 mb-1">Contraseña</label><input type="text" id="input-usuario-pass" placeholder="Clave segura..." class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-blue-600 bg-blue-50"></div></div><div class="flex justify-end gap-3 mt-6"><button onclick="cerrarModal('modal-usuario')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100 transition">Cancelar</button><button onclick="guardarUsuarioAdminFirebase()" class="px-6 py-2 bg-gray-800 text-white font-bold rounded shadow-md hover:bg-gray-900 transition">Guardar Usuario</button></div></div></div>
+    <div id="modal-usuario" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center"><div class="bg-white p-6 rounded-lg shadow-2xl max-w-lg w-full mx-4 border-t-4 border-gray-800"><h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2" id="titulo-modal-usuario">Registrar Nuevo Usuario</h3><input type="hidden" id="input-usuario-id"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="md:col-span-2"><label class="block text-sm font-bold text-gray-700 mb-1">Nombre Completo del Staff</label><input type="text" id="input-usuario-nombre" placeholder="Ej: Dr. Juan Pérez" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Rol en el Sistema</label><select id="input-usuario-rol" onchange="toggleCamposMedico()" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"><option value="Administrativo">Administrativo (Recepción)</option><option value="Médico">Médico Especialista</option><option value="Administración">Administración General</option></select></div><div id="div-usuario-matricula" class="hidden"><label class="block text-sm font-bold text-teal-700 mb-1">Nº Matrícula Provincial</label><input type="text" id="input-usuario-matricula" placeholder="MP: 12345" class="border border-teal-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-teal-600 bg-teal-50"></div><div id="div-usuario-especialidad" class="hidden md:col-span-2"><label class="block text-sm font-bold text-teal-700 mb-1">Especialidad Médica</label><select id="input-usuario-especialidad" class="border border-teal-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-teal-600 bg-teal-50"><option value="clinica">Clínica Médica (Adultos)</option><option value="cardiologia">Cardiología (Corazón)</option><option value="pediatria">Pediatría (Niños y adolescentes)</option><option value="dermatologia">Dermatología (Piel)</option><option value="endocrinologia">Endocrinología (Hormonas y diabetes)</option><option value="gastroenterologia">Gastroenterología (Aparato digestivo)</option><option value="infectologia">Infectología (Infecciones)</option><option value="neurologia">Neurología (Cerebro y sistema nervioso)</option><option value="nefrologia">Nefrología (Riñones)</option><option value="neumonologia">Neumonología (Pulmones)</option><option value="geriatria">Geriatría (Adultos mayores)</option><option value="psiquiatria">Psiquiatría (Salud mental)</option><option value="cirugia_general">Cirugía General</option><option value="cirugia_cardiovascular">Cirugía Cardiovascular</option><option value="cirugia_plastica">Cirugía Plástica y Reparadora</option><option value="traumatologia">Traumatología y Ortopedia</option><option value="urologia">Urología</option><option value="neurocirugia">Neurocirugía</option><option value="otorrinolaringologia">Otorrinolaringología (Oídos, nariz, garganta)</option><option value="oftalmologia">Oftalmología (Ojos)</option><option value="ginecologia">Ginecología y Obstetricia</option><option value="diagnostico_imagenes">Diagnóstico por Imágenes</option><option value="anatomia_patologica">Anatomía Patológica</option><option value="laboratorio">Laboratorio de Análisis Clínicos</option><option value="terapia_intensiva">Terapia Intensiva (UTI)</option><option value="rehabilitacion">Medicina Física y Rehabilitación</option></select></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Teléfono de Contacto</label><input type="tel" id="input-usuario-tel" placeholder="2604..." class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Correo Electrónico</label><input type="email" id="input-usuario-correo" placeholder="@hospital.gov.ar" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-gray-800"></div><div class="md:col-span-2 mt-2"><hr class="border-gray-200"></div><div><label class="block text-sm font-bold text-blue-900 mb-1">Usuario de Acceso</label><input type="text" id="input-usuario-username" placeholder="jperez" class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-blue-600 bg-blue-50"></div><div><label class="block text-sm font-bold text-blue-900 mb-1">Contraseña</label><input type="password" id="input-usuario-pass" placeholder="Clave segura..." class="border border-gray-300 rounded p-2 w-full outline-none focus:ring-2 focus:ring-blue-600 bg-blue-50"></div></div><div class="flex justify-end gap-3 mt-6"><button onclick="cerrarModal('modal-usuario')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100 transition">Cancelar</button><button onclick="guardarUsuarioAdminFirebase()" class="px-6 py-2 bg-gray-800 text-white font-bold rounded shadow-md hover:bg-gray-900 transition">Guardar Usuario</button></div></div></div>
     
-    <div id="modal-agendar-medico" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center"><div class="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4 border-t-4 border-teal-700"><h3 class="text-xl font-bold text-teal-900 mb-2">Programar Próximo Control</h3><p class="text-sm text-gray-700 mb-4">Paciente activo en consulta</p><div class="space-y-4"><div><label class="block text-sm font-bold text-gray-700 mb-1">Fecha de la próxima visita</label><input type="date" class="w-full border border-gray-300 rounded p-2 bg-white outline-none focus:ring-2 focus:ring-teal-600"></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Horario del turno</label><select class="w-full border border-gray-300 rounded p-2 bg-white outline-none focus:ring-2 focus:ring-teal-600"><option value="paciente_define" class="font-bold text-teal-700">-- A definir por el paciente --</option><option value="07:00">07:00</option><option value="07:15">07:15</option><option value="07:30">07:30</option><option value="07:45">07:45</option><option value="08:00">08:00</option></select></div></div><div class="flex justify-end gap-3 mt-6"><button onclick="cerrarModal('modal-agendar-medico')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100 transition">Cancelar</button><button onclick="cerrarModal('modal-agendar-medico'); alert('Próxima consulta registrada correctamente.');" class="px-4 py-2 bg-teal-800 text-white font-bold rounded hover:bg-teal-900 shadow transition">Agendar</button></div></div></div>
+    <div id="modal-agendar-medico" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center"><div class="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full mx-4 border-t-4 border-teal-700"><h3 class="text-xl font-bold text-teal-900 mb-2">Programar Próximo Control</h3><p class="text-sm text-gray-700 mb-4">Paciente activo en consulta</p><div class="space-y-4"><div><label class="block text-sm font-bold text-gray-700 mb-1">Fecha de la próxima visita</label><input type="date" class="w-full border border-gray-300 rounded p-2 bg-white outline-none focus:ring-2 focus:ring-teal-600"></div><div><label class="block text-sm font-bold text-gray-700 mb-1">Horario del turno</label><select class="w-full border border-gray-300 rounded p-2 bg-white outline-none focus:ring-2 focus:ring-teal-600"><option value="paciente_define" class="font-bold text-teal-700">-- A definir por el paciente --</option><option value="07:00">07:00</option><option value="07:15">07:15</option><option value="07:30">07:30</option><option value="07:45">07:45</option><option value="08:00">08:00</option></select></div></div><div class="flex justify-end gap-3 mt-6"><button onclick="cerrarModal('modal-agendar-medico')" class="px-4 py-2 border border-gray-300 rounded font-bold text-gray-700 hover:bg-gray-100 transition">Cancelar</button><button onclick="cerrarModal('modal-agendar-medico'); mostrarExito('Consulta Agendada', 'La próxima visita fue registrada correctamente en el sistema.');" class="px-4 py-2 bg-teal-800 text-white font-bold rounded hover:bg-teal-900 shadow transition">Agendar</button></div></div></div>
 
     <!-- ==========================================
          CONEXIÓN A FIREBASE Y LÓGICA JAVASCRIPT
@@ -586,7 +608,9 @@
         // 2. INICIALIZACIÓN Y CONFIGURACIÓN (SEEDING)
         // ==========================================
         async function forzarReseedDB() {
-            if(!confirm("⚠️ ATENCIÓN: Esto borrará TODOS los usuarios actuales y cargará la nueva lista de 30+ médicos en Firebase. ¿Continuar?")) return;
+            const confirmado = await pedirConfirmacion("⚠️ RESET DB", "Esto borrará TODOS los usuarios actuales y cargará la nueva lista por defecto en Firebase. ¿Continuar?", "Sí, formatear");
+            if (!confirmado) return;
+            
             try {
                 const { collection, getDocs, deleteDoc, doc, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 const snap = await getDocs(collection(window.db, "usuarios"));
@@ -606,8 +630,8 @@
                 promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Recepción Turnos", rol: "Administrativo", username: "recepcion", password: "123", tel: "", correo: "", matricula: "", especialidad: "", timestamp: new Date() }));
                 
                 await Promise.all(promesas);
-                alert("Base de datos reiniciada con éxito con TODOS los especialistas.");
-                window.location.reload();
+                mostrarExito("Base de Datos Reiniciada", "Se han cargado todos los especialistas por defecto.");
+                setTimeout(() => window.location.reload(), 2000);
             } catch (e) { console.error(e); alert("Error al reiniciar BD."); }
         }
 
@@ -788,7 +812,6 @@
                 container.innerHTML = '<p class="text-sm text-gray-500 col-span-3">Seleccione Profesional y Fecha.</p>'; 
                 return;
             }
-            // Agregamos animación de carga
             container.innerHTML = '<div class="col-span-3 flex justify-center py-4"><svg class="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><p class="text-sm text-blue-600 font-bold ml-2">Consultando disponibilidad...</p></div>';
 
             let turnosOcupados = {};
@@ -814,7 +837,7 @@
             let minBucle = 7 * 60; 
             const finBucle = 12 * 60 + 30; 
             let esCanalWeb = true; 
-            let delay = 0; // Para animación en cascada
+            let delay = 0; 
 
             while (minBucle <= finBucle) {
                 let h = Math.floor(minBucle / 60);
@@ -861,8 +884,7 @@
             if (!nom || !dni || !cel) { alert("Nombre, DNI y Celular son obligatorios."); return; }
             if (!/^[0-9]{7,8}$/.test(dni)) { alert("DNI inválido."); return; }
 
-            // Bloqueo del botón y spinner
-            const btnConfirmar = document.getElementById('btn-confirmar-turno');
+            const btnConfirmar = document.getElementById('btn-confirm-turno');
             const textoOriginal = btnConfirmar.innerHTML;
             if (btnConfirmar) {
                 btnConfirmar.disabled = true;
@@ -885,7 +907,6 @@
                     email_destino: email
                 });
                 
-                // Mostrar Modal Personalizado
                 mostrarExito("¡Turno Confirmado!", "El turno ha sido guardado exitosamente. Hemos enviado un correo electrónico con los detalles.");
                 
                 document.getElementById('paciente-nombre').value = ''; 
@@ -902,7 +923,6 @@
                 console.error(error); 
                 alert("Error al registrar."); 
             } finally {
-                // Restaurar Botón
                 if (btnConfirmar) {
                     btnConfirmar.disabled = false;
                     btnConfirmar.innerHTML = textoOriginal;
@@ -938,7 +958,9 @@
         }
 
         async function cancelarTurnoFirebase(id) {
-            if (!confirm("¿Cancelar este turno?")) return;
+            const confirmado = await pedirConfirmacion("¿Cancelar este turno?", "Se eliminará la reserva y se enviará un correo notificando la cancelación.", "Sí, cancelar turno");
+            if (!confirmado) return;
+
             try {
                 const { doc, getDoc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 
@@ -1117,7 +1139,9 @@
         }
 
         async function cancelarTurnoRecepcion(idDoc) {
-            if (!confirm("¿Desea cancelar este turno y liberar el horario?")) return;
+            const confirmado = await pedirConfirmacion("¿Liberar Horario?", "Se cancelará el turno de la agenda y el horario volverá a estar disponible.", "Sí, liberar");
+            if (!confirmado) return;
+
             try {
                 const { doc, getDoc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 
@@ -1292,7 +1316,9 @@
         }
 
         async function marcarAusente(id) {
-            if(!confirm("¿Marcar a este paciente como Ausente?")) return;
+            const confirmado = await pedirConfirmacion("¿Marcar Ausente?", "El paciente perderá este turno y se registrará su ausencia en el sistema.", "Sí, marcar ausente");
+            if (!confirmado) return;
+
             try {
                 const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 await updateDoc(doc(window.db, "turnos", id), { estado: "Ausente" });
@@ -1303,7 +1329,7 @@
                 await cargarAgendaMedico(); 
                 const sig = turnosMedicoHoy.find(t => t.estado.includes("Reservado") || t.estado.includes("Confirmado"));
                 if (sig) { 
-                    alert(`Llamando automáticamente al siguiente: ${sig.pacienteNombre}`); 
+                    mostrarExito("Paciente Ausente", `Llamando automáticamente al siguiente paciente: ${sig.pacienteNombre}`); 
                     llamarPaciente(sig.id); 
                 } else {
                     mostrarExito("Paciente Ausente", "Se ha registrado la ausencia. No hay más pacientes en espera.");
@@ -1443,7 +1469,9 @@
         }
 
         async function eliminarUsuarioAdmin(id) {
-            if(!confirm("¿Está seguro de eliminar a este usuario del sistema? Todo su historial de conexión se perderá.")) return;
+            const confirmado = await pedirConfirmacion("¿Eliminar Usuario?", "Todo su historial de conexión se perderá. Esta acción no se puede deshacer.", "Sí, eliminar");
+            if (!confirmado) return;
+
             try {
                 const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 await deleteDoc(doc(window.db, "usuarios", id));
@@ -1629,6 +1657,25 @@
             document.getElementById('exito-titulo').innerText = titulo;
             document.getElementById('exito-mensaje').innerText = mensaje;
             abrirModal('modal-exito');
+        }
+
+        function pedirConfirmacion(titulo, mensaje, textoAceptar = "Aceptar") {
+            return new Promise((resolve) => {
+                document.getElementById('confirm-titulo').innerText = titulo;
+                document.getElementById('confirm-mensaje').innerText = mensaje;
+                document.getElementById('btn-confirm-aceptar').innerText = textoAceptar;
+                abrirModal('modal-confirmacion');
+
+                document.getElementById('btn-confirm-aceptar').onclick = () => {
+                    cerrarModal('modal-confirmacion');
+                    resolve(true);
+                };
+
+                document.getElementById('btn-confirm-cancelar').onclick = () => {
+                    cerrarModal('modal-confirmacion');
+                    resolve(false);
+                };
+            });
         }
     </script>
 </body>
