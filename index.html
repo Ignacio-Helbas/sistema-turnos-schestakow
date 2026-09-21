@@ -6,10 +6,29 @@
     <title>Sistema de Turnos - Hospital Schestakow</title>
     
     <!-- ==========================================
-         1. LIBRERÍAS EXTERNAS
+         1. LIBRERÍAS EXTERNAS Y TIPOGRAFÍA
     =========================================== -->
+    <!-- Google Fonts: Importamos "Inter" con distintos grosores -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <!-- TailwindCSS: Framework para estilos rápidos y responsivos -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Configuración de Tailwind: Forzamos "Inter" como la fuente global -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
     <!-- SheetJS: Permite exportar las tablas a Excel (.xlsx) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- EmailJS: Permite enviar correos sin necesidad de tener un servidor backend -->
@@ -31,7 +50,7 @@
         .colapsable-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
         .colapsable-content.abierto { max-height: 500px; overflow-y: auto; }
         
-        /* Barra de scroll personalizada para que no se vea la fea de Windows */
+        /* Barra de scroll personalizada para que no se vea la nativa de Windows */
         .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
         
