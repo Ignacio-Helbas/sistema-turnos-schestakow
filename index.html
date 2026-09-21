@@ -5,35 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Turnos - Hospital Schestakow</title>
     
-    <!-- LIBRERÍAS EXTERNAS -->
-    <!-- TailwindCSS: Framework para los estilos visuales y responsivos -->
+    <!-- ==========================================
+         1. LIBRERÍAS EXTERNAS
+    =========================================== -->
+    <!-- TailwindCSS: Framework para estilos rápidos y responsivos -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS: Permite generar y descargar archivos Excel reales (.xlsx) -->
+    <!-- SheetJS: Permite exportar las tablas a Excel (.xlsx) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- EmailJS: Permite enviar correos en segundo plano sin backend propio -->
+    <!-- EmailJS: Permite enviar correos sin necesidad de tener un servidor backend -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     
-    <!-- ESTILOS PERSONALIZADOS -->
+    <!-- ==========================================
+         2. ESTILOS CSS PERSONALIZADOS (Animaciones y UI)
+    =========================================== -->
     <style>
-        /* Gestión de Vistas (SPAs) */
+        /* Clases para cambiar entre pantallas (Single Page Application) */
         .view { display: none; }
         .view.active { display: block; }
         
-        /* Gestión de Modales (Ventanas Emergentes) */
+        /* Clases para mostrar/ocultar los modales flotantes */
         .modal { display: none; }
         .modal.active { display: flex; }
         
-        /* Acordeones y barras de scroll personalizadas */
+        /* Efectos visuales para el historial clínico (acordeón) */
         .colapsable-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
         .colapsable-content.abierto { max-height: 500px; overflow-y: auto; }
+        
+        /* Barra de scroll personalizada para que no se vea la fea de Windows */
         .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
         
-        /* Pestañas del Panel de Administrador */
+        /* Estilos de las pestañas en el panel de administrador */
         .admin-tab { cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
         .admin-tab.active { border-bottom-color: #1f2937; color: #1f2937; font-weight: bold; }
         
-        /* Animaciones para alertas e ingresos */
+        /* Animación de "rebote" (pop) para los iconos de los modales (Éxito, Error, Alerta) */
         @keyframes scaleCheck {
             0% { transform: scale(0); opacity: 0; }
             50% { transform: scale(1.2); opacity: 1; }
@@ -41,6 +47,7 @@
         }
         .animate-check { animation: scaleCheck 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         
+        /* Animación para que los paneles entren flotando desde abajo suavemente */
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
@@ -52,18 +59,23 @@
 <body class="bg-[url('COVID-19-LABORATORIO-HOSPITAL-SCHESTAKOW-6714.jpg')] bg-cover bg-center bg-no-repeat bg-fixed text-gray-800 font-sans min-h-screen flex flex-col">
 
     <!-- ==========================================
-         BARRA DE NAVEGACIÓN SUPERIOR
+         BARRA DE NAVEGACIÓN SUPERIOR (HEADER)
     =========================================== -->
     <nav class="bg-white shadow-md text-blue-900 p-3 flex justify-between items-center z-10 relative">
         <div class="flex items-center gap-3">
+            <!-- Doble clic en el logo lleva al panel de Login oculto -->
             <img src="LogoHospitalSolo.png" alt="Logo Hospital" class="h-12 w-auto rounded bg-white p-1 shadow-sm cursor-pointer hover:scale-105 transition-transform" ondblclick="switchView('login')" title="Doble clic para acceso restringido">
         </div>
         <div class="flex items-center gap-4">
+            <!-- Indicador animado de "Sistema En Vivo" (Puntito verde) -->
             <div class="hidden sm:flex items-center gap-1 text-xs font-semibold text-green-300">
-                <span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span>
+                <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
                 Sistema En Vivo
             </div>
-            <!-- Botón de cierre de sesión dinámico (solo visible para personal del hospital) -->
+            <!-- Botón de Cerrar Sesión (Se oculta para los pacientes) -->
             <button id="btn-logout" onclick="cerrarSesionReal()" class="hidden text-sm text-white bg-red-600 px-3 py-2 rounded font-semibold hover:bg-red-700 transition shadow">Cerrar Sesión</button>
         </div>
     </nav>
@@ -78,9 +90,10 @@
                 <h2 class="text-2xl font-bold text-blue-800 mb-6 border-b border-gray-200 pb-3">Reserva de Turno Online</h2>
                 <div class="space-y-5">
                     
-                    <!-- Fila 1: Especialidad -->
+                    <!-- Selector de Especialidad Médica -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">1. Especialidad</label>
+                        <!-- Al cambiar la especialidad, se ejecuta actualizarMedicosPublico() para filtrar los doctores -->
                         <select id="select-especialidad" onchange="actualizarMedicosPublico()" class="w-full border rounded p-3 bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-shadow">
                             <option value="">-- Elija una especialidad --</option>
                             <optgroup label="Especialidades Clínicas y Médicas">
@@ -118,7 +131,7 @@
                         </select>
                     </div>
 
-                    <!-- Fila 2: Profesionales (Se llena dinámicamente) -->
+                    <!-- Selector de Médico (Se autocompleta desde JavaScript) -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">2. Profesional</label>
                         <select id="select-medico" onchange="generarHorariosPublicos()" disabled class="w-full border rounded p-3 bg-gray-100 text-gray-500 outline-none transition-colors">
@@ -126,14 +139,13 @@
                         </select>
                     </div>
 
-                    <!-- Fila 3: Selección de Fecha -->
+                    <!-- Selector de Fecha -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">3. Fecha (Lunes a Viernes)</label>
-                        <!-- Validaciones: El atributo 'min' se inyecta por JS para bloquear el pasado, 'validarDiaHabil' verifica fines de semana -->
                         <input type="date" id="input-fecha-paciente" onchange="validarDiaHabil(this); generarHorariosPublicos()" class="w-full border rounded p-3 bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
                     </div>
 
-                    <!-- Fila 4: Grilla de Horarios (Renderizado por JS) -->
+                    <!-- Grilla de Horarios (Los botones se inyectan desde JavaScript) -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">4. Horarios Disponibles (Canal Web)</label>
                         <div class="grid grid-cols-3 md:grid-cols-4 gap-2" id="horarios-publicos">
@@ -144,7 +156,7 @@
                     <hr class="my-6 border-gray-300">
                     <h3 class="font-semibold text-gray-700 mb-3">Datos del Paciente</h3>
                     
-                    <!-- Fila 5: Datos de Contacto y Personales -->
+                    <!-- Formulario de Datos Personales -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input type="text" id="paciente-nombre" placeholder="Nombre completo" class="border rounded p-3 w-full bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
                         <input type="text" id="paciente-dni" oninput="this.value = this.value.replace(/[^0-9]/g, '')" maxlength="8" placeholder="DNI (Sin puntos)" class="border rounded p-3 w-full bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
@@ -152,7 +164,7 @@
                         <input type="email" id="paciente-email" placeholder="Email (Opcional)" class="border rounded p-3 w-full bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
                     </div>
 
-                    <!-- Acciones Finales -->
+                    <!-- Botones de Acción Paciente -->
                     <div class="mt-6 space-y-3">
                         <button type="button" id="btn-confirmar-turno" onclick="confirmarTurnoFirebase()" class="w-full bg-blue-800 text-white text-lg font-bold py-3 rounded hover:bg-blue-900 shadow-md transition-all flex justify-center items-center gap-2">
                             Confirmar Turno
@@ -170,19 +182,18 @@
             <div class="bg-white/95 backdrop-blur-md rounded-lg shadow-2xl p-6 max-w-md mx-auto mt-10 border-t-4 border-gray-800 animate-fade-in-up">
                 <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Acceso Restringido</h2>
                 <div class="space-y-4">
-                    <!-- Credenciales de Sistema -->
                     <input type="text" id="login-user" placeholder="Nombre de Usuario" class="border rounded p-3 w-full outline-none focus:ring-2 focus:ring-gray-800">
                     <input type="password" id="login-pass" placeholder="Contraseña" class="border rounded p-3 w-full outline-none focus:ring-2 focus:ring-gray-800">
                     <button onclick="iniciarSesionReal()" class="w-full bg-gray-800 text-white font-bold py-3 rounded hover:bg-gray-900 shadow transition mt-2">Ingresar al Sistema</button>
                     
-                    <!-- Simulación rápida para la presentación -->
+                    <!-- Atajos de simulación para presentar a los profesores -->
                     <div class="mt-4 pt-4 border-t border-gray-200">
                         <p class="text-xs text-gray-500 text-center mb-2 font-bold uppercase tracking-wider">Panel de Simulación para Evaluación</p>
                         <div class="grid grid-cols-3 gap-2">
                             <button onclick="loginAs('reception')" class="bg-indigo-700 text-white py-2 rounded hover:bg-indigo-800 text-sm font-semibold transition shadow-sm">Rec.</button>
                             <button onclick="loginAs('doctor')" class="bg-teal-700 text-white py-2 rounded hover:bg-teal-800 text-sm font-semibold transition shadow-sm">Med.</button>
                             <button onclick="loginAs('admin')" class="bg-gray-800 text-white py-2 rounded hover:bg-gray-900 text-sm font-semibold transition shadow-sm">Admin</button>
-                            <!-- Botón RESET DB (Oculto visualmente pero funciona si se le quita la clase 'hidden') -->
+                            <!-- Botón oculto: Si le quitás "hidden", te permite resetear la BD a cero -->
                             <button onclick="forzarReseedDB()" class="hidden bg-red-700 text-white py-2 rounded hover:bg-red-800 text-xs font-bold transition shadow-sm border border-red-900" title="Borrar y recargar base de datos">RESET DB</button>
                         </div>
                     </div>
@@ -199,16 +210,16 @@
             <div class="bg-white/95 backdrop-blur-md p-5 rounded shadow-xl border-l-4 border-gray-800 mb-6 w-full flex flex-col md:flex-row justify-between items-center gap-4">
                 <h2 class="text-2xl font-bold text-gray-800">Panel de Administración General</h2>
                 
-                <!-- Botones de Navegación Interna del Admin -->
+                <!-- Pestañas (Tabs) del Admin -->
                 <div class="flex gap-4">
                     <button onclick="cambiarTabAdmin('usuarios')" id="tab-usuarios" class="admin-tab active text-gray-600 pb-1">Gestión y Modulación</button>
                     <button onclick="cambiarTabAdmin('metricas')" id="tab-metricas" class="admin-tab text-gray-600 pb-1">Métricas y Rendimiento</button>
                 </div>
             </div>
             
-            <!-- SUB-VISTA: Gestión de Usuarios -->
+            <!-- SUB-VISTA: Configuración y Usuarios -->
             <div id="admin-sec-usuarios" class="admin-section grid grid-cols-1 lg:grid-cols-4 gap-8">
-                <!-- Módulo: Ajustar Modulación de Turnos -->
+                <!-- Modulación de Agenda (Duración de Turnos) -->
                 <div class="bg-white/95 backdrop-blur-md p-6 rounded shadow-xl border-t-4 border-gray-800 lg:col-span-1 h-fit">
                     <h3 class="font-bold text-lg text-gray-800 mb-4 border-b border-gray-200 pb-2">Modulación de Turnos</h3>
                     <p class="text-sm text-gray-600 mb-5">Ajuste el tiempo de atención global o por profesional. Se requerirá su clave de administrador.</p>
@@ -232,7 +243,7 @@
                     </div>
                 </div>
 
-                <!-- Módulo: Tabla de Personal Activo -->
+                <!-- Tabla de Personal Activo -->
                 <div class="bg-white/95 backdrop-blur-md p-6 rounded shadow-xl border-t-4 border-gray-800 lg:col-span-3">
                     <div class="flex justify-between items-center mb-5 border-b border-gray-200 pb-2">
                         <h3 class="font-bold text-xl text-gray-800">Gestión de Usuarios Activos</h3>
@@ -267,12 +278,11 @@
                             <p class="text-sm text-gray-500 mt-1">Seleccione un segmento para visualizar las métricas históricas procesadas.</p>
                         </div>
                         <div class="flex flex-wrap gap-2">
-                            <!-- Filtros de Métricas -->
                             <button onclick="cargarMetricas('todos')" class="bg-gray-100 border border-gray-300 px-4 py-2 rounded text-sm font-bold text-gray-700 hover:bg-gray-200 transition shadow-sm">Todos</button>
                             <button onclick="cargarMetricas('medicos')" class="bg-teal-50 border border-teal-300 px-4 py-2 rounded text-sm font-bold text-teal-800 hover:bg-teal-100 transition shadow-sm">Médicos</button>
                             <button onclick="cargarMetricas('recepcion')" class="bg-indigo-50 border border-indigo-300 px-4 py-2 rounded text-sm font-bold text-indigo-800 hover:bg-indigo-100 transition shadow-sm">Recepción</button>
                             
-                            <!-- Botón de Exportación -->
+                            <!-- Botón de Exportar a Excel General -->
                             <button onclick="descargarReporteMetricas()" class="bg-green-700 text-white px-4 py-2 rounded text-sm font-bold hover:bg-green-800 transition shadow flex items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                 Exportar Excel
@@ -280,10 +290,10 @@
                         </div>
                     </div>
 
-                    <!-- Cards de KPI (Key Performance Indicators) -->
+                    <!-- Cuadros Resumen (KPIs) -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="metricas-kpi-container"></div>
 
-                    <!-- Tabla de resultados de Métricas -->
+                    <!-- Tabla de Resultados de Métricas -->
                     <div class="overflow-x-auto border border-gray-200 rounded">
                         <table class="w-full text-left border-collapse bg-white text-sm">
                             <thead class="bg-gray-100 text-gray-700">
@@ -308,22 +318,19 @@
              VISTA 4: PANEL RECEPCIÓN (ADMINISTRATIVOS)
         =========================================== -->
         <section id="view-reception" class="view animate-fade-in-up">
-            <!-- Barra superior: Filtro de consulta de agenda -->
             <div class="mb-6 bg-white/95 backdrop-blur-md p-5 rounded shadow-xl border-l-4 border-indigo-700">
                 <div class="flex justify-between items-center mb-4 border-b pb-2">
                     <h2 class="text-xl font-bold text-indigo-900">Agenda General - Admisión</h2>
-                    <!-- Herramienta Crítica: Suspensión de Agenda -->
+                    <!-- Botón de Suspensión de Agendas -->
                     <button onclick="abrirModal('modal-ausencia-emergencia')" class="bg-white border border-red-700 text-red-700 text-sm px-4 py-2 rounded font-bold hover:bg-red-50 transition shadow-sm">
                         Declarar Ausencia / Emergencia
                     </button>
                 </div>
                 
-                <!-- Parámetros de Búsqueda -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-1">1. Especialidad</label>
                         <select id="reception-especialidad" onchange="actualizarMedicosRecepcion()" class="w-full border border-gray-300 rounded p-2 bg-white outline-none focus:ring-2 focus:ring-indigo-600">
-                            <!-- (Mismas opciones estáticas para filtrar la base dinámica) -->
                             <option value="">-- Elija una especialidad --</option>
                             <optgroup label="Especialidades Clínicas y Médicas">
                                 <option value="clinica">Clínica Médica (Adultos)</option>
@@ -367,13 +374,12 @@
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-1">3. Fecha</label>
-                        <!-- 'min' se inyecta por JS para bloquear consultas de agendas pasadas inútiles -->
                         <input type="date" id="input-fecha-recepcion" class="w-full border border-gray-300 rounded p-2 bg-white outline-none focus:ring-2 focus:ring-indigo-600">
                     </div>
-                    
-                    <!-- Botones de Acción de Recepción -->
                     <div class="flex gap-2">
+                        <!-- Consultar Agenda -->
                         <button onclick="buscarAgendaRecepcion()" class="w-full bg-indigo-700 text-white font-bold py-2 rounded shadow hover:bg-indigo-800 transition">Ver Agenda</button>
+                        <!-- Descargar Excel de la Agenda del Día -->
                         <button onclick="descargarExcelRecepcion()" class="bg-green-700 text-white font-bold py-2 px-3 rounded shadow hover:bg-green-800 transition" title="Descargar planilla Excel del día">
                             <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                         </button>
@@ -381,7 +387,7 @@
                 </div>
             </div>
 
-            <!-- Grilla Principal de la Agenda del Médico (Renderizada dinámicamente) -->
+            <!-- Grilla Visual de la Agenda -->
             <div id="contenedor-grilla-recepcion" class="hidden bg-white/95 backdrop-blur-md rounded shadow-xl overflow-hidden border animate-fade-in-up-fast">
                 <div class="p-3 bg-indigo-50 border-b flex justify-between items-center">
                     <p class="text-indigo-900 font-bold" id="titulo-agenda-recepcion">Agenda: --</p>
@@ -398,7 +404,7 @@
                             </tr>
                         </thead>
                         <tbody id="reception-tbody">
-                            <!-- Llenado con JavaScript en función de la Modulación de Horarios -->
+                            <!-- Inyectado vía JS con los datos de Firebase -->
                         </tbody>
                     </table>
                 </div>
@@ -406,7 +412,7 @@
         </section>
 
         <!-- ==========================================
-             VISTA 5: PANEL MÉDICO (HISTORIA CLÍNICA)
+             VISTA 5: PANEL MÉDICO (CONSULTORIO)
         =========================================== -->
         <section id="view-doctor" class="view h-full animate-fade-in-up">
             <div class="bg-white/95 backdrop-blur-md p-5 rounded shadow-xl border-l-4 border-teal-700 mb-6 inline-block hidden" id="titulo-medico-dashboard-container">
@@ -414,7 +420,7 @@
             </div>
             
             <div class="flex flex-col lg:flex-row gap-6 lg:h-[80vh]">
-                <!-- Panel Izquierdo: Fila de Pacientes en Espera -->
+                <!-- Panel Izquierdo: Fila de Espera -->
                 <div class="lg:w-1/3 bg-white/95 backdrop-blur-md rounded shadow-xl p-4 border-t-4 border-teal-700 flex flex-col h-full">
                     <h2 class="text-xl font-bold text-teal-900 mb-4 flex-shrink-0">Pacientes de Hoy</h2>
                     <div id="medico-agenda-container" class="space-y-3 flex-grow overflow-y-auto custom-scroll pr-2 pb-2">
@@ -422,10 +428,8 @@
                     </div>
                 </div>
                 
-                <!-- Panel Derecho: Evolución e Historia Clínica -->
+                <!-- Panel Derecho: Historia Clínica y Atención -->
                 <div class="lg:w-2/3 bg-white/95 backdrop-blur-md rounded shadow-xl p-6 relative flex flex-col h-full">
-                    
-                    <!-- Cabecera del Paciente Activo -->
                     <div class="flex justify-between items-end mb-4 border-b pb-3 flex-shrink-0">
                         <div>
                             <h2 class="text-2xl font-bold text-gray-800">Historia Clínica Digital</h2>
@@ -436,10 +440,8 @@
                         </button>
                     </div>
 
-                    <!-- Cuerpo: Formulario Médico -->
                     <div class="flex-grow overflow-y-auto custom-scroll pr-2 pb-2">
-                        
-                        <!-- Colapsable: Muestra evoluciones pasadas (Prototipo UI) -->
+                        <!-- Historial (Acordeón Oculto) -->
                         <div id="historial-paciente" class="colapsable-content bg-gray-50 rounded mb-4">
                             <div class="p-4 border border-gray-300 bg-white">
                                 <h4 class="font-bold text-gray-800 mb-3">Consultas Anteriores</h4>
@@ -450,7 +452,7 @@
                             </div>
                         </div>
                         
-                        <!-- Inputs Médicos -->
+                        <!-- Inputs de la Atención Actual -->
                         <form class="space-y-4">
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Motivo de la consulta</label>
@@ -463,7 +465,7 @@
                         </form>
                     </div>
 
-                    <!-- Botonera de Acción del Consultorio -->
+                    <!-- Botones de Fin de Consulta -->
                     <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t mt-4 flex-shrink-0">
                         <button type="button" onclick="abrirModal('modal-agendar-medico')" class="bg-white border-2 border-teal-700 text-teal-800 font-bold py-2 px-6 rounded shadow-sm hover:bg-teal-50 transition">Agendar Próxima Visita</button>
                         <button type="button" onclick="guardarEvolucionMedico()" class="bg-teal-800 text-white font-bold py-2 px-8 rounded shadow-md hover:bg-teal-900 transition">Guardar Evolución</button>
@@ -475,7 +477,7 @@
     </main>
 
     <!-- ==========================================
-         FOOTER INSTITUCIONAL
+         FOOTER DE LA PÁGINA
     =========================================== -->
     <footer class="bg-gray-800/95 backdrop-blur text-center py-6 text-sm text-gray-300 mt-auto z-10 relative">
         <p class="font-bold text-gray-100 mb-2">Hospital Teodoro J. Schestakow</p>
@@ -495,15 +497,15 @@
     </footer>
 
     <!-- ==========================================
-         CAPA DE MODALES (VENTANAS EMERGENTES)
+         CAPA DE MODALES (ALERTAS FLOTANTES Y UI)
     =========================================== -->
     
-    <!-- Modal Global: Mensaje de Éxito (Color Verde) -->
+    <!-- 1. Modal de Éxito (Color Verde) -->
     <div id="modal-exito" class="modal fixed inset-0 bg-black/60 z-[100] justify-center items-center">
         <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 border-t-8 border-green-500 text-center relative">
             <img src="LogoHospitalSolo.png" alt="Hospital Schestakow" class="h-10 mx-auto mb-6 opacity-80">
-            <!-- Checkmark con animación CSS -->
             <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100 mb-5 animate-check">
+                <!-- Icono Tilde Verde -->
                 <svg class="h-12 w-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path>
                 </svg>
@@ -516,10 +518,11 @@
         </div>
     </div>
 
-    <!-- Modal Global: Mensaje de Advertencia/Confirmación (Color Rojo) -->
+    <!-- 2. Modal de Advertencia/Confirmación (Color Rojo) -->
     <div id="modal-confirmacion" class="modal fixed inset-0 bg-black/60 z-[100] justify-center items-center">
         <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 border-t-8 border-red-500 text-center relative animate-fade-in-up-fast">
             <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-red-100 mb-5">
+                <!-- Icono Alerta Cruzada -->
                 <svg class="h-12 w-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                 </svg>
@@ -536,8 +539,25 @@
             </div>
         </div>
     </div>
+    
+    <!-- 3. Modal de Alerta de Validación Faltante (Color Amarillo) -->
+    <div id="modal-alerta" class="modal fixed inset-0 bg-black/60 z-[100] justify-center items-center">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 border-t-8 border-yellow-500 text-center relative animate-fade-in-up-fast">
+            <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-yellow-100 mb-5">
+                <!-- Icono Información/Exclamación -->
+                <svg class="h-12 w-12 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 id="alerta-titulo" class="text-2xl font-extrabold text-gray-800 mb-2">Atención</h3>
+            <p id="alerta-mensaje" class="text-gray-600 mb-8 font-medium">Por favor, verifique los datos ingresados.</p>
+            <button onclick="cerrarModal('modal-alerta')" class="w-full bg-yellow-500 text-white font-bold py-3 px-4 rounded-xl hover:bg-yellow-600 shadow-lg transition-colors">
+                Entendido
+            </button>
+        </div>
+    </div>
 
-    <!-- Modales Administrativos y Funcionales -->
+    <!-- Modales Restantes (Operativos y funcionales) -->
     <div id="modal-seguridad-modulacion" class="modal fixed inset-0 bg-black/60 z-50 justify-center items-center">
         <div class="bg-white p-6 rounded-lg shadow-2xl max-w-sm w-full mx-4 border-t-4 border-red-700 relative">
             <h3 class="text-xl font-bold text-gray-800 mb-2">Validación de Seguridad</h3>
@@ -718,7 +738,7 @@
                 await Promise.all(promesas);
                 mostrarExito("Base de Datos Reiniciada", "Se han cargado todos los especialistas por defecto.");
                 setTimeout(() => window.location.reload(), 2000);
-            } catch (e) { console.error(e); alert("Error al reiniciar BD."); }
+            } catch (e) { console.error(e); mostrarAlerta("Error", "Error al reiniciar BD."); }
         }
 
         // Verifica si la BD está vacía al arrancar y la auto-llena
@@ -825,11 +845,13 @@
         async function iniciarSesionReal() {
             const user = document.getElementById('login-user').value.trim();
             const pass = document.getElementById('login-pass').value.trim();
-            if (!user || !pass) { alert("Ingrese usuario y contraseña."); return; }
+            
+            if (!user || !pass) { mostrarAlerta("Datos Faltantes", "Ingrese usuario y contraseña."); return; }
+            
             try {
                 const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 const snap = await getDocs(query(collection(window.db, "usuarios"), where("username", "==", user), where("password", "==", pass)));
-                if (snap.empty) { alert("Credenciales incorrectas."); return; }
+                if (snap.empty) { mostrarAlerta("Error de Acceso", "Credenciales incorrectas."); return; }
                 
                 let datosUser = {}; 
                 snap.forEach((doc) => { datosUser = doc.data(); });
@@ -841,7 +863,7 @@
                 if (datosUser.rol === "Médico") switchView("doctor");
                 else if (datosUser.rol === "Administrativo" || datosUser.rol === "Recepción") switchView("reception");
                 else if (datosUser.rol === "Administración") switchView("admin");
-            } catch (error) { console.error(error); alert("Error de conexión."); }
+            } catch (error) { console.error(error); mostrarAlerta("Error de Red", "Error al conectar con la base de datos."); }
         }
 
         // Limpia el caché de sesión
@@ -910,14 +932,14 @@
 
             // Bloquea pasado
             if (f < hoy) {
-                alert("Operación denegada. No se pueden seleccionar fechas en el pasado.");
+                mostrarAlerta("Fecha Inválida", "Operación denegada. No se pueden seleccionar fechas en el pasado.");
                 input.value = "";
                 return;
             }
 
             // Bloquea fines de semana (0 es Domingo, 6 es Sábado)
             if (f.getDay() === 0 || f.getDay() === 6) { 
-                alert("Atención denegada. El hospital atiende por turnos solo de Lunes a Viernes."); 
+                mostrarAlerta("Día no hábil", "Atención denegada. El hospital atiende por turnos solo de Lunes a Viernes."); 
                 input.value = ""; 
             }
         }
@@ -1005,9 +1027,10 @@
             const cel = document.getElementById('paciente-celular').value.trim();
             const email = document.getElementById('paciente-email').value.trim();
 
-            if (!esp || !med || !fec || !hor) { alert("Seleccione Especialidad, Profesional, Fecha y Horario."); return; }
-            if (!nom || !dni || !cel) { alert("Nombre, DNI y Celular son obligatorios."); return; }
-            if (!/^[0-9]{7,8}$/.test(dni)) { alert("DNI inválido."); return; }
+            // Validaciones estrictas: Si falta algo, lanzamos el modal amarillo y cortamos la función (return)
+            if (!esp || !med || !fec || !hor) { mostrarAlerta("Datos Incompletos", "Seleccione Especialidad, Profesional, Fecha y Horario."); return; }
+            if (!nom || !dni || !cel) { mostrarAlerta("Faltan Datos del Paciente", "Nombre, DNI y Celular son campos obligatorios."); return; }
+            if (!/^[0-9]{7,8}$/.test(dni)) { mostrarAlerta("DNI Inválido", "Por favor, ingrese un número de DNI válido (entre 7 y 8 dígitos sin puntos)."); return; }
 
             // ==========================================
             // PREVENCIÓN DE DUPLICADOS (Bloqueo de botón)
@@ -1052,7 +1075,7 @@
 
             } catch (error) { 
                 console.error(error); 
-                alert("Error al registrar."); 
+                mostrarAlerta("Error de Conexión", "Hubo un error al registrar el turno. Intente nuevamente."); 
             } finally {
                 // Desbloqueo garantizado
                 if (btnConfirmar) {
@@ -1067,7 +1090,8 @@
         async function buscarTurnosPaciente() {
             const dni = document.getElementById('input-buscar-dni').value.trim();
             const res = document.getElementById('resultado-turnos-paciente');
-            if (!dni) { alert("Ingrese DNI."); return; }
+            
+            if (!dni) { mostrarAlerta("Dato Faltante", "Por favor ingrese su número de DNI para realizar la búsqueda."); return; }
 
             try {
                 const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
@@ -1075,7 +1099,7 @@
                 
                 let html = '';
                 if (snap.empty) { 
-                    html = `<p class="text-sm text-red-600 font-semibold text-center">No hay turnos activos.</p>`; 
+                    html = `<p class="text-sm text-red-600 font-semibold text-center">No hay turnos activos para este DNI.</p>`; 
                 } else {
                     snap.forEach((doc) => {
                         const t = doc.data();
@@ -1087,7 +1111,7 @@
                 }
                 res.innerHTML = html; 
                 res.classList.remove('hidden');
-            } catch (error) { console.error(error); alert("Error de base de datos."); }
+            } catch (error) { console.error(error); mostrarAlerta("Error", "Error al conectar con la base de datos."); }
         }
 
         // Eliminación de turnos por parte del Paciente
@@ -1114,7 +1138,7 @@
                 await deleteDoc(doc(window.db, "turnos", id));
                 mostrarExito("Turno Cancelado", "Su turno ha sido cancelado. Hemos enviado una notificación por correo.");
                 buscarTurnosPaciente(); 
-            } catch (error) { console.error(error); alert("No se pudo cancelar."); }
+            } catch (error) { console.error(error); mostrarAlerta("Error", "No se pudo cancelar el turno en este momento."); }
         }
 
         // ==========================================
@@ -1153,7 +1177,7 @@
             fechaRecepcionSeleccionada = document.getElementById('input-fecha-recepcion').value;
 
             if (!especialidadSeleccionadaRecepcion || document.getElementById('reception-medico').disabled || !fechaRecepcionSeleccionada || medicoSeleccionadoRecepcion.includes("No hay")) {
-                alert("Seleccione Especialidad, Profesional y Fecha."); 
+                mostrarAlerta("Datos Faltantes", "Seleccione Especialidad, Profesional y Fecha para consultar la agenda."); 
                 return;
             }
 
@@ -1246,8 +1270,8 @@
             const celular = document.getElementById('auto-celular').value.trim();
             const email = document.getElementById('auto-email').value.trim();
 
-            if (!/^[0-9]{7,8}$/.test(dni)) { alert("DNI inválido."); return; }
-            if (!nombre || !celular) { alert("Nombre y celular obligatorios."); return; }
+            if (!/^[0-9]{7,8}$/.test(dni)) { mostrarAlerta("DNI Inválido", "Ingrese un documento válido."); return; }
+            if (!nombre || !celular) { mostrarAlerta("Datos Obligatorios", "Nombre y celular son obligatorios."); return; }
 
             try {
                 const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
@@ -1270,7 +1294,7 @@
                 cerrarModal('modal-dar-turno'); 
                 mostrarExito("¡Turno Asignado!", "El turno presencial fue registrado y el paciente ha sido notificado por correo.");
                 generarAgendaRecepcion();
-            } catch (error) { console.error(error); alert("Error al registrar."); }
+            } catch (error) { console.error(error); mostrarAlerta("Error", "Error al registrar el turno."); }
         }
 
         async function cancelarTurnoRecepcion(idDoc) {
@@ -1296,17 +1320,17 @@
                 await deleteDoc(doc(window.db, "turnos", idDoc));
                 mostrarExito("Turno Cancelado", "El turno fue cancelado y se notificó al paciente."); 
                 generarAgendaRecepcion();
-            } catch (error) { console.error(error); alert("No se pudo cancelar."); }
+            } catch (error) { console.error(error); mostrarAlerta("Error", "No se pudo cancelar."); }
         }
 
         // Lógica de Supresión Masiva (Emergencia en Hospital)
         async function ejecutarAusenciaEmergencia() {
-            if (!fechaRecepcionSeleccionada || !medicoSeleccionadoRecepcion) { alert("Seleccione profesional y fecha."); return; }
+            if (!fechaRecepcionSeleccionada || !medicoSeleccionadoRecepcion) { mostrarAlerta("Faltan datos", "Seleccione profesional y fecha primero."); return; }
             const alcance = document.getElementById('select-alcance-ausencia').value;
             const horaDesde = document.getElementById('hora-desde-ausencia').value;
             const motivo = document.getElementById('motivo-ausencia').value || "Emergencia Médica";
 
-            if (alcance === 'desde_hora' && !horaDesde) { alert("Indique hora de suspensión."); return; }
+            if (alcance === 'desde_hora' && !horaDesde) { mostrarAlerta("Hora Requerida", "Indique la hora a partir de la cual se suspende la atención."); return; }
 
             try {
                 const { collection, query, where, getDocs, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
@@ -1339,12 +1363,12 @@
                 cerrarModal('modal-ausencia-emergencia'); 
                 mostrarExito("Agenda Suspendida", `Se han bloqueado y notificado por correo a los pacientes de ${turnosCancelados} turnos afectados.`);
                 generarAgendaRecepcion(); 
-            } catch (error) { console.error(error); alert("Error en cancelación masiva."); }
+            } catch (error) { console.error(error); mostrarAlerta("Error Crítico", "Fallo durante la cancelación masiva."); }
         }
 
         // Librería SheetJS: Genera Excel de la grilla del médico
         async function descargarExcelRecepcion() {
-            if (!fechaRecepcionSeleccionada || !medicoSeleccionadoRecepcion) { alert("Visualice una agenda primero."); return; }
+            if (!fechaRecepcionSeleccionada || !medicoSeleccionadoRecepcion) { mostrarAlerta("Visualización Requerida", "Cargue una agenda primero para exportarla."); return; }
             try {
                 const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", fechaRecepcionSeleccionada)));
@@ -1364,7 +1388,7 @@
                 let wb = XLSX.utils.book_new(); 
                 XLSX.utils.book_append_sheet(wb, ws, "Agenda");
                 XLSX.writeFile(wb, `Agenda_${medicoSeleccionadoRecepcion}_${fechaRecepcionSeleccionada}.xlsx`);
-            } catch (error) { console.error(error); alert("Error al exportar."); } 
+            } catch (error) { console.error(error); mostrarAlerta("Error", "Error al intentar exportar el documento."); } 
         }
 
         // ==========================================
@@ -1475,10 +1499,10 @@
         }
 
         async function guardarEvolucionMedico() {
-            if(!pacienteActivoId) { alert("Debe llamar a un paciente primero."); return; }
+            if(!pacienteActivoId) { mostrarAlerta("Requisito previo", "Debe llamar a un paciente antes de guardar una evolución."); return; }
             const motivo = document.getElementById('input-motivo-consulta').value.trim();
             const evolucion = document.getElementById('texto-evolucion').value.trim();
-            if(!evolucion) { alert("La Evolución Médica no puede estar vacía."); return; }
+            if(!evolucion) { mostrarAlerta("Campo vacío", "El campo de Evolución Médica no puede estar vacío."); return; }
 
             try {
                 const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
@@ -1489,7 +1513,7 @@
                 document.getElementById('input-motivo-consulta').value = ''; 
                 document.getElementById('texto-evolucion').value = '';
                 cargarAgendaMedico();
-            } catch (error) { console.error(error); alert("Error al guardar evolución."); }
+            } catch (error) { console.error(error); mostrarAlerta("Error", "No se pudo guardar la evolución clínica."); }
         }
 
         // ==========================================
@@ -1589,7 +1613,7 @@
             const mat = document.getElementById('input-usuario-matricula').value.trim();
             const esp = document.getElementById('input-usuario-especialidad').value;
 
-            if (!nom || !user || !pass) { alert("Nombre, Usuario y Contraseña son obligatorios."); return; }
+            if (!nom || !user || !pass) { mostrarAlerta("Datos Faltantes", "Nombre, Usuario y Contraseña son obligatorios."); return; }
             const payload = { nombre: nom, rol: rol, username: user, password: pass, tel: tel, correo: cor, matricula: rol === 'Médico' ? mat : '', especialidad: rol === 'Médico' ? esp : '', timestamp: new Date() };
 
             try {
@@ -1602,7 +1626,7 @@
                     mostrarExito("Usuario Creado", "El nuevo usuario fue añadido al sistema.");
                 }
                 cerrarModal('modal-usuario'); cargarUsuariosAdmin(); cargarEspecialistasFirebase();
-            } catch (error) { console.error(error); alert("Error de base de datos."); }
+            } catch (error) { console.error(error); mostrarAlerta("Error", "Fallo al comunicar con la base de datos."); }
         }
 
         async function eliminarUsuarioAdmin(id) {
@@ -1613,7 +1637,7 @@
                 const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
                 await deleteDoc(doc(window.db, "usuarios", id));
                 cargarUsuariosAdmin(); cargarEspecialistasFirebase();
-            } catch (error) { console.error(error); alert("Error al eliminar."); }
+            } catch (error) { console.error(error); mostrarAlerta("Error", "Error al intentar eliminar el usuario."); }
         }
 
         function cambiarTabAdmin(tabId) {
@@ -1632,10 +1656,10 @@
         async function ejecutarGuardadoModulacion() {
             const passIngresada = document.getElementById('input-seguridad-admin').value.trim();
             const sesionStr = localStorage.getItem("sesionHospitalActiva");
-            if (!sesionStr) { alert("Error de sesión."); return; }
+            if (!sesionStr) { mostrarAlerta("Error", "Sesión inválida."); return; }
             const sesion = JSON.parse(sesionStr);
             
-            if (passIngresada !== sesion.password) { alert("Contraseña incorrecta. Acción denegada."); return; }
+            if (passIngresada !== sesion.password) { mostrarAlerta("Acceso Denegado", "La contraseña ingresada es incorrecta."); return; }
             
             const alcance = document.getElementById('admin-select-alcance').value;
             const nuevaDuracion = document.getElementById('admin-select-duracion').value;
@@ -1653,7 +1677,7 @@
                 }
                 await addDoc(collection(window.db, "auditoria_cambios"), { administrador: sesion.nombre, accion: `Cambio modulación ${alcance} a ${nuevaDuracion} min`, fecha: new Date() });
                 cerrarModal('modal-seguridad-modulacion');
-            } catch(e) { alert("Error al guardar."); }
+            } catch(e) { mostrarAlerta("Error", "No se pudo guardar la configuración."); }
         }
 
         // ==========================================
@@ -1747,7 +1771,7 @@
         }
 
         function descargarReporteMetricas() {
-            if(datosMetricasCache.length === 0) { alert("No hay datos para exportar."); return; }
+            if(datosMetricasCache.length === 0) { mostrarAlerta("Atención", "No hay datos para exportar en este momento."); return; }
             let dataExcel = datosMetricasCache.map(d => ({
                 "Nombre del Profesional": d.nombre, "Rol": d.rol, "Total Turnos / Acciones": d.totalTurnos, "Completados / Atendidos": d.atendidos, "Cancelados": d.cancelados, "Ausentes": d.ausentes
             }));
@@ -1797,6 +1821,13 @@
             document.getElementById('exito-titulo').innerText = titulo;
             document.getElementById('exito-mensaje').innerText = mensaje;
             abrirModal('modal-exito');
+        }
+
+        // Abre el modal amarillo para advertencias o validaciones de formularios
+        function mostrarAlerta(titulo, mensaje) {
+            document.getElementById('alerta-titulo').innerText = titulo;
+            document.getElementById('alerta-mensaje').innerText = mensaje;
+            abrirModal('modal-alerta');
         }
 
         // Promesa para pausar la ejecución hasta que el usuario decida (Modal Rojo)
