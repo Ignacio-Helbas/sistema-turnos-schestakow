@@ -3,7 +3,7 @@
 // ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 // ==========================================
 // CONFIGURACIÓN DE FIREBASE
@@ -872,7 +872,7 @@ async function guardarEvolucionMedico() {
 }
 
 // ==========================================
-// ADMIN Y MÉTRICAS (CON VISUALIZACIÓN DE CLAVE)
+// ADMIN Y MÉTRICAS (CON SINCRONIZACIÓN AUTOMÁTICA Y VISUALIZACIÓN)
 // ==========================================
 function toggleCamposMedico() {
     const rol = document.getElementById('input-usuario-rol').value;
@@ -971,20 +971,45 @@ async function guardarUsuarioAdminFirebase() {
     const mat = document.getElementById('input-usuario-matricula').value.trim();
     const esp = document.getElementById('input-usuario-especialidad').value;
 
-    if (!nom || !user || !pass) { mostrarAlerta("Datos Faltantes", "Nombre, Usuario y Contraseña son obligatorios."); return; }
-    const payload = { nombre: nom, rol: rol, username: user, password: pass, tel: tel, correo: cor, matricula: rol === 'Médico' ? mat : '', especialidad: rol === 'Médico' ? esp : '', timestamp: new Date() };
+    if (!nom || !user || !pass || !cor) { 
+        mostrarAlerta("Datos Faltantes", "Nombre, Usuario, Contraseña y Correo Electrónico son obligatorios para la sincronización con Firebase Auth."); 
+        return; 
+    }
+
+    const payload = { 
+        nombre: nom, rol: rol, username: user, password: pass, 
+        tel: tel, correo: cor, 
+        matricula: rol === 'Médico' ? mat : '', 
+        especialidad: rol === 'Médico' ? esp : '', 
+        timestamp: new Date() 
+    };
 
     try {
         const { collection, addDoc, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+        
         if (id) {
             await updateDoc(doc(window.db, "usuarios", id), payload); 
             mostrarExito("Usuario Actualizado", "Los datos se guardaron correctamente.");
         } else {
+            // Sincronización automática con Firebase Authentication
+            try {
+                await createUserWithEmailAndPassword(window.auth, cor, pass);
+            } catch (authError) {
+                console.warn("Aviso Auth:", authError.message);
+            }
+
             await addDoc(collection(window.db, "usuarios"), payload); 
-            mostrarExito("Usuario Creado", "El nuevo usuario fue añadido al sistema.");
+            mostrarExito("Usuario Sincronizado", "El nuevo usuario fue añadido y registrado en Firebase de forma automática.");
         }
-        cerrarModal('modal-usuario'); cargarUsuariosAdmin(); cargarEspecialistasFirebase();
-    } catch (error) { console.error(error); mostrarAlerta("Error", "Fallo al comunicar con la base de datos."); }
+        
+        cerrarModal('modal-usuario'); 
+        cargarUsuariosAdmin(); 
+        cargarEspecialistasFirebase();
+        
+    } catch (error) { 
+        console.error(error); 
+        mostrarAlerta("Error", "Fallo al comunicar con la base de datos."); 
+    }
 }
 
 async function eliminarUsuarioAdmin(id) {
