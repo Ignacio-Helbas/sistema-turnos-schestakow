@@ -50,40 +50,6 @@ let duracionTurnoGlobal = 15;
 let modulacionPorMedico = {}; 
 let datosMetricasCache = []; 
 
-const medicosPorDefecto = [
-    { nombre: 'Dr. Roberto Gómez', especialidad: 'clinica', username: 'rgomez', password: '123' },
-    { nombre: 'Dra. Silvia Fernández', especialidad: 'clinica', username: 'sfernandez', password: '123' },
-    { nombre: 'Dr. Juan Pérez', especialidad: 'cardiologia', username: 'jperez', password: '123' },
-    { nombre: 'Dra. Laura Martínez', especialidad: 'cardiologia', username: 'lmartinez', password: '123' },
-    { nombre: 'Dra. Ana Gómez', especialidad: 'pediatria', username: 'agomez', password: '123' },
-    { nombre: 'Dr. Martín Silva', especialidad: 'pediatria', username: 'msilva', password: '123' },
-    { nombre: 'Dra. Florencia Castro', especialidad: 'dermatologia', username: 'fcastro', password: '123' },
-    { nombre: 'Dra. Valeria Román', especialidad: 'endocrinologia', username: 'vroman', password: '123' },
-    { nombre: 'Dr. Diego Torres', especialidad: 'gastroenterologia', username: 'dtorres', password: '123' },
-    { nombre: 'Dra. Mariana Vega', especialidad: 'infectologia', username: 'mvega', password: '123' },
-    { nombre: 'Dr. Pablo Herrera', especialidad: 'neurologia', username: 'pherrera', password: '123' },
-    { nombre: 'Dra. Claudia Ortiz', especialidad: 'nefrologia', username: 'cortiz', password: '123' },
-    { nombre: 'Dr. Jorge Medina', especialidad: 'neumonologia', username: 'jmedina', password: '123' },
-    { nombre: 'Dra. Susana Paz', especialidad: 'geriatria', username: 'spaz', password: '123' },
-    { nombre: 'Dr. Ricardo Luna', especialidad: 'psiquiatria', username: 'rluna', password: '123' },
-    { nombre: 'Dr. Guillermo Acosta', especialidad: 'cirugia_general', username: 'gacosta', password: '123' },
-    { nombre: 'Dra. Sofía Ríos', especialidad: 'cirugia_general', username: 'srios', password: '123' },
-    { nombre: 'Dr. Héctor Farias', especialidad: 'cirugia_cardiovascular', username: 'hfarias', password: '123' },
-    { nombre: 'Dra. Carolina Gil', especialidad: 'cirugia_plastica', username: 'cgil', password: '123' },
-    { nombre: 'Dr. Alejandro Vera', especialidad: 'traumatologia', username: 'avera', password: '123' },
-    { nombre: 'Dr. Tomás Cruz', especialidad: 'traumatologia', username: 'tcruz', password: '123' },
-    { nombre: 'Dr. Fernando Sosa', especialidad: 'urologia', username: 'fsosa', password: '123' },
-    { nombre: 'Dra. Beatriz Mora', especialidad: 'neurocirugia', username: 'bmora', password: '123' },
-    { nombre: 'Dr. Andrés Pino', especialidad: 'otorrinolaringologia', username: 'apino', password: '123' },
-    { nombre: 'Dra. Natalia Rey', especialidad: 'oftalmologia', username: 'nrey', password: '123' },
-    { nombre: 'Dra. Mónica López', especialidad: 'ginecologia', username: 'mlopez', password: '123' },
-    { nombre: 'Dr. Carlos Imagen', especialidad: 'diagnostico_imagenes', username: 'cimagen', password: '123' },
-    { nombre: 'Dra. Elena Lab', especialidad: 'anatomia_patologica', username: 'elab', password: '123' },
-    { nombre: 'Dr. Luis Sangre', especialidad: 'laboratorio', username: 'lsangre', password: '123' },
-    { nombre: 'Dra. UTI Jefe', especialidad: 'terapia_intensiva', username: 'ujefe', password: '123' },
-    { nombre: 'Lic. Marcos Peña', especialidad: 'rehabilitacion', username: 'mpena', password: '123' }
-];
-
 // ==========================================
 // INICIALIZACIÓN
 // ==========================================
@@ -93,55 +59,6 @@ function establecerLimitesFecha() {
     if(document.getElementById('input-fecha-paciente')) document.getElementById('input-fecha-paciente').min = fechaMinima;
     if(document.getElementById('input-fecha-recepcion')) document.getElementById('input-fecha-recepcion').min = fechaMinima;
     if(document.getElementById('input-fecha-proxima-visita')) document.getElementById('input-fecha-proxima-visita').min = fechaMinima;
-}
-
-async function forzarReseedDB() {
-    const confirmado = await pedirConfirmacion("⚠️ RESET DB", "Esto borrará TODOS los usuarios actuales y cargará la nueva lista por defecto en Firebase. ¿Continuar?", "Sí, formatear");
-    if (!confirmado) return;
-    
-    try {
-        const { collection, getDocs, deleteDoc, doc, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
-        const snap = await getDocs(collection(window.db, "usuarios"));
-        
-        const deletePromises = [];
-        snap.forEach(d => deletePromises.push(deleteDoc(doc(window.db, "usuarios", d.id))));
-        await Promise.all(deletePromises);
-
-        const promesas = medicosPorDefecto.map(medico => {
-            return addDoc(collection(window.db, "usuarios"), {
-                nombre: medico.nombre, rol: "Médico", username: medico.username, password: medico.password,
-                tel: "2604000000", correo: medico.username + "@hospital.gov.ar", matricula: Math.floor(Math.random() * 10000) + 1000,
-                especialidad: medico.especialidad, timestamp: new Date()
-            });
-        });
-        promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Admin Sistema", rol: "Administración", username: "admin", password: "123", tel: "", correo: "admin@hospital.gov.ar", matricula: "", especialidad: "", timestamp: new Date() }));
-        promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Recepción Turnos", rol: "Administrativo", username: "recepcion", password: "123", tel: "", correo: "recepcion@hospital.gov.ar", matricula: "", especialidad: "", timestamp: new Date() }));
-        
-        await Promise.all(promesas);
-        mostrarExito("Base de Datos Reiniciada", "Se han cargado todos los especialistas por defecto.");
-        setTimeout(() => window.location.reload(), 2000);
-    } catch (e) { console.error(e); mostrarAlerta("Error", "Error al reiniciar BD."); }
-}
-
-async function verificarYCargarMedicosPorDefecto() {
-    try {
-        const { collection, getDocs, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
-        const snap = await getDocs(collection(window.db, "usuarios"));
-        if (snap.empty) {
-            const promesas = medicosPorDefecto.map(medico => {
-                return addDoc(collection(window.db, "usuarios"), {
-                    nombre: medico.nombre, rol: "Médico", username: medico.username, password: medico.password,
-                    tel: "2604000000", correo: medico.username + "@hospital.gov.ar", matricula: Math.floor(Math.random() * 10000) + 1000,
-                    especialidad: medico.especialidad, timestamp: new Date()
-                });
-            });
-            promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Admin Sistema", rol: "Administración", username: "admin", password: "123", tel: "", correo: "admin@hospital.gov.ar", matricula: "", especialidad: "", timestamp: new Date() }));
-            promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Recepción Turnos", rol: "Administrativo", username: "recepcion", password: "123", tel: "", correo: "recepcion@hospital.gov.ar", matricula: "", especialidad: "", timestamp: new Date() }));
-            await Promise.all(promesas); await cargarEspecialistasFirebase();
-        } else { 
-            await cargarEspecialistasFirebase(); 
-        }
-    } catch (error) { console.error(error); }
 }
 
 async function cargarEspecialistasFirebase() {
@@ -183,7 +100,7 @@ async function cargarConfiguracionModulacion() {
 
 async function iniciarCargaDeDatos() {
     establecerLimitesFecha(); 
-    await verificarYCargarMedicosPorDefecto(); 
+    await cargarEspecialistasFirebase(); 
     await cargarConfiguracionModulacion();
     
     if (document.getElementById('view-admin').classList.contains('active')) cargarUsuariosAdmin();
@@ -192,7 +109,7 @@ async function iniciarCargaDeDatos() {
 }
 
 // ==========================================
-// SESIÓN Y NAVEGACIÓN (CON FIREBASE AUTH)
+// SESIÓN Y NAVEGACIÓN
 // ==========================================
 function switchView(viewName) {
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -240,12 +157,8 @@ async function iniciarSesionReal() {
                     correoReal = doc.data().correo;
                 });
             } else {
-                if (inputUsuario === "admin") correoReal = "admin@hospital.gov.ar";
-                else if (inputUsuario === "recepcion") correoReal = "recepcion@hospital.gov.ar";
-                else {
-                    mostrarAlerta("Error de Acceso", "El nombre de usuario no existe.");
-                    return;
-                }
+                mostrarAlerta("Error de Acceso", "El nombre de usuario no existe en la base de datos.");
+                return;
             }
         }
 
@@ -255,13 +168,12 @@ async function iniciarSesionReal() {
         const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         const snapUser = await getDocs(query(collection(window.db, "usuarios"), where("correo", "==", correoReal)));
         
-        let datosUser = { nombre: inputUsuario, rol: "Médico" };
+        let datosUser = null;
         if (!snapUser.empty) {
             snapUser.forEach((doc) => { datosUser = doc.data(); });
-        } else if (correoReal.includes("admin")) {
-            datosUser = { nombre: "Administrador General", rol: "Administración" };
-        } else if (correoReal.includes("recepcion")) {
-            datosUser = { nombre: "Personal de Admisión", rol: "Administrativo" };
+        } else {
+            mostrarAlerta("Error de Permisos", "Usuario autenticado pero sin rol asignado en el sistema.");
+            return;
         }
 
         localStorage.setItem("sesionHospitalActiva", JSON.stringify(datosUser));
@@ -872,7 +784,7 @@ async function guardarEvolucionMedico() {
 }
 
 // ==========================================
-// ADMIN Y MÉTRICAS (CON SINCRONIZACIÓN AUTOMÁTICA Y VISUALIZACIÓN)
+// ADMIN Y MÉTRICAS
 // ==========================================
 function toggleCamposMedico() {
     const rol = document.getElementById('input-usuario-rol').value;
@@ -935,7 +847,7 @@ async function cargarUsuariosAdmin() {
                     <div class="text-xs text-gray-500">Clave: <span class="bg-gray-100 px-1 rounded border font-mono">${u.password || 'No registrada'}</span></div>
                 </td>
                 <td class="p-3 text-center">
-                    <button onclick="editarUsuarioAdmin('${j}')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1 rounded hover:bg-gray-200 font-bold text-xs transition">Editar / Clave</button> 
+                    <button onclick="editarUsuarioAdmin('${j}')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1 rounded hover:bg-gray-200 font-bold text-xs transition">Editar</button> 
                     <button onclick="eliminarUsuarioAdmin('${u.id}')" class="text-red-600 hover:text-red-800 font-bold text-xs ml-2 transition">Borrar</button>
                 </td>
             </tr>`;
@@ -972,7 +884,7 @@ async function guardarUsuarioAdminFirebase() {
     const esp = document.getElementById('input-usuario-especialidad').value;
 
     if (!nom || !user || !pass || !cor) { 
-        mostrarAlerta("Datos Faltantes", "Nombre, Usuario, Contraseña y Correo Electrónico son obligatorios para la sincronización con Firebase Auth."); 
+        mostrarAlerta("Datos Faltantes", "Nombre, Usuario, Contraseña y Correo Electrónico son obligatorios."); 
         return; 
     }
 
@@ -991,7 +903,6 @@ async function guardarUsuarioAdminFirebase() {
             await updateDoc(doc(window.db, "usuarios", id), payload); 
             mostrarExito("Usuario Actualizado", "Los datos se guardaron correctamente.");
         } else {
-            // Sincronización automática con Firebase Authentication
             try {
                 await createUserWithEmailAndPassword(window.auth, cor, pass);
             } catch (authError) {
@@ -999,7 +910,7 @@ async function guardarUsuarioAdminFirebase() {
             }
 
             await addDoc(collection(window.db, "usuarios"), payload); 
-            mostrarExito("Usuario Sincronizado", "El nuevo usuario fue añadido y registrado en Firebase de forma automática.");
+            mostrarExito("Usuario Sincronizado", "El nuevo usuario fue añadido y registrado de forma automática.");
         }
         
         cerrarModal('modal-usuario'); 
@@ -1013,7 +924,7 @@ async function guardarUsuarioAdminFirebase() {
 }
 
 async function eliminarUsuarioAdmin(id) {
-    const confirmado = await pedirConfirmacion("¿Eliminar Usuario?", "Todo su historial de conexión se perderá. Esta acción no se puede deshacer.", "Sí, eliminar");
+    const confirmado = await pedirConfirmacion("¿Eliminar Usuario?", "Esta acción eliminará el perfil de la base de datos.", "Sí, eliminar");
     if (!confirmado) return;
 
     try {
@@ -1271,7 +1182,6 @@ window.descargarReporteMetricasIndividual = descargarReporteMetricasIndividual;
 window.toggleHistorial = toggleHistorial;
 window.simularAutocompletado = simularAutocompletado;
 window.toggleTimeSelector = toggleTimeSelector;
-window.forzarReseedDB = forzarReseedDB;
 
 // ==========================================
 // ARRANQUE DEL SISTEMA
