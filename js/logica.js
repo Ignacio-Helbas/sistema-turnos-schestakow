@@ -1180,6 +1180,82 @@ function pedirConfirmacion(titulo, mensaje, textoAceptar = "Aceptar") {
 }
 
 // ==========================================
+// HERRAMIENTA DE DESARROLLO: INYECCIÓN DE PRUEBA
+// ==========================================
+async function inyectarMedicosDePrueba() {
+    const confirm = await pedirConfirmacion("¿Inyectar Médicos de Prueba?", "Se cargarán profesionales ficticios en la base de datos para la presentación. Este proceso tomará unos segundos.", "Sí, Inyectar");
+    if (!confirm) return;
+
+    const medicosDemo = [
+        // Especialidades Clínicas
+        { nom: "Dr. Esteban Quiroga", esp: "Clínica Médica", mat: "44019" },
+        { nom: "Dra. Valeria Román", esp: "Clínica Médica", mat: "45021" },
+        { nom: "Dr. Carlos San Martín", esp: "Cardiología", mat: "10293" },
+        { nom: "Dra. Lucía Fernández", esp: "Cardiología", mat: "11928" },
+        { nom: "Dra. María Antonieta", esp: "Pediatría", mat: "22019" },
+        { nom: "Dr. Jorge Medina", esp: "Pediatría", mat: "20192" },
+        { nom: "Dr. Martín Ríos", esp: "Gastroenterología", mat: "90182" },
+        { nom: "Dra. Sofía Castro", esp: "Neurología", mat: "80291" },
+        { nom: "Dra. Analía Montes", esp: "Endocrinología", mat: "70331" },
+        { nom: "Dr. Roberto Sánchez", esp: "Neumonología", mat: "60442" },
+        
+        // Especialidades Quirúrgicas
+        { nom: "Dr. Fernando Ruiz", esp: "Cirugía General", mat: "50553" },
+        { nom: "Dr. Ricardo Silva", esp: "Traumatología", mat: "33918" },
+        { nom: "Dr. Marcos Herrera", esp: "Urología", mat: "40664" },
+        { nom: "Dra. Carmen López", esp: "Ginecología y Obstetricia", mat: "60293" },
+        
+        // Servicios de Diagnóstico y Apoyo
+        { nom: "Dr. Javier Blanco", esp: "Diagnóstico por Imágenes", mat: "30775" },
+        { nom: "Dra. Silvia Torres", esp: "Laboratorio de Análisis Clínicos", mat: "20886" },
+        { nom: "Dr. Hugo Varela", esp: "Terapia Intensiva", mat: "10997" }
+    ];
+
+    abrirModal('modal-progreso');
+    const barra = document.getElementById('progreso-barra');
+    const texto = document.getElementById('progreso-texto');
+    
+    let completados = 0;
+    const total = medicosDemo.length;
+
+    for (const med of medicosDemo) {
+        // Generamos un usuario falso seguro
+        const payload = {
+            nombre: med.nom,
+            rol: "Médico",
+            username: med.nom.split(' ')[1].toLowerCase() + Math.floor(Math.random() * 1000),
+            password: "demo", 
+            correo: med.nom.split(' ')[1].toLowerCase() + "@hospital.demo",
+            tel: "2604000000",
+            matricula: med.mat,
+            especialidad: med.esp,
+            uid: "dummy_" + Date.now(), // Fake UID (No interfiere con Auth real)
+            timestamp: new Date()
+        };
+
+        try {
+            await addDoc(collection(window.db, "usuarios"), payload);
+        } catch(e) {
+            console.error("Fallo inyectando a:", med.nom);
+        }
+
+        completados++;
+        let porcentaje = Math.round((completados / total) * 100);
+        barra.style.width = porcentaje + '%';
+        texto.innerText = `Procesando: ${med.nom} (${completados}/${total})`;
+
+        // PAUSA DE 500ms PARA NO SATURAR FIREBASE NI SER MARCADO COMO SPAM
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    cerrarModal('modal-progreso');
+    mostrarExito("Inyección Exitosa", "Los 15 médicos de prueba fueron agregados al sistema. Las listas públicas ya están actualizadas.");
+    
+    cargarUsuariosAdmin('init'); // Recargamos la tabla (que ahora tiene paginación)
+    cargarEspecialistasFirebase(); // Actualiza los selects para que se vean al instante
+}
+
+// ==========================================
 // ARRANQUE SEGURO
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
