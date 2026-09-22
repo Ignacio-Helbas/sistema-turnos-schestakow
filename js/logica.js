@@ -61,11 +61,6 @@ function establecerLimitesFecha() {
     if(document.getElementById('input-fecha-proxima-visita')) document.getElementById('input-fecha-proxima-visita').min = fechaMinima;
 }
 
-// Función vacía para que el botón viejo de RESET DB no tire error si lo tocan
-function forzarReseedDB() {
-    mostrarAlerta("Aviso", "El sistema de prueba fue eliminado. Ahora el software está en modo producción (100% limpio).");
-}
-
 async function cargarEspecialistasFirebase() {
     try {
         const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
@@ -114,7 +109,7 @@ async function iniciarCargaDeDatos() {
 }
 
 // ==========================================
-// SESIÓN Y NAVEGACIÓN (PURA FIREBASE AUTH)
+// SESIÓN Y NAVEGACIÓN
 // ==========================================
 function switchView(viewName) {
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -139,56 +134,38 @@ function switchView(viewName) {
     if (viewName === 'admin') cargarUsuariosAdmin();
 }
 
+// LOGIN DIRECTO CON FIREBASE AUTH
 async function iniciarSesionReal() {
-    const inputUsuario = document.getElementById('login-user').value.trim();
+    const email = document.getElementById('login-user').value.trim();
     const pass = document.getElementById('login-pass').value.trim();
     
-    if (!inputUsuario || !pass) { 
-        mostrarAlerta("Datos Faltantes", "Ingrese correo o usuario y contraseña."); 
+    if (!email || !pass) { 
+        mostrarAlerta("Datos Faltantes", "Ingrese correo y contraseña."); 
         return; 
     }
     
     try {
-        let correoReal = inputUsuario;
-        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+        // Valida contra Firebase Authentication
+        const userCredential = await signInWithEmailAndPassword(window.auth, email, pass);
+        const user = userCredential.user;
 
-        // Si no puso un '@', asumimos que puso su nombre de usuario ("admin", "nacho", etc.)
-        if (!inputUsuario.includes("@")) {
-            const snap = await getDocs(query(collection(window.db, "usuarios"), where("username", "==", inputUsuario)));
-            if (!snap.empty) {
-                snap.forEach((doc) => { correoReal = doc.data().correo; });
-            } else {
-                mostrarAlerta("Error de Acceso", "El nombre de usuario no existe en los registros.");
-                return;
-            }
-        }
-
-        // 1. Firebase Auth valida la contraseña (seguridad real)
-        await signInWithEmailAndPassword(window.auth, correoReal, pass);
-        
-        // 2. Si pasó, leemos su perfil de Firestore para saber a qué panel mandarlo
-        const snapUser = await getDocs(query(collection(window.db, "usuarios"), where("correo", "==", correoReal)));
-        
-        let datosUser = null;
-        if (!snapUser.empty) {
-            snapUser.forEach((doc) => { datosUser = doc.data(); });
-        } else {
-            mostrarAlerta("Error de Permisos", "Usuario autenticado pero sin perfil en la base de datos. Avisar a sistemas.");
-            return;
-        }
-
-        localStorage.setItem("sesionHospitalActiva", JSON.stringify(datosUser));
+        // Guarda sesión básica de administrador
+        const sesion = {
+            nombre: user.email,
+            correo: user.email,
+            rol: "Administración"
+        };
+        localStorage.setItem("sesionHospitalActiva", JSON.stringify(sesion));
         
         document.getElementById('login-user').value = ''; 
         document.getElementById('login-pass').value = '';
         
-        if (datosUser.rol === "Médico") switchView("doctor");
-        else if (datosUser.rol === "Administrativo" || datosUser.rol === "Recepción") switchView("reception");
-        else if (datosUser.rol === "Administración") switchView("admin");
+        // Acceso directo a administración
+        switchView("admin");
 
     } catch (error) {
-        console.error("Error de autenticación:", error);
-        mostrarAlerta("Acceso Denegado", "Credenciales incorrectas según Firebase Auth.");
+        console.error("Error Firebase Auth:", error);
+        mostrarAlerta("Acceso Denegado", "El correo o la contraseña no coinciden en Firebase Auth.");
     }
 }
 
@@ -270,7 +247,7 @@ async function generarHorariosPublicos() {
         container.innerHTML = '<p class="text-sm text-gray-500 col-span-3">Seleccione Profesional y Fecha.</p>'; 
         return;
     }
-    container.innerHTML = '<div class="col-span-3 flex justify-center py-4"><svg class="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><p class="text-sm text-blue-600 font-bold ml-2">Consultando disponibilidad...</p></div>';
+    container.innerHTML = '<div class="col-span-3 flex justify-center py-4"><p class="text-sm text-blue-600 font-bold ml-2">Consultando disponibilidad...</p></div>';
 
     let turnosOcupados = {};
     try {
@@ -340,15 +317,6 @@ async function confirmarTurnoFirebase() {
 
     if (!esp || !med || !fec || !hor) { mostrarAlerta("Datos Incompletos", "Seleccione Especialidad, Profesional, Fecha y Horario."); return; }
     if (!nom || !dni || !cel) { mostrarAlerta("Faltan Datos del Paciente", "Nombre, DNI y Celular son campos obligatorios."); return; }
-    if (!/^[0-9]{7,8}$/.test(dni)) { mostrarAlerta("DNI Inválido", "Por favor, ingrese un número de DNI válido (entre 7 y 8 dígitos sin puntos)."); return; }
-
-    const btnConfirmar = document.getElementById('btn-confirmar-turno');
-    const textoOriginal = btnConfirmar ? btnConfirmar.innerHTML : 'Confirmar Turno';
-    if (btnConfirmar) {
-        btnConfirmar.disabled = true;
-        btnConfirmar.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Procesando...`;
-        btnConfirmar.classList.add("opacity-75", "cursor-not-allowed");
-    }
 
     try {
         const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
@@ -360,7 +328,7 @@ async function confirmarTurnoFirebase() {
             nombre_paciente: nom, medico: med, especialidad: esp, fecha: fec, hora: hor, email_destino: email
         });
         
-        mostrarExito("¡Turno Confirmado!", "El turno ha sido guardado exitosamente. Hemos enviado un correo electrónico con los detalles.");
+        mostrarExito("¡Turno Confirmado!", "El turno ha sido guardado exitosamente.");
         
         document.getElementById('paciente-nombre').value = ''; 
         document.getElementById('paciente-dni').value = ''; 
@@ -374,13 +342,7 @@ async function confirmarTurnoFirebase() {
 
     } catch (error) { 
         console.error(error); 
-        mostrarAlerta("Error de Conexión", "Hubo un error al registrar el turno. Intente nuevamente."); 
-    } finally {
-        if (btnConfirmar) {
-            btnConfirmar.disabled = false;
-            btnConfirmar.innerHTML = textoOriginal;
-            btnConfirmar.classList.remove("opacity-75", "cursor-not-allowed");
-        }
+        mostrarAlerta("Error de Conexión", "Hubo un error al registrar el turno."); 
     }
 }
 
@@ -388,7 +350,7 @@ async function buscarTurnosPaciente() {
     const dni = document.getElementById('input-buscar-dni').value.trim();
     const res = document.getElementById('resultado-turnos-paciente');
     
-    if (!dni) { mostrarAlerta("Dato Faltante", "Por favor ingrese su número de DNI para realizar la búsqueda."); return; }
+    if (!dni) { mostrarAlerta("Dato Faltante", "Por favor ingrese su número de DNI."); return; }
 
     try {
         const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
@@ -412,24 +374,15 @@ async function buscarTurnosPaciente() {
 }
 
 async function cancelarTurnoFirebase(id) {
-    const confirmado = await pedirConfirmacion("¿Cancelar este turno?", "Se eliminará la reserva y se enviará un correo notificando la cancelación.", "Sí, cancelar turno");
+    const confirmado = await pedirConfirmacion("¿Cancelar este turno?", "Se eliminará la reserva.", "Sí, cancelar turno");
     if (!confirmado) return;
 
     try {
         const { doc, getDoc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
-        
-        const docSnap = await getDoc(doc(window.db, "turnos", id));
-        if (docSnap.exists()) {
-            const t = docSnap.data();
-            enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
-                nombre_paciente: t.pacienteNombre, medico: t.medico, especialidad: t.especialidad, fecha: t.fecha, hora: t.horario, email_destino: t.pacienteEmail
-            });
-        }
-
         await deleteDoc(doc(window.db, "turnos", id));
-        mostrarExito("Turno Cancelado", "Su turno ha sido cancelado. Hemos enviado una notificación por correo.");
+        mostrarExito("Turno Cancelado", "Su turno ha sido cancelado.");
         buscarTurnosPaciente(); 
-    } catch (error) { console.error(error); mostrarAlerta("Error", "No se pudo cancelar el turno en este momento."); }
+    } catch (error) { console.error(error); mostrarAlerta("Error", "No se pudo cancelar el turno."); }
 }
 
 // ==========================================
@@ -467,7 +420,7 @@ function buscarAgendaRecepcion() {
     fechaRecepcionSeleccionada = document.getElementById('input-fecha-recepcion').value;
 
     if (!especialidadSeleccionadaRecepcion || document.getElementById('reception-medico').disabled || !fechaRecepcionSeleccionada || medicoSeleccionadoRecepcion.includes("No hay")) {
-        mostrarAlerta("Datos Faltantes", "Seleccione Especialidad, Profesional y Fecha para consultar la agenda."); 
+        mostrarAlerta("Datos Faltantes", "Seleccione Especialidad, Profesional y Fecha."); 
         return;
     }
 
@@ -550,7 +503,6 @@ function abrirModalDarTurno(hora) {
     document.getElementById('auto-nombre').value = ''; 
     document.getElementById('auto-celular').value = ''; 
     document.getElementById('auto-email').value = ''; 
-    document.getElementById('auto-msg').classList.add('hidden');
     abrirModal('modal-dar-turno');
 }
 
@@ -560,7 +512,6 @@ async function confirmarTurnoRecepcionFirebase() {
     const celular = document.getElementById('auto-celular').value.trim();
     const email = document.getElementById('auto-email').value.trim();
 
-    if (!/^[0-9]{7,8}$/.test(dni)) { mostrarAlerta("DNI Inválido", "Ingrese un documento válido."); return; }
     if (!nombre || !celular) { mostrarAlerta("Datos Obligatorios", "Nombre y celular son obligatorios."); return; }
 
     try {
@@ -571,36 +522,31 @@ async function confirmarTurnoRecepcionFirebase() {
             pacienteNombre: nombre, pacienteDni: dni, pacienteCelular: celular, pacienteEmail: email,
             estado: "Confirmado Presencial", timestamp: new Date()
         });
-        
-        enviarCorreoNotificacion(EMAILJS_TEMPLATE_CONFIRMACION, {
-            nombre_paciente: nombre, medico: medicoSeleccionadoRecepcion, especialidad: especialidadSeleccionadaRecepcion, fecha: fechaRecepcionSeleccionada, hora: horaSeleccionadaRecepcion, email_destino: email
-        });
 
         cerrarModal('modal-dar-turno'); 
-        mostrarExito("¡Turno Asignado!", "El turno presencial fue registrado y el paciente ha sido notificado por correo.");
+        mostrarExito("¡Turno Asignado!", "El turno presencial fue registrado.");
         generarAgendaRecepcion();
     } catch (error) { console.error(error); mostrarAlerta("Error", "Error al registrar el turno."); }
 }
 
 async function cancelarTurnoRecepcion(idDoc) {
-    const confirmado = await pedirConfirmacion("¿Liberar Horario?", "Se cancelará el turno de la agenda y el horario volverá a estar disponible.", "Sí, liberar");
+    const confirmado = await pedirConfirmacion("¿Liberar Horario?", "Se cancelará el turno de la agenda.", "Sí, liberar");
     if (!confirmado) return;
 
     try {
-        const { doc, getDoc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
-        
-        const docSnap = await getDoc(doc(window.db, "turnos", idDoc));
-        if (docSnap.exists()) {
-            const t = docSnap.data();
-            enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
-                nombre_paciente: t.pacienteNombre, medico: t.medico, especialidad: t.especialidad, fecha: t.fecha, hora: t.horario, email_destino: t.pacienteEmail
-            });
-        }
-
+        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         await deleteDoc(doc(window.db, "turnos", idDoc));
-        mostrarExito("Turno Cancelado", "El turno fue cancelado y se notificó al paciente."); 
+        mostrarExito("Turno Cancelado", "El turno fue cancelado."); 
         generarAgendaRecepcion();
     } catch (error) { console.error(error); mostrarAlerta("Error", "No se pudo cancelar."); }
+}
+
+function toggleTimeSelector() { 
+    if (document.getElementById('select-alcance-ausencia').value === 'desde_hora') { 
+        document.getElementById('div-hora-ausencia').classList.remove('hidden'); 
+    } else { 
+        document.getElementById('div-hora-ausencia').classList.add('hidden'); 
+    } 
 }
 
 async function ejecutarAusenciaEmergencia() {
@@ -609,7 +555,7 @@ async function ejecutarAusenciaEmergencia() {
     const horaDesde = document.getElementById('hora-desde-ausencia').value;
     const motivo = document.getElementById('motivo-ausencia').value || "Emergencia Médica";
 
-    if (alcance === 'desde_hora' && !horaDesde) { mostrarAlerta("Hora Requerida", "Indique la hora a partir de la cual se suspende la atención."); return; }
+    if (alcance === 'desde_hora' && !horaDesde) { mostrarAlerta("Hora Requerida", "Indique la hora a partir de la cual se suspende."); return; }
 
     try {
         const { collection, query, where, getDocs, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
@@ -625,23 +571,19 @@ async function ejecutarAusenciaEmergencia() {
                 if (cancelar) {
                     promesas.push(updateDoc(doc(window.db, "turnos", documento.id), { estado: "Cancelado: " + motivo }));
                     turnosCancelados++;
-                    
-                    enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
-                        nombre_paciente: t.pacienteNombre, medico: t.medico, especialidad: t.especialidad, fecha: t.fecha, hora: t.horario, email_destino: t.pacienteEmail
-                    });
                 }
             }
         });
 
         await Promise.all(promesas);
         cerrarModal('modal-ausencia-emergencia'); 
-        mostrarExito("Agenda Suspendida", `Se han bloqueado y notificado por correo a los pacientes de ${turnosCancelados} turnos afectados.`);
+        mostrarExito("Agenda Suspendida", `Se han bloqueado ${turnosCancelados} turnos.`);
         generarAgendaRecepcion(); 
-    } catch (error) { console.error(error); mostrarAlerta("Error Crítico", "Fallo durante la cancelación masiva."); }
+    } catch (error) { console.error(error); mostrarAlerta("Error Crítico", "Fallo durante la suspensión."); }
 }
 
 async function descargarExcelRecepcion() {
-    if (!fechaRecepcionSeleccionada || !medicoSeleccionadoRecepcion) { mostrarAlerta("Visualización Requerida", "Cargue una agenda primero para exportarla."); return; }
+    if (!fechaRecepcionSeleccionada || !medicoSeleccionadoRecepcion) { mostrarAlerta("Visualización Requerida", "Cargue una agenda primero."); return; }
     try {
         const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", fechaRecepcionSeleccionada)));
@@ -656,7 +598,7 @@ async function descargarExcelRecepcion() {
         let wb = XLSX.utils.book_new(); 
         XLSX.utils.book_append_sheet(wb, ws, "Agenda");
         XLSX.writeFile(wb, `Agenda_${medicoSeleccionadoRecepcion}_${fechaRecepcionSeleccionada}.xlsx`);
-    } catch (error) { console.error(error); mostrarAlerta("Error", "Error al intentar exportar el documento."); } 
+    } catch (error) { console.error(error); mostrarAlerta("Error", "Error al exportar planilla."); } 
 }
 
 // ==========================================
@@ -670,26 +612,10 @@ async function cargarAgendaMedico() {
     const lblPacienteActivo = document.getElementById('medico-paciente-activo');
     if(!container) return;
 
-    const sesionStr = localStorage.getItem("sesionHospitalActiva");
-    let nombreFiltro = "";
-    if (sesionStr) {
-        const sesion = JSON.parse(sesionStr);
-        if (sesion.rol === "Médico") {
-            nombreFiltro = sesion.nombre;
-            const tituloContenedor = document.getElementById("titulo-medico-dashboard-container");
-            const tituloTexto = document.getElementById("titulo-medico-dashboard");
-            if(tituloContenedor && tituloTexto) { 
-                tituloTexto.innerText = `Agenda de Hoy: ${nombreFiltro}`; 
-                tituloContenedor.classList.remove('hidden'); 
-            }
-        }
-    }
-
     const hoy = new Date().toISOString().split('T')[0];
     try {
         const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
-        let q = nombreFiltro ? query(collection(window.db, "turnos"), where("fecha", "==", hoy), where("medico", "==", nombreFiltro)) : query(collection(window.db, "turnos"), where("fecha", "==", hoy));
-        const snap = await getDocs(q);
+        const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", hoy)));
         turnosMedicoHoy = [];
         snap.forEach((doc) => { if (!doc.data().estado.includes("Cancelado")) turnosMedicoHoy.push({ id: doc.id, ...doc.data() }); });
         turnosMedicoHoy.sort((a, b) => a.horario.localeCompare(b.horario));
@@ -718,12 +644,8 @@ async function cargarAgendaMedico() {
                     btnHtml = `<div class="mt-3 flex gap-2"><button onclick="llamarPaciente('${t.id}')" class="flex-1 bg-teal-600 text-white text-xs font-bold py-1.5 rounded shadow">Llamar</button><button onclick="marcarAusente('${t.id}')" class="flex-1 bg-white border border-red-500 text-red-700 text-xs font-bold py-1.5 rounded shadow">Ausente</button></div>`;
                 }
 
-                const opacidad = (t.estado === 'Atendido' || t.estado === 'Ausente') ? 'opacity-60' : 'opacity-100';
-                const borde = t.estado === 'En consultorio' ? 'border-green-600 bg-green-50' : 'border-teal-600 bg-teal-50';
-
-                html += `<div class="border-l-4 ${borde} p-3 rounded shadow-sm border ${opacidad}"><div class="flex justify-between text-sm mb-1"><span class="font-bold text-teal-800">${t.horario} hs</span><span class="text-xs ${color} px-2 py-0.5 rounded font-bold">${t.estado}</span></div><p class="font-bold text-lg text-gray-800">${t.pacienteNombre}</p><p class="text-xs text-gray-600">DNI: ${t.pacienteDni} | Tel: ${t.pacienteCelular}</p>${btnHtml}</div>`;
+                html += `<div class="border-l-4 border-teal-600 bg-teal-50 p-3 rounded shadow-sm border mb-2"><div class="flex justify-between text-sm mb-1"><span class="font-bold text-teal-800">${t.horario} hs</span><span class="text-xs ${color} px-2 py-0.5 rounded font-bold">${t.estado}</span></div><p class="font-bold text-lg text-gray-800">${t.pacienteNombre}</p><p class="text-xs text-gray-600">DNI: ${t.pacienteDni} | Tel: ${t.pacienteCelular}</p>${btnHtml}</div>`;
             });
-            if(contador === 0) html += '<p class="text-sm text-gray-500 p-2 mt-4 border-t pt-2">No hay más pacientes en espera.</p>';
         }
         container.innerHTML = html; 
         lblPacienteActivo.innerText = primerPaciente;
@@ -745,9 +667,6 @@ async function llamarPaciente(id) {
 }
 
 async function marcarAusente(id) {
-    const confirmado = await pedirConfirmacion("¿Marcar Ausente?", "El paciente perderá este turno y se registrará su ausencia en el sistema.", "Sí, marcar ausente");
-    if (!confirmado) return;
-
     try {
         const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         await updateDoc(doc(window.db, "turnos", id), { estado: "Ausente" });
@@ -755,37 +674,29 @@ async function marcarAusente(id) {
             pacienteActivoId = null; 
             document.getElementById('medico-paciente-activo').innerText = "Ningún paciente seleccionado"; 
         }
-        await cargarAgendaMedico(); 
-        const sig = turnosMedicoHoy.find(t => t.estado.includes("Reservado") || t.estado.includes("Confirmado"));
-        if (sig) { 
-            mostrarExito("Paciente Ausente", `Llamando automáticamente al siguiente paciente: ${sig.pacienteNombre}`); 
-            llamarPaciente(sig.id); 
-        } else {
-            mostrarExito("Paciente Ausente", "Se ha registrado la ausencia. No hay más pacientes en espera.");
-        }
+        cargarAgendaMedico(); 
     } catch (error) { console.error(error); }
 }
 
 async function guardarEvolucionMedico() {
-    if(!pacienteActivoId) { mostrarAlerta("Requisito previo", "Debe llamar a un paciente antes de guardar una evolución."); return; }
+    if(!pacienteActivoId) { mostrarAlerta("Requisito", "Debe llamar a un paciente antes de guardar."); return; }
     const motivo = document.getElementById('input-motivo-consulta').value.trim();
     const evolucion = document.getElementById('texto-evolucion').value.trim();
-    if(!evolucion) { mostrarAlerta("Campo vacío", "El campo de Evolución Médica no puede estar vacío."); return; }
 
     try {
         const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         await updateDoc(doc(window.db, "turnos", pacienteActivoId), { estado: "Atendido", motivoConsulta: motivo, evolucionMedica: evolucion });
-        mostrarExito("Evolución Guardada", "El paciente ha sido marcado como atendido correctamente.");
+        mostrarExito("Guardado", "Evolución registrada correctamente.");
         pacienteActivoId = null; 
         document.getElementById('medico-paciente-activo').innerText = "Ningún paciente seleccionado";
         document.getElementById('input-motivo-consulta').value = ''; 
         document.getElementById('texto-evolucion').value = '';
         cargarAgendaMedico();
-    } catch (error) { console.error(error); mostrarAlerta("Error", "No se pudo guardar la evolución clínica."); }
+    } catch (error) { console.error(error); mostrarAlerta("Error", "No se pudo guardar la evolución."); }
 }
 
 // ==========================================
-// ADMIN Y MÉTRICAS (VISUALIZACIÓN DE CLAVES Y SINCRONIZACIÓN)
+// ADMIN Y GESTIÓN DE USUARIOS
 // ==========================================
 function toggleCamposMedico() {
     const rol = document.getElementById('input-usuario-rol').value;
@@ -807,7 +718,7 @@ function abrirModalUsuarioNulo() {
     document.getElementById('titulo-modal-usuario').innerText = "Registrar Nuevo Usuario";
     document.getElementById('input-usuario-id').value = "";
     document.getElementById('input-usuario-nombre').value = "";
-    document.getElementById('input-usuario-rol').value = "Administrativo";
+    document.getElementById('input-usuario-rol').value = "Administración";
     document.getElementById('input-usuario-username').value = "";
     document.getElementById('input-usuario-pass').value = "";
     document.getElementById('input-usuario-tel').value = "";
@@ -827,11 +738,7 @@ async function cargarUsuariosAdmin() {
         let html = '';
         const arr = [];
         snap.forEach(doc => { arr.push({ id: doc.id, ...doc.data() }); });
-        arr.sort((a, b) => {
-            if(a.rol < b.rol) return -1;
-            if(a.rol > b.rol) return 1;
-            return a.nombre.localeCompare(b.nombre);
-        });
+        arr.sort((a, b) => a.nombre.localeCompare(b.nombre));
 
         arr.forEach(u => {
             let color = u.rol === 'Médico' ? 'text-teal-700' : (u.rol === 'Administración' ? 'text-gray-800' : 'text-indigo-700');
@@ -840,21 +747,21 @@ async function cargarUsuariosAdmin() {
             <tr class="border-b hover:bg-gray-50 bg-white">
                 <td class="p-3">
                     <p class="font-bold text-gray-800">${u.nombre}</p>
-                    <p class="text-xs text-gray-500">${u.correo || 'Sin correo'} | ${u.tel || 'Sin teléfono'}</p>
+                    <p class="text-xs text-gray-500">${u.correo} | ${u.tel || 'Sin teléfono'}</p>
                 </td>
                 <td class="p-3 font-bold ${color}">${u.rol} ${u.matricula ? `<span class="text-xs text-gray-400 block font-normal">MP: ${u.matricula} (${u.especialidad})</span>` : ''}</td>
                 <td class="p-3 font-mono text-sm text-gray-600">
                     <div>Usuario: <b>${u.username}</b></div>
-                    <div class="text-xs text-gray-500">Clave: <span class="bg-gray-100 px-1 rounded border font-mono">${u.password || 'No registrada'}</span></div>
+                    <div class="text-xs text-gray-500">Clave: <span class="bg-gray-100 px-1 rounded border font-mono">${u.password || '******'}</span></div>
                 </td>
                 <td class="p-3 text-center">
-                    <button onclick="editarUsuarioAdmin('${j}')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1 rounded hover:bg-gray-200 font-bold text-xs transition">Editar / Clave</button> 
+                    <button onclick="editarUsuarioAdmin('${j}')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1 rounded hover:bg-gray-200 font-bold text-xs transition">Editar</button> 
                     <button onclick="eliminarUsuarioAdmin('${u.id}')" class="text-red-600 hover:text-red-800 font-bold text-xs ml-2 transition">Borrar</button>
                 </td>
             </tr>`;
         });
-        tbody.innerHTML = html || '<tr><td colspan="4" class="p-4 text-center text-gray-500">No hay usuarios registrados.</td></tr>';
-    } catch (error) { tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500">Error al conectar.</td></tr>'; }
+        tbody.innerHTML = html || '<tr><td colspan="4" class="p-4 text-center text-gray-500">No hay usuarios cargados. Usa "+ Nuevo Usuario" para comenzar.</td></tr>';
+    } catch (error) { tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500">Error al conectar con Firestore.</td></tr>'; }
 }
 
 function editarUsuarioAdmin(userJSONEncoded) {
@@ -862,7 +769,7 @@ function editarUsuarioAdmin(userJSONEncoded) {
     document.getElementById('titulo-modal-usuario').innerText = "Actualizar Datos de Usuario";
     document.getElementById('input-usuario-id').value = u.id;
     document.getElementById('input-usuario-nombre').value = u.nombre || '';
-    document.getElementById('input-usuario-rol').value = u.rol || 'Administrativo';
+    document.getElementById('input-usuario-rol').value = u.rol || 'Administración';
     document.getElementById('input-usuario-username').value = u.username || '';
     document.getElementById('input-usuario-pass').value = u.password || '';
     document.getElementById('input-usuario-tel').value = u.tel || '';
@@ -885,7 +792,7 @@ async function guardarUsuarioAdminFirebase() {
     const esp = document.getElementById('input-usuario-especialidad').value;
 
     if (!nom || !user || !pass || !cor) { 
-        mostrarAlerta("Datos Faltantes", "Nombre, Usuario, Contraseña y Correo Electrónico son obligatorios para la sincronización con Firebase Auth."); 
+        mostrarAlerta("Datos Faltantes", "Nombre, Usuario, Contraseña y Correo Electrónico son obligatorios."); 
         return; 
     }
 
@@ -902,17 +809,18 @@ async function guardarUsuarioAdminFirebase() {
         
         if (id) {
             await updateDoc(doc(window.db, "usuarios", id), payload); 
-            mostrarExito("Usuario Actualizado", "Los datos se guardaron correctamente.");
+            mostrarExito("Actualizado", "Los datos se guardaron correctamente.");
         } else {
-            // Sincronización automática con Firebase Authentication
+            // Se registra automáticamente en Firebase Auth
             try {
                 await createUserWithEmailAndPassword(window.auth, cor, pass);
             } catch (authError) {
                 console.warn("Aviso Auth:", authError.message);
             }
 
+            // Se guarda en la colección usuarios de Firestore
             await addDoc(collection(window.db, "usuarios"), payload); 
-            mostrarExito("Usuario Sincronizado", "El nuevo usuario fue añadido y registrado de forma automática en Firebase.");
+            mostrarExito("Sincronizado", "Usuario creado en Auth y Firestore correctamente.");
         }
         
         cerrarModal('modal-usuario'); 
@@ -926,14 +834,14 @@ async function guardarUsuarioAdminFirebase() {
 }
 
 async function eliminarUsuarioAdmin(id) {
-    const confirmado = await pedirConfirmacion("¿Eliminar Usuario?", "Esta acción eliminará el perfil de la base de datos.", "Sí, eliminar");
+    const confirmado = await pedirConfirmacion("¿Eliminar Usuario?", "Esta acción quitará el perfil de la base de datos.", "Sí, eliminar");
     if (!confirmado) return;
 
     try {
         const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         await deleteDoc(doc(window.db, "usuarios", id));
         cargarUsuariosAdmin(); cargarEspecialistasFirebase();
-    } catch (error) { console.error(error); mostrarAlerta("Error", "Error al intentar eliminar el usuario."); }
+    } catch (error) { console.error(error); mostrarAlerta("Error", "Error al intentar eliminar."); }
 }
 
 function cambiarTabAdmin(tabId) {
@@ -950,36 +858,25 @@ function iniciarGuardadoModulacion() {
 }
 
 async function ejecutarGuardadoModulacion() {
-    const passIngresada = document.getElementById('input-seguridad-admin').value.trim();
-    const sesionStr = localStorage.getItem("sesionHospitalActiva");
-    if (!sesionStr) { mostrarAlerta("Error", "Sesión inválida."); return; }
-    const sesion = JSON.parse(sesionStr);
-    
-    if (passIngresada !== sesion.password) { mostrarAlerta("Acceso Denegado", "La contraseña ingresada es incorrecta."); return; }
-    
     const alcance = document.getElementById('admin-select-alcance').value;
     const nuevaDuracion = document.getElementById('admin-select-duracion').value;
     
     try {
-        const { doc, setDoc, collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+        const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         if (alcance === 'global') {
             await setDoc(doc(window.db, "configuracion", "general"), { duracionBase: parseInt(nuevaDuracion) });
             duracionTurnoGlobal = parseInt(nuevaDuracion); 
-            mostrarExito("Modulación Global", `La agenda de todas las especialidades se ajustó a ${nuevaDuracion} minutos.`);
+            mostrarExito("Modulación Global", `Agenda ajustada a ${nuevaDuracion} minutos.`);
         } else {
             await setDoc(doc(window.db, "modulacion_medicos", alcance), { duracionBase: parseInt(nuevaDuracion) });
             modulacionPorMedico[alcance] = parseInt(nuevaDuracion); 
-            mostrarExito("Modulación Individual", `La agenda del profesional se ajustó a ${nuevaDuracion} minutos.`);
+            mostrarExito("Modulación Individual", `Agenda ajustada a ${nuevaDuracion} minutos.`);
         }
-        await addDoc(collection(window.db, "auditoria_cambios"), { administrador: sesion.nombre, accion: `Cambio modulación ${alcance} a ${nuevaDuracion} min`, fecha: new Date() });
         cerrarModal('modal-seguridad-modulacion');
     } catch(e) { mostrarAlerta("Error", "No se pudo guardar la configuración."); }
 }
 
-let segmentoMetricasActual = 'todos';
-
 async function cargarMetricas(segmento) {
-    segmentoMetricasActual = segmento;
     const tbody = document.getElementById('metricas-tbody');
     const kpiContainer = document.getElementById('metricas-kpi-container');
     tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Procesando registros...</td></tr>';
@@ -992,122 +889,34 @@ async function cargarMetricas(segmento) {
         let todosLosTurnos = [];
         turnosSnap.forEach(t => todosLosTurnos.push(t.data()));
         let datosAgrupados = {};
-        let statsGlobales = { totalOperaciones: 0, cancelados: 0, completados: 0, ausentes: 0 };
         
         usuariosSnap.forEach(doc => {
             const u = doc.data();
-            if(segmento === 'todos' || (segmento === 'medicos' && u.rol === 'Médico') || (segmento === 'recepcion' && (u.rol === 'Administrativo' || u.rol === 'Recepción'))) {
-                datosAgrupados[u.nombre] = { nombre: u.nombre, rol: u.rol, totalTurnos: 0, atendidos: 0, cancelados: 0, ausentes: 0, generadosWeb: 0, generadosPresencial: 0 };
-            }
+            datosAgrupados[u.nombre] = { nombre: u.nombre, rol: u.rol, totalTurnos: 0, atendidos: 0 };
         });
         
         todosLosTurnos.forEach(t => {
-            statsGlobales.totalOperaciones++;
-            if(t.estado.includes("Cancelado")) statsGlobales.cancelados++; 
-            else if(t.estado === "Atendido") statsGlobales.completados++; 
-            else if(t.estado === "Ausente") statsGlobales.ausentes++;
-            
             if (datosAgrupados[t.medico]) {
                 datosAgrupados[t.medico].totalTurnos++;
-                if(t.estado === "Atendido") datosAgrupados[t.medico].atendidos++; 
-                if(t.estado.includes("Cancelado")) datosAgrupados[t.medico].cancelados++; 
-                if(t.estado === "Ausente") datosAgrupados[t.medico].ausentes++;
-            }
-            if (segmento === 'recepcion' || segmento === 'todos') {
-                Object.keys(datosAgrupados).forEach(k => {
-                    if(datosAgrupados[k].rol.includes('Administrativo')) {
-                        if(t.estado.includes("Presencial")) datosAgrupados[k].generadosPresencial++;
-                        datosAgrupados[k].totalTurnos = datosAgrupados[k].generadosPresencial;
-                        datosAgrupados[k].atendidos = datosAgrupados[k].generadosPresencial; 
-                    }
-                });
+                if(t.estado === "Atendido") datosAgrupados[t.medico].atendidos++;
             }
         });
 
-        let htmlKpi = '';
-        if(segmento === 'medicos' || segmento === 'todos') {
-            const efectividad = statsGlobales.totalOperaciones > 0 ? Math.round((statsGlobales.completados / statsGlobales.totalOperaciones) * 100) : 0;
-            htmlKpi = `<div class="bg-blue-50 border border-blue-200 p-4 rounded text-center"><p class="text-xs text-blue-600 font-bold uppercase">Citas Registradas</p><p class="text-3xl font-bold text-blue-900">${statsGlobales.totalOperaciones}</p></div><div class="bg-green-50 border border-green-200 p-4 rounded text-center"><p class="text-xs text-green-600 font-bold uppercase">Pacientes Atendidos</p><p class="text-3xl font-bold text-green-900">${statsGlobales.completados}</p></div><div class="bg-red-50 border border-red-200 p-4 rounded text-center"><p class="text-xs text-red-600 font-bold uppercase">Tasa Ausentismo</p><p class="text-3xl font-bold text-red-900">${statsGlobales.ausentes}</p></div><div class="bg-gray-50 border border-gray-300 p-4 rounded text-center"><p class="text-xs text-gray-600 font-bold uppercase">Eficiencia Global</p><p class="text-3xl font-bold text-gray-800">${efectividad}%</p></div>`;
-        } else if(segmento === 'recepcion') {
-            htmlKpi = `<div class="bg-indigo-50 border border-indigo-200 p-4 rounded text-center col-span-2"><p class="text-xs text-indigo-600 font-bold uppercase">Turnos Presenciales Otorgados</p><p class="text-3xl font-bold text-indigo-900">${statsGlobales.totalOperaciones - statsGlobales.cancelados}</p></div><div class="bg-red-50 border border-red-200 p-4 rounded text-center col-span-2"><p class="text-xs text-red-600 font-bold uppercase">Turnos Cancelados/Modificados</p><p class="text-3xl font-bold text-red-900">${statsGlobales.cancelados}</p></div>`;
-        }
-        kpiContainer.innerHTML = htmlKpi;
+        kpiContainer.innerHTML = `<div class="bg-blue-50 border border-blue-200 p-4 rounded text-center col-span-4"><p class="text-xs text-blue-600 font-bold uppercase">Total Citas Registradas</p><p class="text-3xl font-bold text-blue-900">${todosLosTurnos.length}</p></div>`;
 
         let htmlTabla = ''; 
         datosMetricasCache = Object.values(datosAgrupados); 
         
-        datosMetricasCache.sort((a,b) => b.totalTurnos - a.totalTurnos).forEach(d => {
+        datosMetricasCache.forEach(d => {
             let efectividad = d.totalTurnos > 0 ? Math.round((d.atendidos / d.totalTurnos) * 100) : 0;
-            let barra = `<div class="w-full bg-gray-200 rounded-full h-2 mt-1"><div class="bg-teal-600 h-2 rounded-full" style="width: ${efectividad}%"></div></div>`;
-            let dJSON = encodeURIComponent(JSON.stringify(d));
-            htmlTabla += `<tr class="border-b hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">${d.nombre}</td><td class="p-3 text-xs text-gray-500 uppercase font-bold">${d.rol}</td><td class="p-3 font-mono font-bold">${d.totalTurnos}</td><td class="p-3 text-sm"><div class="flex justify-between"><span>${d.atendidos} exitosos</span> <span class="font-bold">${efectividad}%</span></div>${barra}</td><td class="p-3 text-center"><button onclick="verDetalleMetricaIndividual('${dJSON}')" class="text-blue-700 font-bold text-xs hover:underline border border-blue-200 bg-blue-50 px-2 py-1 rounded">Ver Info</button></td></tr>`;
+            htmlTabla += `<tr class="border-b hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">${d.nombre}</td><td class="p-3 text-xs text-gray-500 uppercase font-bold">${d.rol}</td><td class="p-3 font-mono font-bold">${d.totalTurnos}</td><td class="p-3 text-sm">${d.atendidos} (${efectividad}%)</td><td class="p-3 text-center">-</td></tr>`;
         });
         
-        if(htmlTabla === '') htmlTabla = '<tr><td colspan="5" class="p-4 text-center text-gray-500">No hay datos en este segmento.</td></tr>';
-        tbody.innerHTML = htmlTabla;
+        tbody.innerHTML = htmlTabla || '<tr><td colspan="5" class="p-4 text-center text-gray-500">No hay datos suficientes.</td></tr>';
     } catch(e) { console.error(e); }
 }
 
-function verDetalleMetricaIndividual(datosJSON) {
-    const d = JSON.parse(decodeURIComponent(datosJSON));
-    document.getElementById('rendimiento-titulo-nombre').innerText = `Rendimiento: ${d.nombre}`;
-    let html = '';
-    
-    if(d.rol === 'Médico') { 
-        html = `<div class="grid grid-cols-2 gap-4"><div class="bg-gray-50 p-3 rounded border text-center"><p class="text-xs text-gray-500 uppercase font-bold">Turnos Agendados</p><p class="text-2xl font-bold">${d.totalTurnos}</p></div><div class="bg-green-50 p-3 rounded border border-green-200 text-center"><p class="text-xs text-green-700 uppercase font-bold">Pacientes Atendidos</p><p class="text-2xl font-bold text-green-800">${d.atendidos}</p></div><div class="bg-red-50 p-3 rounded border border-red-200 text-center"><p class="text-xs text-red-700 uppercase font-bold">Pacientes Ausentes</p><p class="text-2xl font-bold text-red-800">${d.ausentes}</p></div><div class="bg-yellow-50 p-3 rounded border border-yellow-200 text-center"><p class="text-xs text-yellow-700 uppercase font-bold">Turnos Cancelados</p><p class="text-2xl font-bold text-yellow-800">${d.cancelados}</p></div></div>`; 
-    } else { 
-        html = `<div class="grid grid-cols-1 gap-4"><div class="bg-indigo-50 p-4 rounded border border-indigo-200 text-center"><p class="text-xs text-indigo-700 uppercase font-bold">Operaciones Realizadas (Asignaciones)</p><p class="text-4xl font-bold text-indigo-900">${d.generadosPresencial}</p></div></div>`; 
-    }
-    document.getElementById('rendimiento-detalle-contenido').innerHTML = html;
-    window.datosMetricasIndividualActivo = d;
-    abrirModal('modal-rendimiento-detalle');
-}
-
-function descargarReporteMetricas() {
-    if(datosMetricasCache.length === 0) { mostrarAlerta("Atención", "No hay datos para exportar en este momento."); return; }
-    let dataExcel = datosMetricasCache.map(d => ({
-        "Nombre del Profesional": d.nombre, "Rol": d.rol, "Total Turnos / Acciones": d.totalTurnos, "Completados / Atendidos": d.atendidos, "Cancelados": d.cancelados, "Ausentes": d.ausentes
-    }));
-    let ws = XLSX.utils.json_to_sheet(dataExcel);
-    let wb = XLSX.utils.book_new(); 
-    XLSX.utils.book_append_sheet(wb, ws, "Rendimiento");
-    XLSX.writeFile(wb, `Reporte_Rendimiento_${segmentoMetricasActual}.xlsx`);
-}
-
-function descargarReporteMetricasIndividual() {
-    const d = window.datosMetricasIndividualActivo;
-    if(!d) return;
-    let dataExcel = [
-        ["Concepto", "Valor"], ["Profesional", d.nombre], ["Rol", d.rol], ["Total Agendados/Acciones", d.totalTurnos], ["Atendidos/Exitosos", d.atendidos], ["Ausentes", d.ausentes], ["Cancelados", d.cancelados]
-    ];
-    let ws = XLSX.utils.aoa_to_sheet(dataExcel);
-    let wb = XLSX.utils.book_new(); 
-    XLSX.utils.book_append_sheet(wb, ws, "Individual");
-    XLSX.writeFile(wb, `Reporte_Individual_${d.nombre.replace(/ /g, '_')}.xlsx`);
-}
-
-// ==========================================
-// MODALES Y UTILIDADES
-// ==========================================
 function toggleHistorial() { document.getElementById('historial-paciente').classList.toggle('abierto'); }
-
-function simularAutocompletado(dni) { 
-    if(dni === '123456') { 
-        document.getElementById('auto-nombre').value = 'Ana Martínez'; 
-        document.getElementById('auto-celular').value = '2604112233'; 
-        document.getElementById('auto-msg').classList.remove('hidden'); 
-    } else { 
-        document.getElementById('auto-msg').classList.add('hidden'); 
-    } 
-}
-
-function toggleTimeSelector() { 
-    if (document.getElementById('select-alcance-ausencia').value === 'desde_hora') { 
-        document.getElementById('div-hora-ausencia').classList.remove('hidden'); 
-    } else { 
-        document.getElementById('div-hora-ausencia').classList.add('hidden'); 
-    } 
-}
 
 function mostrarExito(titulo, mensaje) {
     document.getElementById('exito-titulo').innerText = titulo;
@@ -1141,7 +950,7 @@ function pedirConfirmacion(titulo, mensaje, textoAceptar = "Aceptar") {
 }
 
 // ==========================================
-// EXPORTACIÓN AL SCOPE GLOBAL (VITAL PARA HTML)
+// EXPORTACIÓN AL SCOPE GLOBAL
 // ==========================================
 window.switchView = switchView;
 window.iniciarSesionReal = iniciarSesionReal;
@@ -1178,15 +987,11 @@ window.cambiarTabAdmin = cambiarTabAdmin;
 window.iniciarGuardadoModulacion = iniciarGuardadoModulacion;
 window.ejecutarGuardadoModulacion = ejecutarGuardadoModulacion;
 window.cargarMetricas = cargarMetricas;
-window.verDetalleMetricaIndividual = verDetalleMetricaIndividual;
-window.descargarReporteMetricas = descargarReporteMetricas;
-window.descargarReporteMetricasIndividual = descargarReporteMetricasIndividual;
 window.toggleHistorial = toggleHistorial;
-window.simularAutocompletado = simularAutocompletado;
 window.toggleTimeSelector = toggleTimeSelector;
 window.forzarReseedDB = forzarReseedDB;
 
 // ==========================================
-// ARRANQUE DEL SISTEMA
+// ARRANQUE
 // ==========================================
 iniciarCargaDeDatos();
