@@ -872,7 +872,7 @@ async function guardarEvolucionMedico() {
 }
 
 // ==========================================
-// ADMIN Y MÉTRICAS
+// ADMIN Y MÉTRICAS (CON VISUALIZACIÓN DE CLAVE)
 // ==========================================
 function toggleCamposMedico() {
     const rol = document.getElementById('input-usuario-rol').value;
@@ -930,7 +930,10 @@ async function cargarUsuariosAdmin() {
                     <p class="text-xs text-gray-500">${u.correo || 'Sin correo'} | ${u.tel || 'Sin teléfono'}</p>
                 </td>
                 <td class="p-3 font-bold ${color}">${u.rol} ${u.matricula ? `<span class="text-xs text-gray-400 block font-normal">MP: ${u.matricula} (${u.especialidad})</span>` : ''}</td>
-                <td class="p-3 font-mono text-sm text-gray-600">${u.username}</td>
+                <td class="p-3 font-mono text-sm text-gray-600">
+                    <div>Usuario: <b>${u.username}</b></div>
+                    <div class="text-xs text-gray-500">Clave: <span class="bg-gray-100 px-1 rounded border font-mono">${u.password || 'No registrada'}</span></div>
+                </td>
                 <td class="p-3 text-center">
                     <button onclick="editarUsuarioAdmin('${j}')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1 rounded hover:bg-gray-200 font-bold text-xs transition">Editar / Clave</button> 
                     <button onclick="eliminarUsuarioAdmin('${u.id}')" class="text-red-600 hover:text-red-800 font-bold text-xs ml-2 transition">Borrar</button>
