@@ -117,34 +117,17 @@
                 </div>
 
                 <!-- Columna Derecha: Gestión -->
-                <div class="space-y-6">
-                    <div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-2xl p-6 border-t-4 border-gray-500 h-fit">
-                        <h2 class="text-xl font-bold text-gray-800 mb-4">Mis Turnos</h2>
-                        <p class="text-sm text-gray-600 mb-4">Ingrese su DNI para consultar o cancelar sus turnos vigentes.</p>
-                        
-                        <div class="flex gap-2 mb-4">
-                            <input type="number" id="input-buscar-dni" placeholder="N° de DNI" class="border border-gray-300 rounded p-3 w-full outline-none focus:ring-2 focus:ring-gray-500">
-                            <button onclick="buscarTurnosPaciente()" class="bg-gray-700 text-white font-bold px-4 py-2 rounded hover:bg-gray-800 transition shadow">Buscar</button>
-                        </div>
-
-                        <div id="resultado-turnos-paciente" class="hidden flex flex-col gap-2 mt-4 border-t border-gray-200 pt-4">
-                            <!-- Turnos del paciente aparecerán aquí -->
-                        </div>
+                <div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-2xl p-6 border-t-4 border-gray-500 h-fit">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Mis Turnos</h2>
+                    <p class="text-sm text-gray-600 mb-4">Ingrese su DNI para consultar o cancelar sus turnos vigentes.</p>
+                    
+                    <div class="flex gap-2 mb-4">
+                        <input type="number" id="input-buscar-dni" placeholder="N° de DNI" class="border border-gray-300 rounded p-3 w-full outline-none focus:ring-2 focus:ring-gray-500">
+                        <button onclick="buscarTurnosPaciente()" class="bg-gray-700 text-white font-bold px-4 py-2 rounded hover:bg-gray-800 transition shadow">Buscar</button>
                     </div>
 
-                    <!-- TARJETA HTML CON EL MAPA INTERACTIVO -->
-                    <div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-2xl p-6 border-t-4 border-blue-800 h-fit">
-                        <h3 class="text-lg font-bold text-blue-900 mb-3">Ubicación</h3>
-                        <div class="rounded-lg overflow-hidden border border-gray-300 shadow-sm w-full h-48">
-                            <iframe 
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3223.5183712133694!2d-68.32784648877069!3d-34.620051172835595!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x967907f865ab0c6b%3A0x67edc97046b88a45!2sHospital%20Teodoro%20J.%20Schestakow!5e1!3m2!1ses-419!2sar!4v1790088735824!5m2!1ses-419!2sar" 
-                                class="w-full h-full" 
-                                style="border:0;" 
-                                allowfullscreen="" 
-                                loading="lazy" 
-                                referrerpolicy="strict-origin-when-cross-origin">
-                            </iframe>
-                        </div>
+                    <div id="resultado-turnos-paciente" class="hidden flex flex-col gap-2 mt-4 border-t border-gray-200 pt-4">
+                        <!-- Turnos del paciente aparecerán aquí -->
                     </div>
                 </div>
             </div>
@@ -376,14 +359,14 @@
     <footer id="footer-publico" class="bg-slate-900 text-slate-300 py-6 px-6 border-t border-slate-800 mt-auto">
         <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-6 text-sm">
             
-            <!-- Izquierda: Institución, Hospital y UTN -->
-            <div class="text-center lg:text-left space-y-1">
-                <p class="font-bold text-white text-base">Hospital Teodoro J. Schestakow</p>
-                <a href="https://www.frsr.utn.edu.ar/" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold text-xs transition underline decoration-blue-500/50 block">
-                    UTN - Facultad Regional San Rafael
-                </a>
-                <p class="text-slate-400 text-xs">Sistema de Gestión y Turnos Online</p>
-            </div>
+           <!-- Izquierda: Institución, Hospital y UTN -->
+<div class="text-center lg:text-left space-y-1">
+    <p class="font-bold text-white text-base">Hospital Teodoro J. Schestakow</p>
+    <p class="text-slate-400 text-xs">Sistema de Gestión y Turnos Online</p>
+    <a href="https://www.frsr.utn.edu.ar/" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold text-xs transition underline decoration-blue-500/50 block">
+        UTN - Facultad Regional San Rafael
+    </a>
+</div>
 
             <!-- Centro: Dirección y Enlace Maps -->
             <div class="flex items-center gap-2 text-center lg:text-left">
