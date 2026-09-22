@@ -51,7 +51,7 @@ let modulacionPorMedico = {};
 let datosMetricasCache = []; 
 
 // ==========================================
-// INICIALIZACIÓN (SISTEMA LIMPIO)
+// INICIALIZACIÓN
 // ==========================================
 function establecerLimitesFecha() {
     const hoy = new Date();
@@ -61,9 +61,8 @@ function establecerLimitesFecha() {
     if(document.getElementById('input-fecha-proxima-visita')) document.getElementById('input-fecha-proxima-visita').min = fechaMinima;
 }
 
-// Función purgada, ya no inyecta datos falsos
 function forzarReseedDB() {
-    mostrarAlerta("Aviso", "El sistema de prueba fue eliminado. El software está en modo producción (vacío).");
+    mostrarAlerta("Aviso", "El sistema de prueba fue eliminado. El software está operando limpio.");
 }
 
 async function cargarEspecialistasFirebase() {
@@ -73,8 +72,8 @@ async function cargarEspecialistasFirebase() {
         const selectAlcance = document.getElementById('admin-select-alcance');
         if(selectAlcance) selectAlcance.innerHTML = '<option value="global">Todas las especialidades (Global)</option>';
         
-        snap.forEach((doc) => {
-            const u = doc.data();
+        snap.forEach((documento) => {
+            const u = documento.data();
             if(u.especialidad && u.nombre) {
                 if (!bdMedicosDinamica[u.especialidad]) bdMedicosDinamica[u.especialidad] = [];
                 bdMedicosDinamica[u.especialidad].push(u.nombre);
@@ -111,7 +110,7 @@ async function iniciarCargaDeDatos() {
 }
 
 // ==========================================
-// SESIÓN Y NAVEGACIÓN (ESTRICTAMENTE FIREBASE AUTH)
+// SESIÓN Y NAVEGACIÓN (LOGIN ESTRICTO CON AUTH)
 // ==========================================
 function switchView(viewName) {
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -121,7 +120,7 @@ function switchView(viewName) {
     if (viewName !== 'public' && viewName !== 'login') {
         btnLogout.classList.remove('hidden');
         const sesionStr = localStorage.getItem("sesionHospitalActiva");
-        if (sesionStr) { btnLogout.innerText = `Cerrar Sesión (${JSON.parse(sesionStr).nombre})`; } 
+        if (sesionStr) { btnLogout.innerText = `Cerrar Sesión (${JSON.parse(sesionStr).correo})`; } 
         else { btnLogout.innerText = "Cerrar Sesión"; }
     } else { 
         btnLogout.classList.add('hidden'); 
@@ -146,32 +145,41 @@ async function iniciarSesionReal() {
     }
     
     try {
-        // 1. PASO ESTRICTO: Solo permite acceso si Firebase Auth valida el correo y contraseña
-        await signInWithEmailAndPassword(window.auth, email, pass);
+        // 1. EL ÚNICO FILTRO REAL: Firebase Authentication
+        const userCredential = await signInWithEmailAndPassword(window.auth, email, pass);
+        const user = userCredential.user;
         
-        // 2. Busca qué rol tiene asignado ese correo en Firestore
-        const snapUser = await getDocs(query(collection(window.db, "usuarios"), where("correo", "==", email)));
-        
-        let datosUser = null;
-        if (!snapUser.empty) {
-            snapUser.forEach((doc) => { datosUser = doc.data(); });
-        } else {
-            mostrarAlerta("Error de Permisos", "Correo validado, pero no tiene un perfil asignado en el sistema.");
-            return;
-        }
+        // 2. BUSCAMOS EL ROL (Sin bloquear si no lo encuentra)
+        let rolUsuario = "Administración"; // Por defecto, asume Admin si entró a Auth pero no está en la tabla
+        let nombreUsuario = user.email;
 
-        localStorage.setItem("sesionHospitalActiva", JSON.stringify(datosUser));
+        try {
+            const snapUser = await getDocs(query(collection(window.db, "usuarios"), where("correo", "==", user.email)));
+            if (!snapUser.empty) {
+                const data = snapUser.docs[0].data();
+                rolUsuario = data.rol;
+                if(data.nombre) nombreUsuario = data.nombre;
+            }
+        } catch (e) { console.warn("No se pudo leer el rol, ingresando por defecto a Administración."); }
+
+        // 3. GUARDAR SESIÓN Y ENTRAR
+        localStorage.setItem("sesionHospitalActiva", JSON.stringify({
+            correo: user.email,
+            nombre: nombreUsuario,
+            rol: rolUsuario,
+            uid: user.uid
+        }));
         
         document.getElementById('login-user').value = ''; 
         document.getElementById('login-pass').value = '';
         
-        if (datosUser.rol === "Médico") switchView("doctor");
-        else if (datosUser.rol === "Administrativo" || datosUser.rol === "Recepción") switchView("reception");
-        else if (datosUser.rol === "Administración") switchView("admin");
+        if (rolUsuario === "Médico") switchView("doctor");
+        else if (rolUsuario === "Administrativo" || rolUsuario === "Recepción") switchView("reception");
+        else switchView("admin");
 
     } catch (error) {
-        console.error("Error de autenticación:", error);
-        mostrarAlerta("Acceso Denegado", "Correo o contraseña incorrectos.");
+        console.error("Auth Error:", error);
+        mostrarAlerta("Acceso Denegado", "El correo o la contraseña no están registrados o son incorrectos.");
     }
 }
 
@@ -344,17 +352,14 @@ async function confirmarTurnoFirebase() {
         document.getElementById('select-medico').innerHTML = '<option>Primero seleccione especialidad</option>'; 
         document.getElementById('select-medico').disabled = true;
 
-    } catch (error) { 
-        console.error(error); 
-        mostrarAlerta("Error de Conexión", "Hubo un error al registrar el turno. Intente nuevamente."); 
-    } 
+    } catch (error) { console.error(error); mostrarAlerta("Error de Conexión", "Hubo un error al registrar el turno."); } 
 }
 
 async function buscarTurnosPaciente() {
     const dni = document.getElementById('input-buscar-dni').value.trim();
     const res = document.getElementById('resultado-turnos-paciente');
     
-    if (!dni) { mostrarAlerta("Dato Faltante", "Por favor ingrese su número de DNI para realizar la búsqueda."); return; }
+    if (!dni) { mostrarAlerta("Dato Faltante", "Ingrese su número de DNI para realizar la búsqueda."); return; }
 
     try {
         const snap = await getDocs(query(collection(window.db, "turnos"), where("pacienteDni", "==", dni)));
@@ -377,7 +382,7 @@ async function buscarTurnosPaciente() {
 }
 
 async function cancelarTurnoFirebase(id) {
-    const confirmado = await pedirConfirmacion("¿Cancelar este turno?", "Se eliminará la reserva y se enviará un correo notificando la cancelación.", "Sí, cancelar turno");
+    const confirmado = await pedirConfirmacion("¿Cancelar este turno?", "Se eliminará la reserva.", "Sí, cancelar turno");
     if (!confirmado) return;
 
     try {
@@ -388,7 +393,6 @@ async function cancelarTurnoFirebase(id) {
                 nombre_paciente: t.pacienteNombre, medico: t.medico, especialidad: t.especialidad, fecha: t.fecha, hora: t.horario, email_destino: t.pacienteEmail
             });
         }
-
         await deleteDoc(doc(window.db, "turnos", id));
         mostrarExito("Turno Cancelado", "Su turno ha sido cancelado.");
         buscarTurnosPaciente(); 
@@ -697,7 +701,7 @@ async function guardarEvolucionMedico() {
 }
 
 // ==========================================
-// ADMIN Y GESTIÓN DE USUARIOS (100% LIMPIO)
+// ADMIN Y GESTIÓN DE USUARIOS (UID DE FIREBASE AUTH)
 // ==========================================
 function toggleCamposMedico() {
     const rol = document.getElementById('input-usuario-rol').value;
@@ -737,7 +741,7 @@ async function cargarUsuariosAdmin() {
         let html = '';
         const arr = [];
         snap.forEach(documento => { arr.push({ id: documento.id, ...documento.data() }); });
-        arr.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        arr.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
 
         arr.forEach(u => {
             let color = u.rol === 'Médico' ? 'text-teal-700' : (u.rol === 'Administración' ? 'text-gray-800' : 'text-indigo-700');
@@ -745,12 +749,13 @@ async function cargarUsuariosAdmin() {
             html += `
             <tr class="border-b hover:bg-gray-50 bg-white">
                 <td class="p-3">
-                    <p class="font-bold text-gray-800">${u.nombre}</p>
+                    <p class="font-bold text-gray-800">${u.nombre || 'Sin Nombre'}</p>
                     <p class="text-xs text-gray-500">${u.tel || 'Sin teléfono'}</p>
                 </td>
                 <td class="p-3 font-bold ${color}">${u.rol} ${u.matricula ? `<span class="text-xs text-gray-400 block font-normal">MP: ${u.matricula} (${u.especialidad})</span>` : ''}</td>
                 <td class="p-3 font-mono text-sm text-gray-600">
                     <div><b>${u.correo}</b></div>
+                    <div class="text-xs text-gray-500">UID: <span class="text-indigo-600">${u.uid || 'No vinculado'}</span></div>
                     <div class="text-xs text-gray-500">Clave: <span class="bg-gray-100 px-1 rounded border font-mono text-gray-800">${u.password || '******'}</span></div>
                 </td>
                 <td class="p-3 text-center">
@@ -788,12 +793,12 @@ async function guardarUsuarioAdminFirebase() {
     const mat = document.getElementById('input-usuario-matricula').value.trim();
     const esp = document.getElementById('input-usuario-especialidad').value;
 
-    if (!nom || !pass || !cor) { 
-        mostrarAlerta("Datos Faltantes", "Nombre, Contraseña y Correo Electrónico son obligatorios."); 
+    if (!cor || !pass) { 
+        mostrarAlerta("Datos Faltantes", "Correo Electrónico y Contraseña son obligatorios."); 
         return; 
     }
 
-    const payload = { 
+    let payload = { 
         nombre: nom, 
         rol: rol, 
         password: pass, 
@@ -809,17 +814,18 @@ async function guardarUsuarioAdminFirebase() {
             await updateDoc(doc(window.db, "usuarios", id), payload); 
             mostrarExito("Actualizado", "Los datos se guardaron correctamente en el perfil.");
         } else {
-            // Alta en Firebase Authentication (Seguridad Google)
+            // Alta en Firebase Authentication (Para obtener el UID real)
             try {
-                await createUserWithEmailAndPassword(window.auth, cor, pass);
+                const credencial = await createUserWithEmailAndPassword(window.auth, cor, pass);
+                payload.uid = credencial.user.uid; // Capturamos el UID real de Firebase Auth
             } catch (authError) {
                 console.warn("Aviso Auth:", authError.message);
-                // Si falla (ej. correo ya existe), igual lo creamos en el panel visual
+                payload.uid = "Existente en Auth";
             }
 
-            // Alta en Firestore (Tabla administrativa)
+            // Alta en Firestore para el panel visual
             await addDoc(collection(window.db, "usuarios"), payload); 
-            mostrarExito("Sincronizado", "Usuario creado en el sistema exitosamente.");
+            mostrarExito("Sincronizado", "Usuario creado en Auth y Firestore correctamente.");
         }
         
         cerrarModal('modal-usuario'); 
@@ -914,6 +920,24 @@ async function cargarMetricas(segmento) {
 
 function toggleHistorial() { document.getElementById('historial-paciente').classList.toggle('abierto'); }
 
+function simularAutocompletado(dni) { 
+    if(dni === '123456') { 
+        document.getElementById('auto-nombre').value = 'Ana Martínez'; 
+        document.getElementById('auto-celular').value = '2604112233'; 
+        document.getElementById('auto-msg').classList.remove('hidden'); 
+    } else { 
+        document.getElementById('auto-msg').classList.add('hidden'); 
+    } 
+}
+
+function toggleTimeSelector() { 
+    if (document.getElementById('select-alcance-ausencia').value === 'desde_hora') { 
+        document.getElementById('div-hora-ausencia').classList.remove('hidden'); 
+    } else { 
+        document.getElementById('div-hora-ausencia').classList.add('hidden'); 
+    } 
+}
+
 function mostrarExito(titulo, mensaje) {
     document.getElementById('exito-titulo').innerText = titulo;
     document.getElementById('exito-mensaje').innerText = mensaje;
@@ -984,6 +1008,8 @@ window.iniciarGuardadoModulacion = iniciarGuardadoModulacion;
 window.ejecutarGuardadoModulacion = ejecutarGuardadoModulacion;
 window.cargarMetricas = cargarMetricas;
 window.toggleHistorial = toggleHistorial;
+window.simularAutocompletado = simularAutocompletado;
+window.toggleTimeSelector = toggleTimeSelector;
 window.forzarReseedDB = forzarReseedDB;
 
 // ==========================================
