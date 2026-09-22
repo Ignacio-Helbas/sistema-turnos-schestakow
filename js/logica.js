@@ -1,7 +1,7 @@
 // ==========================================
 // IMPORTACIONES DE FIREBASE Y AUTH
 // ==========================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, query, where, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, getDoc, orderBy, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getFirestore, collection, query, where, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
@@ -64,6 +64,9 @@ window.cargarMetricas = cargarMetricas;
 window.toggleHistorial = toggleHistorial;
 window.simularAutocompletado = simularAutocompletado;
 window.toggleTimeSelector = toggleTimeSelector;
+let usuariosPageSnapshots = []; 
+let currentUsuariosPage = 0;
+const USUARIOS_PER_PAGE = 10;
 
 // ==========================================
 // CONFIGURACIÓN DE EMAILJS
@@ -862,19 +865,60 @@ function abrirModalUsuarioNulo() {
     abrirModal('modal-usuario');
 }
 
-async function cargarUsuariosAdmin() {
+async function cargarUsuariosAdmin(direccion = 'init') {
     const tbody = document.getElementById('admin-users-tbody');
     if(!tbody) return;
-    try {
-        const snap = await getDocs(collection(window.db, "usuarios"));
-        let html = '';
-        const arr = [];
-        snap.forEach(documento => { arr.push({ id: documento.id, ...documento.data() }); });
-        arr.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
 
-        arr.forEach(u => {
+    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500 font-bold animate-pulse">Cargando base de datos...</td></tr>';
+
+    let q;
+    const refCol = collection(window.db, "usuarios");
+
+    // Lógica del Cursor
+    if (direccion === 'init') {
+        usuariosPageSnapshots = [];
+        currentUsuariosPage = 0;
+        // Ordenamos alfabéticamente y limitamos a 5
+        q = query(refCol, orderBy("nombre"), limit(USUARIOS_PER_PAGE)); 
+    } 
+    else if (direccion === 'next') {
+        const ultimoDoc = usuariosPageSnapshots[currentUsuariosPage].lastVisible;
+        // Arranca DESPUÉS del último documento de la página actual
+        q = query(refCol, orderBy("nombre"), startAfter(ultimoDoc), limit(USUARIOS_PER_PAGE));
+        currentUsuariosPage++;
+    } 
+    else if (direccion === 'prev') {
+        currentUsuariosPage--;
+        if (currentUsuariosPage === 0) {
+            q = query(refCol, orderBy("nombre"), limit(USUARIOS_PER_PAGE));
+        } else {
+            const docPrevio = usuariosPageSnapshots[currentUsuariosPage - 1].lastVisible;
+            q = query(refCol, orderBy("nombre"), startAfter(docPrevio), limit(USUARIOS_PER_PAGE));
+        }
+    }
+
+    try {
+        const snap = await getDocs(q);
+        
+        if (snap.empty) {
+            if (direccion === 'next') currentUsuariosPage--; 
+            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">No hay más usuarios registrados.</td></tr>';
+            actualizarBotonesPaginacion(false);
+            return;
+        }
+
+        // Guardamos el primer y último documento en memoria para usarlos de ancla
+        usuariosPageSnapshots[currentUsuariosPage] = {
+            firstVisible: snap.docs[0],
+            lastVisible: snap.docs[snap.docs.length - 1]
+        };
+
+        let html = '';
+        snap.forEach(documento => {
+            const u = { id: documento.id, ...documento.data() };
             let color = u.rol === 'Médico' ? 'text-teal-700' : (u.rol === 'Administración' ? 'text-gray-800' : 'text-indigo-700');
             const j = encodeURIComponent(JSON.stringify(u));
+            
             html += `
             <tr class="border-b hover:bg-gray-50 bg-white">
                 <td class="p-3">
@@ -893,8 +937,25 @@ async function cargarUsuariosAdmin() {
                 </td>
             </tr>`;
         });
-        tbody.innerHTML = html || '<tr><td colspan="4" class="p-4 text-center text-gray-500">No hay usuarios cargados. Usa "+ Nuevo Usuario" para comenzar.</td></tr>';
-    } catch (error) { tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500">Error al conectar con Firestore.</td></tr>'; }
+        
+        tbody.innerHTML = html;
+        // Habilitamos o deshabilitamos los botones
+        actualizarBotonesPaginacion(snap.docs.length === USUARIOS_PER_PAGE);
+
+    } catch (error) {
+        console.error(error);
+        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500 font-bold">Error de conexión. Es posible que falte un índice en Firestore.</td></tr>';
+    }
+}
+
+function actualizarBotonesPaginacion(hayMas) {
+    const btnPrev = document.getElementById('btn-prev-users');
+    const btnNext = document.getElementById('btn-next-users');
+    const info = document.getElementById('admin-pag-info');
+    
+    if(btnPrev) btnPrev.disabled = currentUsuariosPage === 0;
+    if(btnNext) btnNext.disabled = !hayMas;
+    if(info) info.innerText = `Página ${currentUsuariosPage + 1}`;
 }
 
 function editarUsuarioAdmin(userJSONEncoded) {
