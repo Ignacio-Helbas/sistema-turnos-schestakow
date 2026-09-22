@@ -24,7 +24,7 @@ window.db = db;
 window.auth = auth;
 
 // ==========================================
-// EXPORTACIÓN INMEDIATA (EVITA CRASHES DEL HTML)
+// EXPORTACIÓN INMEDIATA AL SCOPE GLOBAL
 // ==========================================
 window.switchView = switchView;
 window.iniciarSesionReal = iniciarSesionReal;
@@ -61,13 +61,9 @@ window.cambiarTabAdmin = cambiarTabAdmin;
 window.iniciarGuardadoModulacion = iniciarGuardadoModulacion;
 window.ejecutarGuardadoModulacion = ejecutarGuardadoModulacion;
 window.cargarMetricas = cargarMetricas;
-window.verDetalleMetricaIndividual = verDetalleMetricaIndividual;
-window.descargarReporteMetricas = descargarReporteMetricas;
-window.descargarReporteMetricasIndividual = descargarReporteMetricasIndividual;
 window.toggleHistorial = toggleHistorial;
 window.simularAutocompletado = simularAutocompletado;
 window.toggleTimeSelector = toggleTimeSelector;
-window.forzarReseedDB = forzarReseedDB;
 
 // ==========================================
 // CONFIGURACIÓN DE EMAILJS
@@ -81,12 +77,12 @@ try {
     if(typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY) {
         emailjs.init(EMAILJS_PUBLIC_KEY);
     }
-} catch(e) { console.warn("Librería EmailJS no detectada, omitiendo correos."); }
+} catch(e) { console.warn("Librería EmailJS no detectada."); }
 
 function enviarCorreoNotificacion(templateId, templateParams) {
     if (!templateParams.email_destino || typeof emailjs === 'undefined') return;
     emailjs.send(EMAILJS_SERVICE_ID, templateId, templateParams)
-        .then(function() { console.log("Correo enviado a " + templateParams.email_destino); }, 
+        .then(function() { console.log("Correo enviado."); }, 
               function(error) { console.error("Fallo al enviar correo:", error); });
 }
 
@@ -96,7 +92,46 @@ function enviarCorreoNotificacion(templateId, templateParams) {
 let bdMedicosDinamica = {};
 let duracionTurnoGlobal = 15; 
 let modulacionPorMedico = {}; 
-let datosMetricasCache = []; 
+
+// ==========================================
+// PERMISOS VISUALES (LLAVE MAESTRA)
+// ==========================================
+function aplicarPermisosVisuales() {
+    // Buscamos los botones en el HTML
+    const btnAdmin = document.getElementById('btn-nav-admin') || document.querySelector('[onclick*="admin"]');
+    const btnRec = document.getElementById('btn-nav-reception') || document.querySelector('[onclick*="reception"]');
+    const btnDoc = document.getElementById('btn-nav-doctor') || document.querySelector('[onclick*="doctor"]');
+
+    // Por defecto, ocultamos todos
+    if(btnAdmin) btnAdmin.classList.add('hidden');
+    if(btnRec) btnRec.classList.add('hidden');
+    if(btnDoc) btnDoc.classList.add('hidden');
+
+    const sesionStr = localStorage.getItem("sesionHospitalActiva");
+    if (!sesionStr) return; // Si no hay sesión, se quedan ocultos
+
+    const sesion = JSON.parse(sesionStr);
+    
+    // MODO DESARROLLADOR: Ve absolutamente todo
+    if (sesion.correo === "nachohelbas@gmail.com") {
+        if(btnAdmin) btnAdmin.classList.remove('hidden');
+        if(btnRec) btnRec.classList.remove('hidden');
+        if(btnDoc) btnDoc.classList.remove('hidden');
+    } 
+    // EMPLEADOS NORMALES
+    else {
+        if (sesion.rol === "Administración") {
+            if(btnAdmin) btnAdmin.classList.remove('hidden');
+            if(btnRec) btnRec.classList.remove('hidden');
+        } 
+        else if (sesion.rol === "Recepcionista" || sesion.rol === "Administrativo" || sesion.rol === "Recepción") {
+            if(btnRec) btnRec.classList.remove('hidden');
+        } 
+        else if (sesion.rol === "Médico") {
+            if(btnDoc) btnDoc.classList.remove('hidden');
+        }
+    }
+}
 
 // ==========================================
 // INICIALIZACIÓN
@@ -110,10 +145,6 @@ function establecerLimitesFecha() {
     if(fp) fp.min = fechaMinima;
     if(fr) fr.min = fechaMinima;
     if(fv) fv.min = fechaMinima;
-}
-
-function forzarReseedDB() {
-    mostrarAlerta("Aviso", "El sistema de prueba fue eliminado. El software está operando limpio.");
 }
 
 async function cargarEspecialistasFirebase() {
@@ -151,6 +182,7 @@ async function cargarConfiguracionModulacion() {
 }
 
 async function iniciarCargaDeDatos() {
+    aplicarPermisosVisuales(); // Verifica botones al cargar la página
     establecerLimitesFecha(); 
     await cargarEspecialistasFirebase(); 
     await cargarConfiguracionModulacion();
@@ -178,7 +210,6 @@ function switchView(viewName) {
         if(btnLogout) btnLogout.classList.remove('hidden');
         const sesionStr = localStorage.getItem("sesionHospitalActiva");
         if (sesionStr && btnLogout) { btnLogout.innerText = `Cerrar Sesión (${JSON.parse(sesionStr).nombre})`; } 
-        else if (btnLogout) { btnLogout.innerText = "Cerrar Sesión"; }
     } else { 
         if(btnLogout) btnLogout.classList.add('hidden'); 
     }
@@ -227,7 +258,7 @@ async function iniciarSesionReal() {
                 rolUsuario = data.rol;
                 if(data.nombre) nombreUsuario = data.nombre;
             }
-        } catch (e) { console.warn("Rol no leído, asumiendo Administración.", e); }
+        } catch (e) { console.warn("Rol no leído."); }
 
         localStorage.setItem("sesionHospitalActiva", JSON.stringify({
             correo: user.email,
@@ -236,6 +267,8 @@ async function iniciarSesionReal() {
             uid: user.uid
         }));
         
+        aplicarPermisosVisuales(); // Revela los botones que le corresponden
+
         document.getElementById('login-user').value = ''; 
         document.getElementById('login-pass').value = '';
         
@@ -251,6 +284,7 @@ async function iniciarSesionReal() {
 
 function cerrarSesionReal() { 
     localStorage.removeItem("sesionHospitalActiva"); 
+    aplicarPermisosVisuales(); // Oculta todos los botones de nuevo
     switchView("public"); 
 }
 
@@ -488,6 +522,8 @@ let especialidadSeleccionadaRecepcion = '';
 function actualizarMedicosRecepcion() {
     const esp = document.getElementById('reception-especialidad').value;
     const selectMed = document.getElementById('reception-medico');
+    if(!selectMed) return;
+    
     selectMed.innerHTML = '';
     
     if (!esp) { 
@@ -740,8 +776,12 @@ async function cargarAgendaMedico() {
                     btnHtml = `<div class="mt-3 flex gap-2"><button onclick="llamarPaciente('${t.id}')" class="flex-1 bg-teal-600 text-white text-xs font-bold py-1.5 rounded shadow">Llamar</button><button onclick="marcarAusente('${t.id}')" class="flex-1 bg-white border border-red-50 text-red-700 text-xs font-bold py-1.5 rounded shadow">Ausente</button></div>`;
                 }
 
-                html += `<div class="border-l-4 border-teal-600 bg-teal-50 p-3 rounded shadow-sm border mb-2"><div class="flex justify-between text-sm mb-1"><span class="font-bold text-teal-800">${t.horario} hs</span><span class="text-xs ${color} px-2 py-0.5 rounded font-bold">${t.estado}</span></div><p class="font-bold text-lg text-gray-800">${t.pacienteNombre}</p><p class="text-xs text-gray-600">DNI: ${t.pacienteDni} | Tel: ${t.pacienteCelular}</p>${btnHtml}</div>`;
+                const opacidad = (t.estado === 'Atendido' || t.estado === 'Ausente') ? 'opacity-60' : 'opacity-100';
+                const borde = t.estado === 'En consultorio' ? 'border-green-600 bg-green-50' : 'border-teal-600 bg-teal-50';
+
+                html += `<div class="border-l-4 ${borde} p-3 rounded shadow-sm border ${opacidad}"><div class="flex justify-between text-sm mb-1"><span class="font-bold text-teal-800">${t.horario} hs</span><span class="text-xs ${color} px-2 py-0.5 rounded font-bold">${t.estado}</span></div><p class="font-bold text-lg text-gray-800">${t.pacienteNombre}</p><p class="text-xs text-gray-600">DNI: ${t.pacienteDni} | Tel: ${t.pacienteCelular}</p>${btnHtml}</div>`;
             });
+            if(contador === 0) html += '<p class="text-sm text-gray-500 p-2 mt-4 border-t pt-2">No hay más pacientes en espera.</p>';
         }
         container.innerHTML = html; 
         if(lblPacienteActivo) lblPacienteActivo.innerText = primerPaciente;
@@ -1065,58 +1105,12 @@ function pedirConfirmacion(titulo, mensaje, textoAceptar = "Aceptar") {
 }
 
 // ==========================================
-// EXPORTACIÓN AL SCOPE GLOBAL
-// ==========================================
-window.switchView = switchView;
-window.iniciarSesionReal = iniciarSesionReal;
-window.cerrarSesionReal = cerrarSesionReal;
-window.loginAs = loginAs;
-window.abrirModal = abrirModal;
-window.cerrarModal = cerrarModal;
-window.actualizarMedicosPublico = actualizarMedicosPublico;
-window.validarDiaHabil = validarDiaHabil;
-window.generarHorariosPublicos = generarHorariosPublicos;
-window.seleccionarHorario = seleccionarHorario;
-window.confirmarTurnoFirebase = confirmarTurnoFirebase;
-window.buscarTurnosPaciente = buscarTurnosPaciente;
-window.cancelarTurnoFirebase = cancelarTurnoFirebase;
-window.actualizarMedicosRecepcion = actualizarMedicosRecepcion;
-window.buscarAgendaRecepcion = buscarAgendaRecepcion;
-window.generarAgendaRecepcion = generarAgendaRecepcion;
-window.abrirModalDarTurno = abrirModalDarTurno;
-window.confirmarTurnoRecepcionFirebase = confirmarTurnoRecepcionFirebase;
-window.cancelarTurnoRecepcion = cancelarTurnoRecepcion;
-window.ejecutarAusenciaEmergencia = ejecutarAusenciaEmergencia;
-window.descargarExcelRecepcion = descargarExcelRecepcion;
-window.cargarAgendaMedico = cargarAgendaMedico;
-window.llamarPaciente = llamarPaciente;
-window.marcarAusente = marcarAusente;
-window.guardarEvolucionMedico = guardarEvolucionMedico;
-window.toggleCamposMedico = toggleCamposMedico;
-window.abrirModalUsuarioNulo = abrirModalUsuarioNulo;
-window.cargarUsuariosAdmin = cargarUsuariosAdmin;
-window.editarUsuarioAdmin = editarUsuarioAdmin;
-window.guardarUsuarioAdminFirebase = guardarUsuarioAdminFirebase;
-window.eliminarUsuarioAdmin = eliminarUsuarioAdmin;
-window.cambiarTabAdmin = cambiarTabAdmin;
-window.iniciarGuardadoModulacion = iniciarGuardadoModulacion;
-window.ejecutarGuardadoModulacion = ejecutarGuardadoModulacion;
-window.cargarMetricas = cargarMetricas;
-window.verDetalleMetricaIndividual = verDetalleMetricaIndividual;
-window.descargarReporteMetricas = descargarReporteMetricas;
-window.descargarReporteMetricasIndividual = descargarReporteMetricasIndividual;
-window.toggleHistorial = toggleHistorial;
-window.simularAutocompletado = simularAutocompletado;
-window.toggleTimeSelector = toggleTimeSelector;
-window.forzarReseedDB = forzarReseedDB;
-
-// ==========================================
 // ARRANQUE SEGURO
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
     iniciarCargaDeDatos();
-
-    // Soporte para tecla Enter en el login
+    
+    // Permitir inicio de sesión presionando "Enter"
     const inputUser = document.getElementById('login-user');
     const inputPass = document.getElementById('login-pass');
     if(inputUser) inputUser.addEventListener('keypress', e => { if(e.key === 'Enter') iniciarSesionReal(); });
