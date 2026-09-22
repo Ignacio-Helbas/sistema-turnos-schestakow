@@ -2,7 +2,7 @@
 // IMPORTACIONES DE FIREBASE Y AUTH
 // ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 // ==========================================
@@ -51,7 +51,7 @@ let modulacionPorMedico = {};
 let datosMetricasCache = []; 
 
 // ==========================================
-// INICIALIZACIÓN
+// INICIALIZACIÓN (SISTEMA LIMPIO)
 // ==========================================
 function establecerLimitesFecha() {
     const hoy = new Date();
@@ -61,11 +61,14 @@ function establecerLimitesFecha() {
     if(document.getElementById('input-fecha-proxima-visita')) document.getElementById('input-fecha-proxima-visita').min = fechaMinima;
 }
 
+// Función purgada, ya no inyecta datos falsos
+function forzarReseedDB() {
+    mostrarAlerta("Aviso", "El sistema de prueba fue eliminado. El software está en modo producción (vacío).");
+}
+
 async function cargarEspecialistasFirebase() {
     try {
-        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         const snap = await getDocs(query(collection(window.db, "usuarios"), where("rol", "==", "Médico")));
-        
         bdMedicosDinamica = {}; 
         const selectAlcance = document.getElementById('admin-select-alcance');
         if(selectAlcance) selectAlcance.innerHTML = '<option value="global">Todas las especialidades (Global)</option>';
@@ -83,7 +86,6 @@ async function cargarEspecialistasFirebase() {
 
 async function cargarConfiguracionModulacion() {
     try {
-        const { collection, getDocs, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         const snapGlobal = await getDoc(doc(window.db, "configuracion", "general"));
         if(snapGlobal.exists()) {
             duracionTurnoGlobal = snapGlobal.data().duracionBase || 15;
@@ -94,7 +96,7 @@ async function cargarConfiguracionModulacion() {
         }
         const snapIndividual = await getDocs(collection(window.db, "modulacion_medicos"));
         modulacionPorMedico = {}; 
-        snapIndividual.forEach(doc => { modulacionPorMedico[doc.id] = doc.data().duracionBase; });
+        snapIndividual.forEach(documento => { modulacionPorMedico[documento.id] = documento.data().duracionBase; });
     } catch(e) { console.log("Configuración por defecto."); }
 }
 
@@ -109,7 +111,7 @@ async function iniciarCargaDeDatos() {
 }
 
 // ==========================================
-// SESIÓN Y NAVEGACIÓN
+// SESIÓN Y NAVEGACIÓN (ESTRICTAMENTE FIREBASE AUTH)
 // ==========================================
 function switchView(viewName) {
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -134,38 +136,42 @@ function switchView(viewName) {
     if (viewName === 'admin') cargarUsuariosAdmin();
 }
 
-// LOGIN DIRECTO CON FIREBASE AUTH
 async function iniciarSesionReal() {
     const email = document.getElementById('login-user').value.trim();
     const pass = document.getElementById('login-pass').value.trim();
     
     if (!email || !pass) { 
-        mostrarAlerta("Datos Faltantes", "Ingrese correo y contraseña."); 
+        mostrarAlerta("Datos Faltantes", "Ingrese correo electrónico y contraseña."); 
         return; 
     }
     
     try {
-        // Valida contra Firebase Authentication
-        const userCredential = await signInWithEmailAndPassword(window.auth, email, pass);
-        const user = userCredential.user;
+        // 1. PASO ESTRICTO: Solo permite acceso si Firebase Auth valida el correo y contraseña
+        await signInWithEmailAndPassword(window.auth, email, pass);
+        
+        // 2. Busca qué rol tiene asignado ese correo en Firestore
+        const snapUser = await getDocs(query(collection(window.db, "usuarios"), where("correo", "==", email)));
+        
+        let datosUser = null;
+        if (!snapUser.empty) {
+            snapUser.forEach((doc) => { datosUser = doc.data(); });
+        } else {
+            mostrarAlerta("Error de Permisos", "Correo validado, pero no tiene un perfil asignado en el sistema.");
+            return;
+        }
 
-        // Guarda sesión básica de administrador
-        const sesion = {
-            nombre: user.email,
-            correo: user.email,
-            rol: "Administración"
-        };
-        localStorage.setItem("sesionHospitalActiva", JSON.stringify(sesion));
+        localStorage.setItem("sesionHospitalActiva", JSON.stringify(datosUser));
         
         document.getElementById('login-user').value = ''; 
         document.getElementById('login-pass').value = '';
         
-        // Acceso directo a administración
-        switchView("admin");
+        if (datosUser.rol === "Médico") switchView("doctor");
+        else if (datosUser.rol === "Administrativo" || datosUser.rol === "Recepción") switchView("reception");
+        else if (datosUser.rol === "Administración") switchView("admin");
 
     } catch (error) {
-        console.error("Error Firebase Auth:", error);
-        mostrarAlerta("Acceso Denegado", "El correo o la contraseña no coinciden en Firebase Auth.");
+        console.error("Error de autenticación:", error);
+        mostrarAlerta("Acceso Denegado", "Correo o contraseña incorrectos.");
     }
 }
 
@@ -251,7 +257,6 @@ async function generarHorariosPublicos() {
 
     let turnosOcupados = {};
     try {
-        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", input)));
         snap.forEach((doc) => {
             const data = doc.data();
@@ -319,7 +324,6 @@ async function confirmarTurnoFirebase() {
     if (!nom || !dni || !cel) { mostrarAlerta("Faltan Datos del Paciente", "Nombre, DNI y Celular son campos obligatorios."); return; }
 
     try {
-        const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         await addDoc(collection(window.db, "turnos"), {
             especialidad: esp, medico: med, fecha: fec, horario: hor, pacienteNombre: nom, pacienteDni: dni, pacienteCelular: cel, pacienteEmail: email, estado: "Reservado Web", timestamp: new Date()
         });
@@ -342,18 +346,17 @@ async function confirmarTurnoFirebase() {
 
     } catch (error) { 
         console.error(error); 
-        mostrarAlerta("Error de Conexión", "Hubo un error al registrar el turno."); 
-    }
+        mostrarAlerta("Error de Conexión", "Hubo un error al registrar el turno. Intente nuevamente."); 
+    } 
 }
 
 async function buscarTurnosPaciente() {
     const dni = document.getElementById('input-buscar-dni').value.trim();
     const res = document.getElementById('resultado-turnos-paciente');
     
-    if (!dni) { mostrarAlerta("Dato Faltante", "Por favor ingrese su número de DNI."); return; }
+    if (!dni) { mostrarAlerta("Dato Faltante", "Por favor ingrese su número de DNI para realizar la búsqueda."); return; }
 
     try {
-        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         const snap = await getDocs(query(collection(window.db, "turnos"), where("pacienteDni", "==", dni)));
         
         let html = '';
@@ -374,11 +377,18 @@ async function buscarTurnosPaciente() {
 }
 
 async function cancelarTurnoFirebase(id) {
-    const confirmado = await pedirConfirmacion("¿Cancelar este turno?", "Se eliminará la reserva.", "Sí, cancelar turno");
+    const confirmado = await pedirConfirmacion("¿Cancelar este turno?", "Se eliminará la reserva y se enviará un correo notificando la cancelación.", "Sí, cancelar turno");
     if (!confirmado) return;
 
     try {
-        const { doc, getDoc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+        const docSnap = await getDoc(doc(window.db, "turnos", id));
+        if (docSnap.exists()) {
+            const t = docSnap.data();
+            enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
+                nombre_paciente: t.pacienteNombre, medico: t.medico, especialidad: t.especialidad, fecha: t.fecha, hora: t.horario, email_destino: t.pacienteEmail
+            });
+        }
+
         await deleteDoc(doc(window.db, "turnos", id));
         mostrarExito("Turno Cancelado", "Su turno ha sido cancelado.");
         buscarTurnosPaciente(); 
@@ -420,7 +430,7 @@ function buscarAgendaRecepcion() {
     fechaRecepcionSeleccionada = document.getElementById('input-fecha-recepcion').value;
 
     if (!especialidadSeleccionadaRecepcion || document.getElementById('reception-medico').disabled || !fechaRecepcionSeleccionada || medicoSeleccionadoRecepcion.includes("No hay")) {
-        mostrarAlerta("Datos Faltantes", "Seleccione Especialidad, Profesional y Fecha."); 
+        mostrarAlerta("Datos Faltantes", "Seleccione Especialidad, Profesional y Fecha para consultar la agenda."); 
         return;
     }
 
@@ -437,12 +447,11 @@ async function generarAgendaRecepcion() {
 
     let turnosOcupados = {};
     try {
-        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", fechaRecepcionSeleccionada)));
-        snap.forEach((doc) => {
-            const data = doc.data();
+        snap.forEach((documento) => {
+            const data = documento.data();
             if (data.medico === medicoSeleccionadoRecepcion) {
-                turnosOcupados[data.horario] = { id: doc.id, ...data };
+                turnosOcupados[data.horario] = { id: documento.id, ...data };
             }
         });
     } catch (error) { console.error("Error BD:", error); }
@@ -515,7 +524,6 @@ async function confirmarTurnoRecepcionFirebase() {
     if (!nombre || !celular) { mostrarAlerta("Datos Obligatorios", "Nombre y celular son obligatorios."); return; }
 
     try {
-        const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         await addDoc(collection(window.db, "turnos"), {
             especialidad: especialidadSeleccionadaRecepcion, medico: medicoSeleccionadoRecepcion,
             fecha: fechaRecepcionSeleccionada, horario: horaSeleccionadaRecepcion,
@@ -534,7 +542,6 @@ async function cancelarTurnoRecepcion(idDoc) {
     if (!confirmado) return;
 
     try {
-        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         await deleteDoc(doc(window.db, "turnos", idDoc));
         mostrarExito("Turno Cancelado", "El turno fue cancelado."); 
         generarAgendaRecepcion();
@@ -558,7 +565,6 @@ async function ejecutarAusenciaEmergencia() {
     if (alcance === 'desde_hora' && !horaDesde) { mostrarAlerta("Hora Requerida", "Indique la hora a partir de la cual se suspende."); return; }
 
     try {
-        const { collection, query, where, getDocs, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", fechaRecepcionSeleccionada)));
 
         let turnosCancelados = 0; 
@@ -585,10 +591,9 @@ async function ejecutarAusenciaEmergencia() {
 async function descargarExcelRecepcion() {
     if (!fechaRecepcionSeleccionada || !medicoSeleccionadoRecepcion) { mostrarAlerta("Visualización Requerida", "Cargue una agenda primero."); return; }
     try {
-        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", fechaRecepcionSeleccionada)));
         let turnos = []; 
-        snap.forEach((doc) => { if (doc.data().medico === medicoSeleccionadoRecepcion) turnos.push(doc.data()); });
+        snap.forEach((documento) => { if (documento.data().medico === medicoSeleccionadoRecepcion) turnos.push(documento.data()); });
         turnos.sort((a, b) => a.horario.localeCompare(b.horario));
         
         let dataExcel = turnos.map(t => ({
@@ -614,10 +619,9 @@ async function cargarAgendaMedico() {
 
     const hoy = new Date().toISOString().split('T')[0];
     try {
-        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", hoy)));
         turnosMedicoHoy = [];
-        snap.forEach((doc) => { if (!doc.data().estado.includes("Cancelado")) turnosMedicoHoy.push({ id: doc.id, ...doc.data() }); });
+        snap.forEach((documento) => { if (!documento.data().estado.includes("Cancelado")) turnosMedicoHoy.push({ id: documento.id, ...documento.data() }); });
         turnosMedicoHoy.sort((a, b) => a.horario.localeCompare(b.horario));
 
         let html = ''; 
@@ -641,7 +645,7 @@ async function cargarAgendaMedico() {
 
                 let btnHtml = '';
                 if (t.estado !== "Atendido" && t.estado !== "Ausente") {
-                    btnHtml = `<div class="mt-3 flex gap-2"><button onclick="llamarPaciente('${t.id}')" class="flex-1 bg-teal-600 text-white text-xs font-bold py-1.5 rounded shadow">Llamar</button><button onclick="marcarAusente('${t.id}')" class="flex-1 bg-white border border-red-500 text-red-700 text-xs font-bold py-1.5 rounded shadow">Ausente</button></div>`;
+                    btnHtml = `<div class="mt-3 flex gap-2"><button onclick="llamarPaciente('${t.id}')" class="flex-1 bg-teal-600 text-white text-xs font-bold py-1.5 rounded shadow">Llamar</button><button onclick="marcarAusente('${t.id}')" class="flex-1 bg-white border border-red-50 text-red-700 text-xs font-bold py-1.5 rounded shadow">Ausente</button></div>`;
                 }
 
                 html += `<div class="border-l-4 border-teal-600 bg-teal-50 p-3 rounded shadow-sm border mb-2"><div class="flex justify-between text-sm mb-1"><span class="font-bold text-teal-800">${t.horario} hs</span><span class="text-xs ${color} px-2 py-0.5 rounded font-bold">${t.estado}</span></div><p class="font-bold text-lg text-gray-800">${t.pacienteNombre}</p><p class="text-xs text-gray-600">DNI: ${t.pacienteDni} | Tel: ${t.pacienteCelular}</p>${btnHtml}</div>`;
@@ -656,7 +660,6 @@ async function llamarPaciente(id) {
     const paciente = turnosMedicoHoy.find(t => t.id === id); 
     if(!paciente) return;
     try {
-        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         await updateDoc(doc(window.db, "turnos", id), { estado: "En consultorio" });
     } catch(e) { console.error(e); }
     pacienteActivoId = id;
@@ -668,7 +671,6 @@ async function llamarPaciente(id) {
 
 async function marcarAusente(id) {
     try {
-        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         await updateDoc(doc(window.db, "turnos", id), { estado: "Ausente" });
         if (pacienteActivoId === id) { 
             pacienteActivoId = null; 
@@ -684,7 +686,6 @@ async function guardarEvolucionMedico() {
     const evolucion = document.getElementById('texto-evolucion').value.trim();
 
     try {
-        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         await updateDoc(doc(window.db, "turnos", pacienteActivoId), { estado: "Atendido", motivoConsulta: motivo, evolucionMedica: evolucion });
         mostrarExito("Guardado", "Evolución registrada correctamente.");
         pacienteActivoId = null; 
@@ -696,7 +697,7 @@ async function guardarEvolucionMedico() {
 }
 
 // ==========================================
-// ADMIN Y GESTIÓN DE USUARIOS
+// ADMIN Y GESTIÓN DE USUARIOS (100% LIMPIO)
 // ==========================================
 function toggleCamposMedico() {
     const rol = document.getElementById('input-usuario-rol').value;
@@ -718,11 +719,10 @@ function abrirModalUsuarioNulo() {
     document.getElementById('titulo-modal-usuario').innerText = "Registrar Nuevo Usuario";
     document.getElementById('input-usuario-id').value = "";
     document.getElementById('input-usuario-nombre').value = "";
-    document.getElementById('input-usuario-rol').value = "Administración";
-    document.getElementById('input-usuario-username').value = "";
+    document.getElementById('input-usuario-rol').value = "Administrativo";
+    document.getElementById('input-usuario-correo').value = "";
     document.getElementById('input-usuario-pass').value = "";
     document.getElementById('input-usuario-tel').value = "";
-    document.getElementById('input-usuario-correo').value = "";
     document.getElementById('input-usuario-matricula').value = "";
     document.getElementById('input-usuario-especialidad').value = "clinica";
     toggleCamposMedico();
@@ -733,11 +733,10 @@ async function cargarUsuariosAdmin() {
     const tbody = document.getElementById('admin-users-tbody');
     if(!tbody) return;
     try {
-        const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         const snap = await getDocs(collection(window.db, "usuarios"));
         let html = '';
         const arr = [];
-        snap.forEach(doc => { arr.push({ id: doc.id, ...doc.data() }); });
+        snap.forEach(documento => { arr.push({ id: documento.id, ...documento.data() }); });
         arr.sort((a, b) => a.nombre.localeCompare(b.nombre));
 
         arr.forEach(u => {
@@ -747,12 +746,12 @@ async function cargarUsuariosAdmin() {
             <tr class="border-b hover:bg-gray-50 bg-white">
                 <td class="p-3">
                     <p class="font-bold text-gray-800">${u.nombre}</p>
-                    <p class="text-xs text-gray-500">${u.correo} | ${u.tel || 'Sin teléfono'}</p>
+                    <p class="text-xs text-gray-500">${u.tel || 'Sin teléfono'}</p>
                 </td>
                 <td class="p-3 font-bold ${color}">${u.rol} ${u.matricula ? `<span class="text-xs text-gray-400 block font-normal">MP: ${u.matricula} (${u.especialidad})</span>` : ''}</td>
                 <td class="p-3 font-mono text-sm text-gray-600">
-                    <div>Usuario: <b>${u.username}</b></div>
-                    <div class="text-xs text-gray-500">Clave: <span class="bg-gray-100 px-1 rounded border font-mono">${u.password || '******'}</span></div>
+                    <div><b>${u.correo}</b></div>
+                    <div class="text-xs text-gray-500">Clave: <span class="bg-gray-100 px-1 rounded border font-mono text-gray-800">${u.password || '******'}</span></div>
                 </td>
                 <td class="p-3 text-center">
                     <button onclick="editarUsuarioAdmin('${j}')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1 rounded hover:bg-gray-200 font-bold text-xs transition">Editar</button> 
@@ -769,11 +768,10 @@ function editarUsuarioAdmin(userJSONEncoded) {
     document.getElementById('titulo-modal-usuario').innerText = "Actualizar Datos de Usuario";
     document.getElementById('input-usuario-id').value = u.id;
     document.getElementById('input-usuario-nombre').value = u.nombre || '';
-    document.getElementById('input-usuario-rol').value = u.rol || 'Administración';
-    document.getElementById('input-usuario-username').value = u.username || '';
+    document.getElementById('input-usuario-rol').value = u.rol || 'Administrativo';
+    document.getElementById('input-usuario-correo').value = u.correo || '';
     document.getElementById('input-usuario-pass').value = u.password || '';
     document.getElementById('input-usuario-tel').value = u.tel || '';
-    document.getElementById('input-usuario-correo').value = u.correo || '';
     document.getElementById('input-usuario-matricula').value = u.matricula || '';
     document.getElementById('input-usuario-especialidad').value = u.especialidad || 'clinica';
     toggleCamposMedico();
@@ -784,43 +782,44 @@ async function guardarUsuarioAdminFirebase() {
     const id = document.getElementById('input-usuario-id').value;
     const nom = document.getElementById('input-usuario-nombre').value.trim();
     const rol = document.getElementById('input-usuario-rol').value;
-    const user = document.getElementById('input-usuario-username').value.trim();
     const pass = document.getElementById('input-usuario-pass').value.trim();
     const tel = document.getElementById('input-usuario-tel').value.trim();
     const cor = document.getElementById('input-usuario-correo').value.trim();
     const mat = document.getElementById('input-usuario-matricula').value.trim();
     const esp = document.getElementById('input-usuario-especialidad').value;
 
-    if (!nom || !user || !pass || !cor) { 
-        mostrarAlerta("Datos Faltantes", "Nombre, Usuario, Contraseña y Correo Electrónico son obligatorios."); 
+    if (!nom || !pass || !cor) { 
+        mostrarAlerta("Datos Faltantes", "Nombre, Contraseña y Correo Electrónico son obligatorios."); 
         return; 
     }
 
     const payload = { 
-        nombre: nom, rol: rol, username: user, password: pass, 
-        tel: tel, correo: cor, 
+        nombre: nom, 
+        rol: rol, 
+        password: pass, 
+        correo: cor, 
+        tel: tel,
         matricula: rol === 'Médico' ? mat : '', 
         especialidad: rol === 'Médico' ? esp : '', 
         timestamp: new Date() 
     };
 
     try {
-        const { collection, addDoc, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
-        
         if (id) {
             await updateDoc(doc(window.db, "usuarios", id), payload); 
-            mostrarExito("Actualizado", "Los datos se guardaron correctamente.");
+            mostrarExito("Actualizado", "Los datos se guardaron correctamente en el perfil.");
         } else {
-            // Se registra automáticamente en Firebase Auth
+            // Alta en Firebase Authentication (Seguridad Google)
             try {
                 await createUserWithEmailAndPassword(window.auth, cor, pass);
             } catch (authError) {
                 console.warn("Aviso Auth:", authError.message);
+                // Si falla (ej. correo ya existe), igual lo creamos en el panel visual
             }
 
-            // Se guarda en la colección usuarios de Firestore
+            // Alta en Firestore (Tabla administrativa)
             await addDoc(collection(window.db, "usuarios"), payload); 
-            mostrarExito("Sincronizado", "Usuario creado en Auth y Firestore correctamente.");
+            mostrarExito("Sincronizado", "Usuario creado en el sistema exitosamente.");
         }
         
         cerrarModal('modal-usuario'); 
@@ -834,11 +833,10 @@ async function guardarUsuarioAdminFirebase() {
 }
 
 async function eliminarUsuarioAdmin(id) {
-    const confirmado = await pedirConfirmacion("¿Eliminar Usuario?", "Esta acción quitará el perfil de la base de datos.", "Sí, eliminar");
+    const confirmado = await pedirConfirmacion("¿Eliminar Usuario?", "Esta acción quitará el perfil de la tabla administrativa. Para revocar el acceso total, también bórrelo desde la consola de Firebase Authentication.", "Sí, eliminar");
     if (!confirmado) return;
 
     try {
-        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         await deleteDoc(doc(window.db, "usuarios", id));
         cargarUsuariosAdmin(); cargarEspecialistasFirebase();
     } catch (error) { console.error(error); mostrarAlerta("Error", "Error al intentar eliminar."); }
@@ -862,7 +860,6 @@ async function ejecutarGuardadoModulacion() {
     const nuevaDuracion = document.getElementById('admin-select-duracion').value;
     
     try {
-        const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         if (alcance === 'global') {
             await setDoc(doc(window.db, "configuracion", "general"), { duracionBase: parseInt(nuevaDuracion) });
             duracionTurnoGlobal = parseInt(nuevaDuracion); 
@@ -882,7 +879,6 @@ async function cargarMetricas(segmento) {
     tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Procesando registros...</td></tr>';
     
     try {
-        const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
         const turnosSnap = await getDocs(collection(window.db, "turnos"));
         const usuariosSnap = await getDocs(collection(window.db, "usuarios"));
         
@@ -890,8 +886,8 @@ async function cargarMetricas(segmento) {
         turnosSnap.forEach(t => todosLosTurnos.push(t.data()));
         let datosAgrupados = {};
         
-        usuariosSnap.forEach(doc => {
-            const u = doc.data();
+        usuariosSnap.forEach(documento => {
+            const u = documento.data();
             datosAgrupados[u.nombre] = { nombre: u.nombre, rol: u.rol, totalTurnos: 0, atendidos: 0 };
         });
         
@@ -988,7 +984,6 @@ window.iniciarGuardadoModulacion = iniciarGuardadoModulacion;
 window.ejecutarGuardadoModulacion = ejecutarGuardadoModulacion;
 window.cargarMetricas = cargarMetricas;
 window.toggleHistorial = toggleHistorial;
-window.toggleTimeSelector = toggleTimeSelector;
 window.forzarReseedDB = forzarReseedDB;
 
 // ==========================================
