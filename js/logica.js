@@ -3,7 +3,7 @@
 // ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, query, where, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 // ==========================================
 // CONFIGURACIÓN DE FIREBASE
@@ -61,6 +61,9 @@ window.cambiarTabAdmin = cambiarTabAdmin;
 window.iniciarGuardadoModulacion = iniciarGuardadoModulacion;
 window.ejecutarGuardadoModulacion = ejecutarGuardadoModulacion;
 window.cargarMetricas = cargarMetricas;
+window.verDetalleMetricaIndividual = verDetalleMetricaIndividual;
+window.descargarReporteMetricas = descargarReporteMetricas;
+window.descargarReporteMetricasIndividual = descargarReporteMetricasIndividual;
 window.toggleHistorial = toggleHistorial;
 window.simularAutocompletado = simularAutocompletado;
 window.toggleTimeSelector = toggleTimeSelector;
@@ -895,8 +898,8 @@ async function guardarUsuarioAdminFirebase() {
     const mat = document.getElementById('input-usuario-matricula').value.trim();
     const esp = document.getElementById('input-usuario-especialidad').value;
 
-    if (!cor || !pass) { 
-        mostrarAlerta("Datos Faltantes", "Correo Electrónico y Contraseña son obligatorios."); 
+    if (!cor || !pass || !nom || !user) { 
+        mostrarAlerta("Datos Faltantes", "Nombre, Usuario, Correo y Contraseña son obligatorios."); 
         return; 
     }
 
@@ -917,16 +920,22 @@ async function guardarUsuarioAdminFirebase() {
             await updateDoc(doc(window.db, "usuarios", id), payload); 
             mostrarExito("Actualizado", "Los datos se guardaron correctamente en el perfil.");
         } else {
-            // Alta en Firebase Authentication
+            // TRUCO: Crear conexión secundaria para no cerrar la sesión del Administrador
             try {
-                const credencial = await createUserWithEmailAndPassword(window.auth, cor, pass);
+                const appSecundaria = initializeApp(firebaseConfig, "AppTemporal_" + Date.now());
+                const authSecundario = getAuth(appSecundaria);
+
+                const credencial = await createUserWithEmailAndPassword(authSecundario, cor, pass);
                 payload.uid = credencial.user.uid; 
+
+                // Cerramos sesión en la app temporal para limpiar procesos
+                await signOut(authSecundario); 
             } catch (authError) {
                 console.warn("Aviso Auth:", authError.message);
-                payload.uid = "Existente en Auth";
+                payload.uid = "Fallo Auth o Ya existente";
             }
 
-            // Alta en Firestore
+            // Guardado final en Firestore
             await addDoc(collection(window.db, "usuarios"), payload); 
             mostrarExito("Sincronizado", "Usuario creado en Auth y Firestore correctamente.");
         }
@@ -1020,6 +1029,103 @@ async function cargarMetricas(segmento) {
         tbody.innerHTML = htmlTabla || '<tr><td colspan="5" class="p-4 text-center text-gray-500">No hay datos suficientes.</td></tr>';
     } catch(e) { console.error(e); }
 }
+
+function toggleHistorial() { document.getElementById('historial-paciente').classList.toggle('abierto'); }
+
+function simularAutocompletado(dni) { 
+    if(dni === '123456') { 
+        document.getElementById('auto-nombre').value = 'Ana Martínez'; 
+        document.getElementById('auto-celular').value = '2604112233'; 
+        document.getElementById('auto-msg').classList.remove('hidden'); 
+    } else { 
+        document.getElementById('auto-msg').classList.add('hidden'); 
+    } 
+}
+
+function toggleTimeSelector() { 
+    if (document.getElementById('select-alcance-ausencia').value === 'desde_hora') { 
+        document.getElementById('div-hora-ausencia').classList.remove('hidden'); 
+    } else { 
+        document.getElementById('div-hora-ausencia').classList.add('hidden'); 
+    } 
+}
+
+function mostrarExito(titulo, mensaje) {
+    document.getElementById('exito-titulo').innerText = titulo;
+    document.getElementById('exito-mensaje').innerText = mensaje;
+    abrirModal('modal-exito');
+}
+
+function mostrarAlerta(titulo, mensaje) {
+    document.getElementById('alerta-titulo').innerText = titulo;
+    document.getElementById('alerta-mensaje').innerText = mensaje;
+    abrirModal('modal-alerta');
+}
+
+function pedirConfirmacion(titulo, mensaje, textoAceptar = "Aceptar") {
+    return new Promise((resolve) => {
+        document.getElementById('confirm-titulo').innerText = titulo;
+        document.getElementById('confirm-mensaje').innerText = mensaje;
+        document.getElementById('btn-confirm-aceptar').innerText = textoAceptar;
+        abrirModal('modal-confirmacion');
+
+        document.getElementById('btn-confirm-aceptar').onclick = () => {
+            cerrarModal('modal-confirmacion');
+            resolve(true);
+        };
+
+        document.getElementById('btn-confirm-cancelar').onclick = () => {
+            cerrarModal('modal-confirmacion');
+            resolve(false);
+        };
+    });
+}
+
+// ==========================================
+// EXPORTACIÓN AL SCOPE GLOBAL
+// ==========================================
+window.switchView = switchView;
+window.iniciarSesionReal = iniciarSesionReal;
+window.cerrarSesionReal = cerrarSesionReal;
+window.loginAs = loginAs;
+window.abrirModal = abrirModal;
+window.cerrarModal = cerrarModal;
+window.actualizarMedicosPublico = actualizarMedicosPublico;
+window.validarDiaHabil = validarDiaHabil;
+window.generarHorariosPublicos = generarHorariosPublicos;
+window.seleccionarHorario = seleccionarHorario;
+window.confirmarTurnoFirebase = confirmarTurnoFirebase;
+window.buscarTurnosPaciente = buscarTurnosPaciente;
+window.cancelarTurnoFirebase = cancelarTurnoFirebase;
+window.actualizarMedicosRecepcion = actualizarMedicosRecepcion;
+window.buscarAgendaRecepcion = buscarAgendaRecepcion;
+window.generarAgendaRecepcion = generarAgendaRecepcion;
+window.abrirModalDarTurno = abrirModalDarTurno;
+window.confirmarTurnoRecepcionFirebase = confirmarTurnoRecepcionFirebase;
+window.cancelarTurnoRecepcion = cancelarTurnoRecepcion;
+window.ejecutarAusenciaEmergencia = ejecutarAusenciaEmergencia;
+window.descargarExcelRecepcion = descargarExcelRecepcion;
+window.cargarAgendaMedico = cargarAgendaMedico;
+window.llamarPaciente = llamarPaciente;
+window.marcarAusente = marcarAusente;
+window.guardarEvolucionMedico = guardarEvolucionMedico;
+window.toggleCamposMedico = toggleCamposMedico;
+window.abrirModalUsuarioNulo = abrirModalUsuarioNulo;
+window.cargarUsuariosAdmin = cargarUsuariosAdmin;
+window.editarUsuarioAdmin = editarUsuarioAdmin;
+window.guardarUsuarioAdminFirebase = guardarUsuarioAdminFirebase;
+window.eliminarUsuarioAdmin = eliminarUsuarioAdmin;
+window.cambiarTabAdmin = cambiarTabAdmin;
+window.iniciarGuardadoModulacion = iniciarGuardadoModulacion;
+window.ejecutarGuardadoModulacion = ejecutarGuardadoModulacion;
+window.cargarMetricas = cargarMetricas;
+window.verDetalleMetricaIndividual = verDetalleMetricaIndividual;
+window.descargarReporteMetricas = descargarReporteMetricas;
+window.descargarReporteMetricasIndividual = descargarReporteMetricasIndividual;
+window.toggleHistorial = toggleHistorial;
+window.simularAutocompletado = simularAutocompletado;
+window.toggleTimeSelector = toggleTimeSelector;
+window.forzarReseedDB = forzarReseedDB;
 
 // ==========================================
 // ARRANQUE SEGURO
