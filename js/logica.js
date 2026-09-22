@@ -214,11 +214,9 @@ async function iniciarSesionReal() {
             }
         }
 
-        // 1. EL ÚNICO FILTRO REAL: Firebase Authentication
         const userCredential = await signInWithEmailAndPassword(window.auth, correoAuth, pass);
         const user = userCredential.user;
         
-        // 2. BUSCAMOS EL ROL EN FIRESTORE
         let rolUsuario = "Administración"; 
         let nombreUsuario = user.email;
 
@@ -633,14 +631,6 @@ async function cancelarTurnoRecepcion(idDoc) {
     } catch (error) { console.error(error); mostrarAlerta("Error", "No se pudo cancelar."); }
 }
 
-function toggleTimeSelector() { 
-    if (document.getElementById('select-alcance-ausencia').value === 'desde_hora') { 
-        document.getElementById('div-hora-ausencia').classList.remove('hidden'); 
-    } else { 
-        document.getElementById('div-hora-ausencia').classList.add('hidden'); 
-    } 
-}
-
 async function ejecutarAusenciaEmergencia() {
     if (!fechaRecepcionSeleccionada || !medicoSeleccionadoRecepcion) { mostrarAlerta("Faltan datos", "Seleccione profesional y fecha primero."); return; }
     const alcance = document.getElementById('select-alcance-ausencia').value;
@@ -750,12 +740,8 @@ async function cargarAgendaMedico() {
                     btnHtml = `<div class="mt-3 flex gap-2"><button onclick="llamarPaciente('${t.id}')" class="flex-1 bg-teal-600 text-white text-xs font-bold py-1.5 rounded shadow">Llamar</button><button onclick="marcarAusente('${t.id}')" class="flex-1 bg-white border border-red-50 text-red-700 text-xs font-bold py-1.5 rounded shadow">Ausente</button></div>`;
                 }
 
-                const opacidad = (t.estado === 'Atendido' || t.estado === 'Ausente') ? 'opacity-60' : 'opacity-100';
-                const borde = t.estado === 'En consultorio' ? 'border-green-600 bg-green-50' : 'border-teal-600 bg-teal-50';
-
-                html += `<div class="border-l-4 ${borde} p-3 rounded shadow-sm border ${opacidad}"><div class="flex justify-between text-sm mb-1"><span class="font-bold text-teal-800">${t.horario} hs</span><span class="text-xs ${color} px-2 py-0.5 rounded font-bold">${t.estado}</span></div><p class="font-bold text-lg text-gray-800">${t.pacienteNombre}</p><p class="text-xs text-gray-600">DNI: ${t.pacienteDni} | Tel: ${t.pacienteCelular}</p>${btnHtml}</div>`;
+                html += `<div class="border-l-4 border-teal-600 bg-teal-50 p-3 rounded shadow-sm border mb-2"><div class="flex justify-between text-sm mb-1"><span class="font-bold text-teal-800">${t.horario} hs</span><span class="text-xs ${color} px-2 py-0.5 rounded font-bold">${t.estado}</span></div><p class="font-bold text-lg text-gray-800">${t.pacienteNombre}</p><p class="text-xs text-gray-600">DNI: ${t.pacienteDni} | Tel: ${t.pacienteCelular}</p>${btnHtml}</div>`;
             });
-            if(contador === 0) html += '<p class="text-sm text-gray-500 p-2 mt-4 border-t pt-2">No hay más pacientes en espera.</p>';
         }
         container.innerHTML = html; 
         if(lblPacienteActivo) lblPacienteActivo.innerText = primerPaciente;
@@ -920,7 +906,6 @@ async function guardarUsuarioAdminFirebase() {
             await updateDoc(doc(window.db, "usuarios", id), payload); 
             mostrarExito("Actualizado", "Los datos se guardaron correctamente en el perfil.");
         } else {
-            // TRUCO: Crear conexión secundaria para no cerrar la sesión del Administrador
             try {
                 const appSecundaria = initializeApp(firebaseConfig, "AppTemporal_" + Date.now());
                 const authSecundario = getAuth(appSecundaria);
@@ -928,14 +913,12 @@ async function guardarUsuarioAdminFirebase() {
                 const credencial = await createUserWithEmailAndPassword(authSecundario, cor, pass);
                 payload.uid = credencial.user.uid; 
 
-                // Cerramos sesión en la app temporal para limpiar procesos
                 await signOut(authSecundario); 
             } catch (authError) {
                 console.warn("Aviso Auth:", authError.message);
                 payload.uid = "Fallo Auth o Ya existente";
             }
 
-            // Guardado final en Firestore
             await addDoc(collection(window.db, "usuarios"), payload); 
             mostrarExito("Sincronizado", "Usuario creado en Auth y Firestore correctamente.");
         }
