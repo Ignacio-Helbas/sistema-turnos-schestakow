@@ -655,5 +655,26 @@
     </script>
 
     <script type="module" src="js/logica.js"></script>
+
+    <!-- ========================================== -->
+<!-- MODAL: LIMPIEZA AUTOMÁTICA DE DATOS -->
+<!-- ========================================== -->
+<div id="modal-limpieza-anual" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-11/12 max-w-md p-6 animate-fade-in-up border-t-4 border-amber-500">
+        <div class="flex items-center gap-3 mb-4 text-amber-600">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <h3 class="text-xl font-bold text-gray-800">Depuración Requerida</h3>
+        </div>
+        <p class="text-sm text-gray-600 mb-4" id="limpieza-mensaje">Se han detectado turnos inactivos con más de 1 año de antigüedad.</p>
+        <div class="bg-amber-50 p-3 rounded border border-amber-100 text-xs text-amber-800 mb-5">
+            Por normativas de capacidad y protección de datos, deben ser archivados. Puede posponer esta acción, o descargar una copia segura en Excel antes de eliminarlos.
+        </div>
+        <div class="flex justify-end gap-3">
+            <button onclick="cerrarModal('modal-limpieza-anual')" class="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded transition text-sm">Posponer</button>
+            <button onclick="ejecutarLimpiezaYDescarga()" class="px-4 py-2 bg-amber-500 text-white font-bold rounded hover:bg-amber-600 shadow transition text-sm">Descargar Excel y Depurar</button>
+        </div>
+    </div>
+</div>
+    
 </body>
 </html>
