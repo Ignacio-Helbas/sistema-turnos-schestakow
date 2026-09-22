@@ -67,6 +67,7 @@ window.toggleTimeSelector = toggleTimeSelector;
 let usuariosPageSnapshots = []; 
 let currentUsuariosPage = 0;
 const USUARIOS_PER_PAGE = 10;
+window.inyectarMedicosDePrueba = inyectarMedicosDePrueba;
 
 // ==========================================
 // CONFIGURACIÓN DE EMAILJS
