@@ -12,17 +12,39 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
     <style>
-        .view { display: none; }
-        .view.active { display: block; }
-        .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .modal-overlay { background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); }
-        .modal { display: none; }
-        .modal.active { display: flex; }
-    </style>
+    .view { display: none; }
+    .view.active { display: block; }
+    .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .modal-overlay { background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); }
+    .modal { display: none; }
+    .modal.active { display: flex; }
+
+    /* EFECTO FLUIDO PARA LAS PESTAÑAS DE ADMINISTRACIÓN */
+    .admin-tab {
+        position: relative;
+        transition: color 0.3s ease-in-out;
+    }
+    .admin-tab::after {
+        content: '';
+        position: absolute;
+        bottom: -4px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: #1e40af; /* Azul institucional */
+        transform: scaleX(0);
+        transform-origin: right;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .admin-tab.active::after {
+        transform: scaleX(1);
+        transform-origin: left;
+    }
+</style>
 </head>
 
 <!-- FONDO ORIGINAL DEL HOSPITAL -->
@@ -156,9 +178,9 @@
             <div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-2xl p-6 border-t-4 border-gray-800 animate-fade-in-up">
                 <div class="flex justify-between items-center border-b border-gray-200 pb-4 mb-6 flex-wrap gap-4">
                     <h2 class="text-2xl font-bold text-gray-800">Panel de Administración General</h2>
-                    <div class="flex gap-4">
-                        <button onclick="cambiarTabAdmin('gestion')" id="tab-gestion" class="admin-tab active font-bold text-blue-800 border-b-2 border-blue-800 px-2 pb-1">Gestión y Modulación</button>
-                        <button onclick="cambiarTabAdmin('metricas')" id="tab-metricas" class="admin-tab font-bold text-gray-500 hover:text-gray-800 px-2 pb-1 transition border-b-2 border-transparent">Métricas y Rendimiento</button>
+                      <div class="flex gap-6">
+                      <button onclick="cambiarTabAdmin('gestion')" id="tab-gestion" class="admin-tab active font-bold text-blue-800 pb-1 cursor-pointer">Gestión y Modulación</button>
+                      <button onclick="cambiarTabAdmin('metricas')" id="tab-metricas" class="admin-tab font-bold text-gray-500 hover:text-gray-800 pb-1 transition cursor-pointer">Métricas y Rendimiento</button>
                     </div>
                 </div>
 
