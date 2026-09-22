@@ -11,26 +11,71 @@
     <!-- EmailJS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
-    <!-- Estilos Personalizados y Animaciones -->
-    <link rel="stylesheet" href="css/estilos.css">
+    <!-- Estilos Personalizados y Fondo de Pantalla -->
+    <style>
+        body { 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh; 
+            background-image: url('img/COVID-19-LABORATORIO-HOSPITAL-SCHESTAKOW-6714.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            position: relative;
+        }
+        
+        /* Capa de opacidad para legibilidad sobre el fondo */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(248, 250, 252, 0.90);
+            z-index: -1;
+        }
+
+        /* Control de Vistas */
+        .view { display: none; }
+        .view.active { display: block; animation: fadeIn 0.4s ease-out; }
+        
+        /* Animaciones */
+        .animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+        .animate-fade-in-up-fast { animation: fadeInUp 0.2s ease-out forwards; opacity: 0; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Modales */
+        .modal-overlay { background-color: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); }
+        .modal { display: none; }
+        .modal.active { display: flex; animation: fadeIn 0.2s ease-out; }
+
+        /* Pestañas Fluidas de Administración */
+        .admin-tab { position: relative; transition: color 0.3s ease-in-out; outline: none; }
+        .admin-tab::after {
+            content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 3px;
+            background-color: #1e40af; transform: scaleX(0); transform-origin: right;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .admin-tab.active::after { transform: scaleX(1); transform-origin: left; }
+    </style>
 </head>
 <body class="text-slate-800 font-sans">
 
     <!-- ========================================== -->
     <!-- CABECERA Y NAVEGACIÓN -->
     <!-- ========================================== -->
-    <header class="bg-white shadow-md sticky top-0 z-40 border-b border-blue-900/10">
+    <header class="bg-white/95 backdrop-blur shadow-md sticky top-0 z-40 border-b border-blue-900/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-20 items-center">
-                <!-- Logo y Título -->
-                <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('public')">
-                    <div class="bg-blue-800 text-white p-2 rounded-lg shadow">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                    </div>
-                    <div>
-                        <h1 class="text-xl font-bold text-blue-900 leading-tight">Hospital Teodoro J. Schestakow</h1>
-                        <p class="text-xs text-slate-500 font-medium tracking-wide uppercase">Sistema de Gestión Integrada</p>
-                    </div>
+                <!-- Logo Exclusivo en Imagen -->
+                <div class="flex items-center cursor-pointer py-2" onclick="switchView('public')">
+                    <img src="img/LogoHospital.png" alt="Hospital Teodoro J. Schestakow" class="h-12 w-auto object-contain">
                 </div>
 
                 <!-- Botones de Navegación -->
@@ -59,7 +104,7 @@
                 <p class="text-slate-500 mt-2">Gestione sus citas médicas de forma rápida y segura.</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-6 md:p-8 rounded-xl shadow-sm border border-slate-200">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white/95 backdrop-blur p-6 md:p-8 rounded-xl shadow-sm border border-slate-200">
                 <!-- Columna Izquierda: Búsqueda -->
                 <div class="space-y-6">
                     <h3 class="text-lg font-bold text-slate-800 border-b pb-2">Buscar Disponibilidad</h3>
@@ -92,24 +137,24 @@
                 </div>
 
                 <!-- Columna Derecha: Datos del Paciente -->
-                <div class="space-y-6 bg-slate-50 p-6 rounded-xl border border-slate-200">
+                <div class="space-y-6 bg-slate-50/80 p-6 rounded-xl border border-slate-200">
                     <h3 class="text-lg font-bold text-slate-800 border-b pb-2">Datos del Paciente</h3>
                     
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-1">DNI <span class="text-red-500">*</span></label>
-                        <input type="number" id="paciente-dni" placeholder="Sin puntos ni espacios" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        <input type="number" id="paciente-dni" placeholder="Sin puntos ni espacios" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition bg-white">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-1">Nombre Completo <span class="text-red-500">*</span></label>
-                        <input type="text" id="paciente-nombre" placeholder="Ej: Juan Pérez" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        <input type="text" id="paciente-nombre" placeholder="Ej: Juan Pérez" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition bg-white">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-1">Teléfono Celular <span class="text-red-500">*</span></label>
-                        <input type="tel" id="paciente-celular" placeholder="Código de área + número" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        <input type="tel" id="paciente-celular" placeholder="Código de área + número" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition bg-white">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-1">Correo Electrónico</label>
-                        <input type="email" id="paciente-email" placeholder="Para recibir comprobante" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        <input type="email" id="paciente-email" placeholder="Para recibir comprobante" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition bg-white">
                     </div>
                     
                     <button onclick="confirmarTurnoFirebase()" class="w-full bg-blue-800 text-white font-bold text-lg py-3 rounded-lg hover:bg-blue-900 shadow-md transition transform hover:-translate-y-0.5">Confirmar Reserva</button>
@@ -118,13 +163,13 @@
 
             <!-- Sección de Cancelación -->
             <div class="mt-8 text-center">
-                <button onclick="abrirModal('modal-cancelar-paciente')" class="text-slate-500 hover:text-red-600 font-bold underline transition text-sm">Ya tengo un turno y deseo cancelarlo</button>
+                <button onclick="abrirModal('modal-cancelar-paciente')" class="text-slate-600 hover:text-red-600 font-bold underline transition text-sm bg-white/80 px-4 py-2 rounded-lg shadow-sm">Ya tengo un turno y deseo cancelarlo</button>
             </div>
         </div>
 
         <!-- 2. VISTA LOGIN -->
         <div id="view-login" class="view">
-            <div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200 mt-10">
+            <div class="max-w-md mx-auto bg-white/95 backdrop-blur p-8 rounded-xl shadow-sm border border-slate-200 mt-10">
                 <div class="text-center mb-6">
                     <div class="inline-block bg-slate-100 p-4 rounded-full mb-3">
                         <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7a4 4 0 00-8 0v4h8z"></path></svg>
@@ -149,12 +194,12 @@
 
         <!-- 3. VISTA RECEPCIÓN -->
         <div id="view-reception" class="view">
-            <div class="flex justify-between items-center mb-6 border-b pb-4">
+            <div class="flex justify-between items-center mb-6 border-b pb-4 bg-white/9p px-4 rounded-lg">
                 <h2 class="text-2xl font-bold text-slate-800">Panel de Recepción</h2>
                 <button onclick="abrirModal('modal-ausencia-emergencia')" class="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-bold hover:bg-red-100 transition text-sm">Reportar Ausencia Médica</button>
             </div>
 
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+            <div class="bg-white/95 backdrop-blur p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-1">Especialidad</label>
@@ -173,7 +218,7 @@
             </div>
 
             <!-- Grilla Diaria Recepción -->
-            <div id="contenedor-grilla-recepcion" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div id="contenedor-grilla-recepcion" class="hidden bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center">
                     <h3 id="titulo-agenda-recepcion" class="font-bold text-slate-800 text-lg">Agenda:</h3>
                     <button onclick="descargarExcelRecepcion()" class="bg-emerald-600 text-white text-sm px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 shadow transition flex items-center gap-2">
@@ -201,7 +246,7 @@
 
         <!-- 4. VISTA CONSULTORIO MÉDICO -->
         <div id="view-doctor" class="view">
-            <div id="titulo-medico-dashboard-container" class="hidden mb-6 border-b pb-4 flex justify-between items-center">
+            <div id="titulo-medico-dashboard-container" class="hidden mb-6 border-b pb-4 flex justify-between items-center bg-white/90 p-4 rounded-lg">
                 <h2 id="titulo-medico-dashboard" class="text-2xl font-bold text-slate-800">Mi Consultorio</h2>
                 <button onclick="cargarAgendaMedico()" class="text-blue-600 hover:text-blue-800 font-bold text-sm flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Actualizar
@@ -210,7 +255,7 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Columna Izquierda: Sala de Espera -->
-                <div class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[600px]">
+                <div class="lg:col-span-1 bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[600px]">
                     <div class="bg-slate-800 text-white p-4">
                         <h3 class="font-bold text-lg">Sala de Espera</h3>
                     </div>
@@ -220,7 +265,7 @@
                 </div>
 
                 <!-- Columna Derecha: Evolución del Paciente -->
-                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[600px]">
+                <div class="lg:col-span-2 bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[600px]">
                     <div class="bg-blue-50 border-b border-blue-100 p-4">
                         <p class="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Paciente en Consultorio</p>
                         <h3 id="medico-paciente-activo" class="text-xl font-bold text-blue-900">Ningún paciente seleccionado</h3>
@@ -248,10 +293,10 @@
 
         <!-- 5. VISTA ADMINISTRACIÓN -->
         <div id="view-admin" class="view">
-            <h2 class="text-2xl font-bold text-slate-800 mb-6">Panel de Administración General</h2>
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 bg-white/90 p-4 rounded-lg shadow-sm">Panel de Administración General</h2>
             
             <!-- Pestañas Fluidas -->
-            <div class="flex gap-8 border-b border-slate-200 mb-6 px-2">
+            <div class="flex gap-8 border-b border-slate-200 mb-6 px-2 bg-white/90 pt-3 rounded-t-lg">
                 <button onclick="cambiarTabAdmin('gestion')" id="tab-gestion" class="admin-tab active font-bold text-blue-800 pb-2 cursor-pointer">Gestión y Modulación</button>
                 <button onclick="cambiarTabAdmin('metricas')" id="tab-metricas" class="admin-tab font-bold text-slate-500 hover:text-slate-800 pb-2 transition cursor-pointer">Métricas y Rendimiento</button>
             </div>
@@ -260,7 +305,7 @@
             <div id="admin-sec-gestion" class="admin-section grid grid-cols-1 lg:grid-cols-4 gap-6">
                 
                 <!-- Columna Izquierda: Modulación -->
-                <div class="lg:col-span-1 bg-white p-5 rounded-xl shadow-sm border border-slate-200 self-start">
+                <div class="lg:col-span-1 bg-white/95 backdrop-blur p-5 rounded-xl shadow-sm border border-slate-200 self-start">
                     <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">Modulación de Turnos</h3>
                     <div class="space-y-4">
                         <div>
@@ -286,7 +331,7 @@
 
                 <!-- Columna Derecha: Lista de Usuarios Paginada -->
                 <div class="lg:col-span-3">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex justify-between items-center mb-4 bg-white/90 p-4 rounded-xl shadow-sm">
                         <h3 class="text-lg font-bold text-slate-800">Gestión de Usuarios Activos</h3>
                         <div class="flex items-center">
                             <!-- Botón Secreto Dummies -->
@@ -295,7 +340,7 @@
                         </div>
                     </div>
                     
-                    <div class="overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <div class="overflow-x-auto bg-white/95 backdrop-blur rounded-xl border border-slate-200 shadow-sm">
                         <table class="w-full text-left border-collapse">
                             <thead class="bg-slate-50 text-slate-600 text-xs uppercase font-bold border-b border-slate-200">
                                 <tr>
@@ -312,7 +357,7 @@
                     </div>
 
                     <!-- Controles de Paginación -->
-                    <div class="flex justify-between items-center mt-4 px-4 bg-white py-3 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center mt-4 px-4 bg-white/95 backdrop-blur py-3 rounded-xl border border-slate-200 shadow-sm">
                         <span id="admin-pag-info" class="text-sm text-slate-600 font-bold">Página 1</span>
                         <div class="flex gap-2">
                             <button id="btn-prev-users" onclick="cargarUsuariosAdmin('prev')" class="px-4 py-1.5 bg-slate-100 text-slate-700 border border-slate-300 rounded hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold transition">Anterior</button>
@@ -325,7 +370,7 @@
             <!-- SECCIÓN 2: MÉTRICAS -->
             <div id="admin-sec-metricas" class="admin-section hidden">
                 <div id="metricas-kpi-container" class="mb-6"></div>
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-slate-50 text-slate-600 text-xs uppercase font-bold border-b border-slate-200">
                             <tr>
@@ -635,10 +680,7 @@
     <!-- ========================================== -->
     <!-- SCRIPTS -->
     <!-- ========================================== -->
-    <!-- SheetJS (Para exportar a Excel) -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    
-    <!-- Lógica Principal del Sistema (Como Módulo para soportar Firebase v10) -->
     <script type="module" src="js/logica.js"></script>
 
 </body>
