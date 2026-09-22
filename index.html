@@ -26,7 +26,7 @@
 </head>
 
 <!-- FONDO ORIGINAL DEL HOSPITAL -->
-<body class="bg-[url('img/COVID-19-LABORATORIO-HOSPITAL-SCHESTAKOW-6714.jpg')] bg-cover bg-center bg-fixed font-sans text-gray-800 antialiased min-h-screen flex flex-col">
+<body class="bg-[url('img/COVID-19-LABORATORIO-HOSPITAL-SCHESTAKOW-6714.jpg')] bg-cover bg-center bg-fixed font-sans text-gray-800 antialiased min-h-screen flex flex-col justify-between">
 
     <!-- CABECERA BLANCA -->
     <header class="bg-white shadow-md sticky top-0 z-50">
@@ -64,7 +64,7 @@
         <!-- VISTA 1: PÚBLICO (PACIENTES) -->
         <!-- ========================================== -->
         <section id="view-public" class="view active animate-fade-in-up">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                 
                 <!-- Columna Izquierda: Reserva -->
                 <div class="lg:col-span-2 bg-white/95 backdrop-blur-sm rounded-lg shadow-2xl p-6 border-t-4 border-blue-800">
@@ -131,46 +131,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- FOOTER EXCLUSIVO DEL PORTAL PÚBLICO -->
-            <footer class="mt-8 bg-white/95 backdrop-blur-sm rounded-lg shadow-2xl p-6 border-t-4 border-blue-800">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                    
-                    <!-- Info de contacto -->
-                    <div class="flex flex-col justify-center">
-                        <h3 class="text-xl font-bold text-blue-900 mb-4">Contacto y Ubicación</h3>
-                        <ul class="space-y-4 text-gray-700">
-                            <li class="flex items-start gap-3">
-                                <svg class="w-5 h-5 text-blue-800 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                <span><strong>Dirección:</strong> <a href="https://maps.app.goo.gl/wbbsJfMhKGHj9Qxj6" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline transition">Emilio Civit 150, San Rafael, Mendoza</a></span>
-                            </li>
-                            <li class="flex items-start gap-3">
-                                <svg class="w-5 h-5 text-blue-800 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                                <span><strong>Teléfono:</strong> 0260 442-7086</span>
-                            </li>
-                            <li class="flex items-start gap-3">
-                                <svg class="w-5 h-5 text-blue-800 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span><strong>Horario de Atención:</strong> Lunes a Viernes de 07:00 a 13:00 hs.</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <!-- Mapa Interactivo embebido por iframe -->
-                    <div class="flex flex-col h-full w-full">
-                        <h3 class="text-lg font-bold text-gray-800 mb-2">Ubicación en Mapa</h3>
-                        <div class="rounded-lg overflow-hidden border border-gray-300 shadow-sm w-full h-48 md:h-full min-h-[200px]">
-                            <iframe 
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3223.5183712133694!2d-68.32784648877069!3d-34.620051172835595!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x967907f865ab0c6b%3A0x67edc97046b88a45!2sHospital%20Teodoro%20J.%20Schestakow!5e1!3m2!1ses-419!2sar!4v1790088735824!5m2!1ses-419!2sar" 
-                                class="w-full h-full" 
-                                style="border:0;" 
-                                allowfullscreen="" 
-                                loading="lazy" 
-                                referrerpolicy="strict-origin-when-cross-origin">
-                            </iframe>
-                        </div>
-                    </div>
-                </div>
-            </footer>
         </section>
 
         <!-- ========================================== -->
@@ -394,6 +354,37 @@
     </main>
 
     <!-- ========================================== -->
+    <!-- PIE DE PÁGINA TRADICIONAL (SÓLO PORTAL PÚBLICO) -->
+    <!-- ========================================== -->
+    <footer id="footer-publico" class="bg-slate-900 text-slate-300 py-6 px-6 border-t border-slate-800 mt-auto">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
+            
+            <!-- Izquierda: Hospital y Derechos -->
+            <div>
+                <p class="font-bold text-white">Hospital Teodoro J. Schestakow</p>
+                <p class="text-slate-400 text-xs">Sistema de Gestión y Turnos Online • UTN</p>
+            </div>
+
+            <!-- Centro: Dirección y Enlace Maps -->
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <a href="https://maps.app.goo.gl/wbbsJfMhKGHj9Qxj6" target="_blank" class="hover:text-white transition underline decoration-slate-600">
+                    Emilio Civit 150, San Rafael, Mendoza
+                </a>
+            </div>
+
+            <!-- Derecha: Teléfono Click-to-Call -->
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                <a href="tel:02604427086" class="hover:text-white transition font-mono font-bold text-emerald-400">
+                    0260 442-7086
+                </a>
+            </div>
+
+        </div>
+    </footer>
+
+    <!-- ========================================== -->
     <!-- MODALES -->
     <!-- ========================================== -->
 
@@ -573,6 +564,28 @@
             </div>
         </div>
     </div>
+
+    <!-- Script para ocultar/mostrar dinámicamente el footer según la vista activa -->
+    <script>
+        // Observador de cambios en las vistas para el footer
+        const observerFooter = new MutationObserver(() => {
+            const viewPublic = document.getElementById('view-public');
+            const footer = document.getElementById('footer-publico');
+            if (viewPublic && footer) {
+                if (viewPublic.classList.contains('active')) {
+                    footer.style.display = 'block';
+                } else {
+                    footer.style.display = 'none';
+                }
+            }
+        });
+        document.addEventListener("DOMContentLoaded", () => {
+            const viewPublic = document.getElementById('view-public');
+            if (viewPublic) {
+                observerFooter.observe(viewPublic, { attributes: true, attributeFilter: ['class'] });
+            }
+        });
+    </script>
 
     <script type="module" src="js/logica.js"></script>
 </body>
