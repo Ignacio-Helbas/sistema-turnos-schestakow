@@ -32,7 +32,7 @@
     <header class="bg-white shadow-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center flex-wrap gap-4">
             
-            <!-- Logo (Doble Clic para Login Oculto - Texto Eliminado) -->
+            <!-- Logo (Doble Clic para Login Oculto) -->
             <div class="flex items-center gap-3">
                 <img src="img/LogoHospital.png" alt="Hospital Schestakow" class="h-12 object-contain cursor-pointer" ondblclick="switchView('login')" onclick="switchView('public')" title="Doble clic para acceso Staff">
             </div>
@@ -137,36 +137,37 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                     
                     <!-- Info de contacto -->
-                    <div>
+                    <div class="flex flex-col justify-center">
                         <h3 class="text-xl font-bold text-blue-900 mb-4">Contacto y Ubicación</h3>
-                        <ul class="space-y-3 text-gray-700">
-                            <li class="flex items-start gap-2">
+                        <ul class="space-y-4 text-gray-700">
+                            <li class="flex items-start gap-3">
                                 <svg class="w-5 h-5 text-blue-800 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                <span><strong>Dirección:</strong> Emilio Civit 150, San Rafael, Mendoza</span>
+                                <span><strong>Dirección:</strong> <a href="https://maps.app.goo.gl/wbbsJfMhKGHj9Qxj6" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline transition">Emilio Civit 150, San Rafael, Mendoza</a></span>
                             </li>
-                            <li class="flex items-start gap-2">
+                            <li class="flex items-start gap-3">
                                 <svg class="w-5 h-5 text-blue-800 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
                                 <span><strong>Teléfono:</strong> 0260 442-7086</span>
                             </li>
-                            <li class="flex items-start gap-2">
+                            <li class="flex items-start gap-3">
                                 <svg class="w-5 h-5 text-blue-800 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 <span><strong>Horario de Atención:</strong> Lunes a Viernes de 07:00 a 13:00 hs.</span>
                             </li>
                         </ul>
                     </div>
 
-                    <!-- Mapa Estático (Botón Abrir en Maps) -->
-                    <div class="flex flex-col">
-                        <h3 class="text-lg font-bold text-gray-800 mb-2">Ubicación</h3>
-                        <a href="https://maps.app.goo.gl/tB3aC7VzS2XGk9C97" target="_blank" class="relative group block overflow-hidden rounded-lg border border-gray-300 shadow-sm max-h-[160px]">
-                            <img src="img/mapa.png" alt="Mapa de Ubicación" class="w-full h-full object-cover transition duration-300 group-hover:scale-105">
-                            
-                            <!-- Etiqueta Abrir en Maps estilo Google -->
-                            <div class="absolute top-2 left-2 bg-white text-blue-600 font-bold text-sm px-3 py-2 rounded shadow-md flex items-center gap-1 hover:bg-gray-50 transition border border-gray-100">
-                                Abrir en Maps
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                            </div>
-                        </a>
+                    <!-- Mapa Interactivo embebido por iframe -->
+                    <div class="flex flex-col h-full w-full">
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Ubicación en Mapa</h3>
+                        <div class="rounded-lg overflow-hidden border border-gray-300 shadow-sm w-full h-48 md:h-full min-h-[200px]">
+                            <iframe 
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3223.5183712133694!2d-68.32784648877069!3d-34.620051172835595!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x967907f865ab0c6b%3A0x67edc97046b88a45!2sHospital%20Teodoro%20J.%20Schestakow!5e1!3m2!1ses-419!2sar!4v1790088735824!5m2!1ses-419!2sar" 
+                                class="w-full h-full" 
+                                style="border:0;" 
+                                allowfullscreen="" 
+                                loading="lazy" 
+                                referrerpolicy="strict-origin-when-cross-origin">
+                            </iframe>
+                        </div>
                     </div>
                 </div>
             </footer>
@@ -517,7 +518,7 @@
                     </select>
                 </div>
             </div>
-            <div class="p-4 border-t bg-gray-50 flex justify-end gap-3">
+            <div class="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
                 <button onclick="cerrarModal('modal-usuario')" class="px-6 py-2 border border-gray-300 rounded text-gray-700 font-bold hover:bg-gray-100 transition">Cancelar</button>
                 <button onclick="guardarUsuarioAdminFirebase()" class="px-6 py-2 bg-gray-800 text-white rounded font-bold hover:bg-gray-900 shadow transition">Guardar Usuario</button>
             </div>
