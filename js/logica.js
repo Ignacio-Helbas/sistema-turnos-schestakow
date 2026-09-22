@@ -51,7 +51,7 @@ let modulacionPorMedico = {};
 let datosMetricasCache = []; 
 
 // ==========================================
-// INICIALIZACIÓN
+// INICIALIZACIÓN (SISTEMA LIMPIO)
 // ==========================================
 function establecerLimitesFecha() {
     const hoy = new Date();
@@ -110,7 +110,7 @@ async function iniciarCargaDeDatos() {
 }
 
 // ==========================================
-// SESIÓN Y NAVEGACIÓN (LOGIN ESTRICTO CON AUTH)
+// SESIÓN Y NAVEGACIÓN
 // ==========================================
 function switchView(viewName) {
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -120,7 +120,7 @@ function switchView(viewName) {
     if (viewName !== 'public' && viewName !== 'login') {
         btnLogout.classList.remove('hidden');
         const sesionStr = localStorage.getItem("sesionHospitalActiva");
-        if (sesionStr) { btnLogout.innerText = `Cerrar Sesión (${JSON.parse(sesionStr).correo})`; } 
+        if (sesionStr) { btnLogout.innerText = `Cerrar Sesión (${JSON.parse(sesionStr).nombre})`; } 
         else { btnLogout.innerText = "Cerrar Sesión"; }
     } else { 
         btnLogout.classList.add('hidden'); 
@@ -136,27 +136,41 @@ function switchView(viewName) {
 }
 
 async function iniciarSesionReal() {
-    const email = document.getElementById('login-user').value.trim();
+    const inputUsuario = document.getElementById('login-user').value.trim();
     const pass = document.getElementById('login-pass').value.trim();
     
-    if (!email || !pass) { 
-        mostrarAlerta("Datos Faltantes", "Ingrese correo electrónico y contraseña."); 
+    if (!inputUsuario || !pass) { 
+        mostrarAlerta("Datos Faltantes", "Ingrese correo o usuario y contraseña."); 
         return; 
     }
     
     try {
-        // 1. EL ÚNICO FILTRO REAL: Firebase Authentication
-        const userCredential = await signInWithEmailAndPassword(window.auth, email, pass);
+        let correoAuth = inputUsuario;
+
+        // Si el usuario no ingresó un '@', asumimos que es un username.
+        // Buscamos su correo real en Firestore para poder enviarlo a Firebase Auth.
+        if (!inputUsuario.includes('@')) {
+            const snapBusqueda = await getDocs(query(collection(window.db, "usuarios"), where("username", "==", inputUsuario)));
+            if (!snapBusqueda.empty) {
+                correoAuth = snapBusqueda.docs[0].data().correo;
+            } else {
+                mostrarAlerta("Acceso Denegado", "El nombre de usuario no existe en el sistema.");
+                return;
+            }
+        }
+
+        // 1. EL ÚNICO FILTRO REAL: Firebase Authentication (Siempre con correo)
+        const userCredential = await signInWithEmailAndPassword(window.auth, correoAuth, pass);
         const user = userCredential.user;
         
-        // 2. BUSCAMOS EL ROL (Sin bloquear si no lo encuentra)
-        let rolUsuario = "Administración"; // Por defecto, asume Admin si entró a Auth pero no está en la tabla
+        // 2. BUSCAMOS EL ROL
+        let rolUsuario = "Administración"; 
         let nombreUsuario = user.email;
 
         try {
-            const snapUser = await getDocs(query(collection(window.db, "usuarios"), where("correo", "==", user.email)));
-            if (!snapUser.empty) {
-                const data = snapUser.docs[0].data();
+            const snapRol = await getDocs(query(collection(window.db, "usuarios"), where("correo", "==", user.email)));
+            if (!snapRol.empty) {
+                const data = snapRol.docs[0].data();
                 rolUsuario = data.rol;
                 if(data.nombre) nombreUsuario = data.nombre;
             }
@@ -179,7 +193,7 @@ async function iniciarSesionReal() {
 
     } catch (error) {
         console.error("Auth Error:", error);
-        mostrarAlerta("Acceso Denegado", "El correo o la contraseña no están registrados o son incorrectos.");
+        mostrarAlerta("Acceso Denegado", "Las credenciales son incorrectas.");
     }
 }
 
@@ -352,14 +366,17 @@ async function confirmarTurnoFirebase() {
         document.getElementById('select-medico').innerHTML = '<option>Primero seleccione especialidad</option>'; 
         document.getElementById('select-medico').disabled = true;
 
-    } catch (error) { console.error(error); mostrarAlerta("Error de Conexión", "Hubo un error al registrar el turno."); } 
+    } catch (error) { 
+        console.error(error); 
+        mostrarAlerta("Error de Conexión", "Hubo un error al registrar el turno. Intente nuevamente."); 
+    } 
 }
 
 async function buscarTurnosPaciente() {
     const dni = document.getElementById('input-buscar-dni').value.trim();
     const res = document.getElementById('resultado-turnos-paciente');
     
-    if (!dni) { mostrarAlerta("Dato Faltante", "Ingrese su número de DNI para realizar la búsqueda."); return; }
+    if (!dni) { mostrarAlerta("Dato Faltante", "Por favor ingrese su número de DNI para realizar la búsqueda."); return; }
 
     try {
         const snap = await getDocs(query(collection(window.db, "turnos"), where("pacienteDni", "==", dni)));
@@ -382,7 +399,7 @@ async function buscarTurnosPaciente() {
 }
 
 async function cancelarTurnoFirebase(id) {
-    const confirmado = await pedirConfirmacion("¿Cancelar este turno?", "Se eliminará la reserva.", "Sí, cancelar turno");
+    const confirmado = await pedirConfirmacion("¿Cancelar este turno?", "Se eliminará la reserva y se enviará un correo notificando la cancelación.", "Sí, cancelar turno");
     if (!confirmado) return;
 
     try {
@@ -393,6 +410,7 @@ async function cancelarTurnoFirebase(id) {
                 nombre_paciente: t.pacienteNombre, medico: t.medico, especialidad: t.especialidad, fecha: t.fecha, hora: t.horario, email_destino: t.pacienteEmail
             });
         }
+
         await deleteDoc(doc(window.db, "turnos", id));
         mostrarExito("Turno Cancelado", "Su turno ha sido cancelado.");
         buscarTurnosPaciente(); 
@@ -621,9 +639,25 @@ async function cargarAgendaMedico() {
     const lblPacienteActivo = document.getElementById('medico-paciente-activo');
     if(!container) return;
 
+    const sesionStr = localStorage.getItem("sesionHospitalActiva");
+    let nombreFiltro = "";
+    if (sesionStr) {
+        const sesion = JSON.parse(sesionStr);
+        if (sesion.rol === "Médico") {
+            nombreFiltro = sesion.nombre;
+            const tituloContenedor = document.getElementById("titulo-medico-dashboard-container");
+            const tituloTexto = document.getElementById("titulo-medico-dashboard");
+            if(tituloContenedor && tituloTexto) { 
+                tituloTexto.innerText = `Agenda de Hoy: ${nombreFiltro}`; 
+                tituloContenedor.classList.remove('hidden'); 
+            }
+        }
+    }
+
     const hoy = new Date().toISOString().split('T')[0];
     try {
-        const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", hoy)));
+        let q = nombreFiltro ? query(collection(window.db, "turnos"), where("fecha", "==", hoy), where("medico", "==", nombreFiltro)) : query(collection(window.db, "turnos"), where("fecha", "==", hoy));
+        const snap = await getDocs(q);
         turnosMedicoHoy = [];
         snap.forEach((documento) => { if (!documento.data().estado.includes("Cancelado")) turnosMedicoHoy.push({ id: documento.id, ...documento.data() }); });
         turnosMedicoHoy.sort((a, b) => a.horario.localeCompare(b.horario));
@@ -724,6 +758,7 @@ function abrirModalUsuarioNulo() {
     document.getElementById('input-usuario-id').value = "";
     document.getElementById('input-usuario-nombre').value = "";
     document.getElementById('input-usuario-rol').value = "Administrativo";
+    document.getElementById('input-usuario-username').value = "";
     document.getElementById('input-usuario-correo').value = "";
     document.getElementById('input-usuario-pass').value = "";
     document.getElementById('input-usuario-tel').value = "";
@@ -756,7 +791,7 @@ async function cargarUsuariosAdmin() {
                 <td class="p-3 font-mono text-sm text-gray-600">
                     <div><b>${u.correo}</b></div>
                     <div class="text-xs text-gray-500">UID: <span class="text-indigo-600">${u.uid || 'No vinculado'}</span></div>
-                    <div class="text-xs text-gray-500">Clave: <span class="bg-gray-100 px-1 rounded border font-mono text-gray-800">${u.password || '******'}</span></div>
+                    <div class="text-xs text-gray-500">Usr: <b>${u.username || 'N/A'}</b> | Clave: <span class="bg-gray-100 px-1 rounded border font-mono text-gray-800">${u.password || '******'}</span></div>
                 </td>
                 <td class="p-3 text-center">
                     <button onclick="editarUsuarioAdmin('${j}')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1 rounded hover:bg-gray-200 font-bold text-xs transition">Editar</button> 
@@ -774,6 +809,7 @@ function editarUsuarioAdmin(userJSONEncoded) {
     document.getElementById('input-usuario-id').value = u.id;
     document.getElementById('input-usuario-nombre').value = u.nombre || '';
     document.getElementById('input-usuario-rol').value = u.rol || 'Administrativo';
+    document.getElementById('input-usuario-username').value = u.username || '';
     document.getElementById('input-usuario-correo').value = u.correo || '';
     document.getElementById('input-usuario-pass').value = u.password || '';
     document.getElementById('input-usuario-tel').value = u.tel || '';
@@ -787,6 +823,7 @@ async function guardarUsuarioAdminFirebase() {
     const id = document.getElementById('input-usuario-id').value;
     const nom = document.getElementById('input-usuario-nombre').value.trim();
     const rol = document.getElementById('input-usuario-rol').value;
+    const user = document.getElementById('input-usuario-username').value.trim();
     const pass = document.getElementById('input-usuario-pass').value.trim();
     const tel = document.getElementById('input-usuario-tel').value.trim();
     const cor = document.getElementById('input-usuario-correo').value.trim();
@@ -801,6 +838,7 @@ async function guardarUsuarioAdminFirebase() {
     let payload = { 
         nombre: nom, 
         rol: rol, 
+        username: user,
         password: pass, 
         correo: cor, 
         tel: tel,
