@@ -368,13 +368,27 @@
     </a>
 </div>
 
-            <!-- Centro: Dirección y Enlace Maps -->
-            <div class="flex items-center gap-2 text-center lg:text-left">
-                <svg class="w-5 h-5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                <a href="https://maps.app.goo.gl/wbbsJfMhKGHj9Qxj6" target="_blank" class="hover:text-white transition underline decoration-slate-600">
-                    Emilio Civit 150, San Rafael, Mendoza
-                </a>
-            </div>
+           <!-- Centro: Dirección y Enlace Maps con Tarjeta de Mapa Abajo -->
+<div class="flex flex-col items-center lg:items-start text-center lg:text-left gap-3">
+    <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        <a href="https://maps.app.goo.gl/wbbsJfMhKGHj9Qxj6" target="_blank" class="hover:text-white transition underline decoration-slate-600 font-medium">
+            Emilio Civit 150, San Rafael, Mendoza
+        </a>
+    </div>
+
+    <!-- Tarjeta del Mapa con Bordes Redondeados -->
+    <div class="rounded-lg overflow-hidden border border-slate-700 shadow-md w-full max-w-[280px] h-36">
+        <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3223.5183712133694!2d-68.32784648877069!3d-34.620051172835595!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x967907f865ab0c6b%3A0x67edc97046b88a45!2sHospital%20Teodoro%20J.%20Schestakow!5e1!3m2!1ses-419!2sar!4v1790088735824!5m2!1ses-419!2sar" 
+            class="w-full h-full" 
+            style="border:0;" 
+            allowfullscreen="" 
+            loading="lazy" 
+            referrerpolicy="strict-origin-when-cross-origin">
+        </iframe>
+    </div>
+</div>
 
             <!-- Centro-Derecha: Teléfono Click-to-Call -->
             <div class="flex items-center gap-2">
