@@ -64,9 +64,8 @@ window.cargarMetricas = cargarMetricas;
 window.toggleHistorial = toggleHistorial;
 window.simularAutocompletado = simularAutocompletado;
 window.toggleTimeSelector = toggleTimeSelector;
-let usuariosPageSnapshots = []; 
-let currentUsuariosPage = 0;
-const USUARIOS_PER_PAGE = 10;
+window.verificarLimpiezaAnual = verificarLimpiezaAnual;
+window.ejecutarLimpiezaYDescarga = ejecutarLimpiezaYDescarga;
 window.inyectarMedicosDePrueba = inyectarMedicosDePrueba;
 
 // ==========================================
@@ -85,9 +84,7 @@ try {
 
 function enviarCorreoNotificacion(templateId, templateParams) {
     if (!templateParams.email_destino || typeof emailjs === 'undefined') return;
-    emailjs.send(EMAILJS_SERVICE_ID, templateId, templateParams)
-        .then(function() { console.log("Correo enviado."); }, 
-              function(error) { console.error("Fallo al enviar correo:", error); });
+    emailjs.send(EMAILJS_SERVICE_ID, templateId, templateParams).catch(e => console.error(e));
 }
 
 // ==========================================
@@ -96,6 +93,17 @@ function enviarCorreoNotificacion(templateId, templateParams) {
 let bdMedicosDinamica = {};
 let duracionTurnoGlobal = 15; 
 let modulacionPorMedico = {}; 
+let usuariosPageSnapshots = []; 
+let currentUsuariosPage = 0;
+const USUARIOS_PER_PAGE = 5; // Cambialo a 10 si preferís listas más largas
+
+let fechaRecepcionSeleccionada = '';
+let medicoSeleccionadoRecepcion = '';
+let especialidadSeleccionadaRecepcion = '';
+let horaSeleccionadaRecepcion = '';
+
+let turnosMedicoHoy = [];
+let pacienteActivoId = null;
 
 // ==========================================
 // PERMISOS VISUALES (LLAVE MAESTRA)
@@ -104,15 +112,15 @@ function aplicarPermisosVisuales() {
     const btnAdmin = document.getElementById('btn-nav-admin');
     const btnRec = document.getElementById('btn-nav-reception');
     const btnDoc = document.getElementById('btn-nav-doctor');
-    const btnDummies = document.getElementById('btn-cargar-dummies'); // NUEVO
+    const btnDummies = document.getElementById('btn-cargar-dummies');
 
     if(btnAdmin) btnAdmin.classList.add('hidden');
     if(btnRec) btnRec.classList.add('hidden');
     if(btnDoc) btnDoc.classList.add('hidden');
-    if(btnDummies) btnDummies.classList.add('hidden'); // NUEVO
+    if(btnDummies) btnDummies.classList.add('hidden');
 
     const sesionStr = localStorage.getItem("sesionHospitalActiva");
-    if (!sesionStr) return;
+    if (!sesionStr) return; 
 
     const sesion = JSON.parse(sesionStr);
     
@@ -121,7 +129,7 @@ function aplicarPermisosVisuales() {
         if(btnAdmin) btnAdmin.classList.remove('hidden');
         if(btnRec) btnRec.classList.remove('hidden');
         if(btnDoc) btnDoc.classList.remove('hidden');
-        if(btnDummies) btnDummies.classList.remove('hidden'); // SOLAMENTE VOS VES ESTO
+        if(btnDummies) btnDummies.classList.remove('hidden');
     } 
     // EMPLEADOS NORMALES
     else {
@@ -146,10 +154,8 @@ function establecerLimitesFecha() {
     const fechaMinima = hoy.toISOString().split('T')[0];
     const fp = document.getElementById('input-fecha-paciente');
     const fr = document.getElementById('input-fecha-recepcion');
-    const fv = document.getElementById('input-fecha-proxima-visita');
     if(fp) fp.min = fechaMinima;
     if(fr) fr.min = fechaMinima;
-    if(fv) fv.min = fechaMinima;
 }
 
 async function cargarEspecialistasFirebase() {
@@ -187,13 +193,16 @@ async function cargarConfiguracionModulacion() {
 }
 
 async function iniciarCargaDeDatos() {
-    aplicarPermisosVisuales(); // Verifica botones al cargar la página
+    aplicarPermisosVisuales();
     establecerLimitesFecha(); 
     await cargarEspecialistasFirebase(); 
     await cargarConfiguracionModulacion();
     
     const vAdmin = document.getElementById('view-admin');
-    if (vAdmin && vAdmin.classList.contains('active')) cargarUsuariosAdmin();
+    if (vAdmin && vAdmin.classList.contains('active')) {
+        cargarUsuariosAdmin();
+        verificarLimpiezaAnual();
+    }
     
     const vPublic = document.getElementById('view-public');
     if (vPublic && vPublic.classList.contains('active')) actualizarMedicosPublico();
@@ -225,7 +234,10 @@ function switchView(viewName) {
     }
     if (viewName === 'public') actualizarMedicosPublico();
     if (viewName === 'doctor') cargarAgendaMedico();
-    if (viewName === 'admin') cargarUsuariosAdmin();
+    if (viewName === 'admin') {
+        cargarUsuariosAdmin();
+        verificarLimpiezaAnual(); // Detonador de limpieza anual
+    }
 }
 
 async function iniciarSesionReal() {
@@ -239,7 +251,6 @@ async function iniciarSesionReal() {
     
     try {
         let correoAuth = inputUsuario;
-
         if (!inputUsuario.includes('@')) {
             const snapBusqueda = await getDocs(query(collection(window.db, "usuarios"), where("username", "==", inputUsuario)));
             if (!snapBusqueda.empty) {
@@ -272,7 +283,7 @@ async function iniciarSesionReal() {
             uid: user.uid
         }));
         
-        aplicarPermisosVisuales(); // Revela los botones que le corresponden
+        aplicarPermisosVisuales();
 
         document.getElementById('login-user').value = ''; 
         document.getElementById('login-pass').value = '';
@@ -289,7 +300,7 @@ async function iniciarSesionReal() {
 
 function cerrarSesionReal() { 
     localStorage.removeItem("sesionHospitalActiva"); 
-    aplicarPermisosVisuales(); // Oculta todos los botones de nuevo
+    aplicarPermisosVisuales();
     switchView("public"); 
 }
 
@@ -520,10 +531,6 @@ async function cancelarTurnoFirebase(id) {
 // ==========================================
 // RECEPCIÓN
 // ==========================================
-let fechaRecepcionSeleccionada = '';
-let medicoSeleccionadoRecepcion = '';
-let especialidadSeleccionadaRecepcion = '';
-
 function actualizarMedicosRecepcion() {
     const esp = document.getElementById('reception-especialidad').value;
     const selectMed = document.getElementById('reception-medico');
@@ -628,7 +635,6 @@ async function generarAgendaRecepcion() {
     tbody.innerHTML = html;
 }
 
-let horaSeleccionadaRecepcion = '';
 function abrirModalDarTurno(hora) {
     horaSeleccionadaRecepcion = hora;
     document.getElementById('modal-hora-turno').innerText = hora;
@@ -726,9 +732,6 @@ async function descargarExcelRecepcion() {
 // ==========================================
 // MÉDICO
 // ==========================================
-let turnosMedicoHoy = [];
-let pacienteActivoId = null;
-
 async function cargarAgendaMedico() {
     const container = document.getElementById('medico-agenda-container');
     const lblPacienteActivo = document.getElementById('medico-paciente-activo');
@@ -876,16 +879,13 @@ async function cargarUsuariosAdmin(direccion = 'init') {
     let q;
     const refCol = collection(window.db, "usuarios");
 
-    // Lógica del Cursor
     if (direccion === 'init') {
         usuariosPageSnapshots = [];
         currentUsuariosPage = 0;
-        // Ordenamos alfabéticamente y limitamos a 5
         q = query(refCol, orderBy("nombre"), limit(USUARIOS_PER_PAGE)); 
     } 
     else if (direccion === 'next') {
         const ultimoDoc = usuariosPageSnapshots[currentUsuariosPage].lastVisible;
-        // Arranca DESPUÉS del último documento de la página actual
         q = query(refCol, orderBy("nombre"), startAfter(ultimoDoc), limit(USUARIOS_PER_PAGE));
         currentUsuariosPage++;
     } 
@@ -909,7 +909,6 @@ async function cargarUsuariosAdmin(direccion = 'init') {
             return;
         }
 
-        // Guardamos el primer y último documento en memoria para usarlos de ancla
         usuariosPageSnapshots[currentUsuariosPage] = {
             firstVisible: snap.docs[0],
             lastVisible: snap.docs[snap.docs.length - 1]
@@ -941,7 +940,6 @@ async function cargarUsuariosAdmin(direccion = 'init') {
         });
         
         tbody.innerHTML = html;
-        // Habilitamos o deshabilitamos los botones
         actualizarBotonesPaginacion(snap.docs.length === USUARIOS_PER_PAGE);
 
     } catch (error) {
@@ -1037,7 +1035,7 @@ async function guardarUsuarioAdminFirebase() {
 }
 
 async function eliminarUsuarioAdmin(id) {
-    const confirmado = await pedirConfirmacion("¿Eliminar Usuario?", "Esta acción quitará el perfil de la tabla administrativa. Para revocar el acceso total, también bórrelo desde la consola de Firebase Authentication.", "Sí, eliminar");
+    const confirmado = await pedirConfirmacion("¿Eliminar Usuario?", "Esta acción quitará el perfil de la tabla administrativa.", "Sí, eliminar");
     if (!confirmado) return;
 
     try {
@@ -1051,7 +1049,6 @@ function cambiarTabAdmin(tabId) {
         t.classList.remove('active', 'text-blue-800');
         t.classList.add('text-gray-500');
     });
-    
     document.querySelectorAll('.admin-section').forEach(s => s.classList.add('hidden'));
     
     const tabActiva = document.getElementById('tab-' + tabId);
@@ -1117,7 +1114,7 @@ async function cargarMetricas(segmento) {
         kpiContainer.innerHTML = `<div class="bg-blue-50 border border-blue-200 p-4 rounded text-center col-span-4"><p class="text-xs text-blue-600 font-bold uppercase">Total Citas Registradas</p><p class="text-3xl font-bold text-blue-900">${todosLosTurnos.length}</p></div>`;
 
         let htmlTabla = ''; 
-        datosMetricasCache = Object.values(datosAgrupados); 
+        let datosMetricasCache = Object.values(datosAgrupados); 
         
         datosMetricasCache.forEach(d => {
             let efectividad = d.totalTurnos > 0 ? Math.round((d.atendidos / d.totalTurnos) * 100) : 0;
@@ -1180,6 +1177,57 @@ function pedirConfirmacion(titulo, mensaje, textoAceptar = "Aceptar") {
 }
 
 // ==========================================
+// MANTENIMIENTO INTELIGENTE (SIMULACIÓN CLOUD FUNCTION)
+// ==========================================
+async function verificarLimpiezaAnual() {
+    const hoy = new Date();
+    hoy.setFullYear(hoy.getFullYear() - 1); // Restamos exactamente 1 año
+    const fechaLimite = hoy.toISOString().split('T')[0];
+
+    try {
+        const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "<", fechaLimite)));
+        if (!snap.empty) {
+            document.getElementById('limpieza-mensaje').innerText = `Se encontraron ${snap.docs.length} registros anteriores al ${fechaLimite}.`;
+            abrirModal('modal-limpieza-anual');
+        }
+    } catch (error) { console.error("Fallo al verificar datos antiguos:", error); }
+}
+
+async function ejecutarLimpiezaYDescarga() {
+    if(typeof XLSX === 'undefined') { mostrarAlerta("Error", "La librería de Excel no se pudo cargar."); return; }
+    
+    const hoy = new Date();
+    hoy.setFullYear(hoy.getFullYear() - 1);
+    const fechaLimite = hoy.toISOString().split('T')[0];
+
+    try {
+        const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "<", fechaLimite)));
+        if (snap.empty) return;
+
+        let datosExcel = [];
+        snap.forEach(doc => {
+            const t = doc.data();
+            datosExcel.push({
+                "Fecha": t.fecha, "Hora": t.horario, "Especialidad": t.especialidad, "Profesional": t.medico, "Paciente": t.pacienteNombre, "DNI": t.pacienteDni, "Celular": t.pacienteCelular, "Correo": t.pacienteEmail || "N/A", "Estado Final": t.estado, "Evolución / Motivo": t.evolucionMedica || t.motivoConsulta || "Sin observaciones"
+            });
+        });
+
+        let ws = XLSX.utils.json_to_sheet(datosExcel);
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Archivo Histórico");
+        XLSX.writeFile(wb, `Resguardo_Turnos_Hasta_${fechaLimite}.xlsx`);
+
+        const promesasBorrado = snap.docs.map(documento => deleteDoc(doc(window.db, "turnos", documento.id)));
+        await Promise.all(promesasBorrado);
+
+        cerrarModal('modal-limpieza-anual');
+        mostrarExito("Depuración Exitosa", `Se descargó el archivo y se eliminaron ${snap.docs.length} registros históricos de la base de datos operativa.`);
+        cargarMetricas('todos');
+        
+    } catch (error) { console.error(error); mostrarAlerta("Error Crítico", "Fallo al realizar la exportación."); }
+}
+
+// ==========================================
 // HERRAMIENTA DE DESARROLLO: INYECCIÓN DE PRUEBA
 // ==========================================
 async function inyectarMedicosDePrueba() {
@@ -1187,7 +1235,6 @@ async function inyectarMedicosDePrueba() {
     if (!confirm) return;
 
     const medicosDemo = [
-        // Especialidades Clínicas
         { nom: "Dr. Esteban Quiroga", esp: "Clínica Médica", mat: "44019" },
         { nom: "Dra. Valeria Román", esp: "Clínica Médica", mat: "45021" },
         { nom: "Dr. Carlos San Martín", esp: "Cardiología", mat: "10293" },
@@ -1198,14 +1245,10 @@ async function inyectarMedicosDePrueba() {
         { nom: "Dra. Sofía Castro", esp: "Neurología", mat: "80291" },
         { nom: "Dra. Analía Montes", esp: "Endocrinología", mat: "70331" },
         { nom: "Dr. Roberto Sánchez", esp: "Neumonología", mat: "60442" },
-        
-        // Especialidades Quirúrgicas
         { nom: "Dr. Fernando Ruiz", esp: "Cirugía General", mat: "50553" },
         { nom: "Dr. Ricardo Silva", esp: "Traumatología", mat: "33918" },
         { nom: "Dr. Marcos Herrera", esp: "Urología", mat: "40664" },
         { nom: "Dra. Carmen López", esp: "Ginecología y Obstetricia", mat: "60293" },
-        
-        // Servicios de Diagnóstico y Apoyo
         { nom: "Dr. Javier Blanco", esp: "Diagnóstico por Imágenes", mat: "30775" },
         { nom: "Dra. Silvia Torres", esp: "Laboratorio de Análisis Clínicos", mat: "20886" },
         { nom: "Dr. Hugo Varela", esp: "Terapia Intensiva", mat: "10997" }
@@ -1219,40 +1262,31 @@ async function inyectarMedicosDePrueba() {
     const total = medicosDemo.length;
 
     for (const med of medicosDemo) {
-        // Generamos un usuario falso seguro
         const payload = {
-            nombre: med.nom,
-            rol: "Médico",
+            nombre: med.nom, rol: "Médico",
             username: med.nom.split(' ')[1].toLowerCase() + Math.floor(Math.random() * 1000),
-            password: "demo", 
-            correo: med.nom.split(' ')[1].toLowerCase() + "@hospital.demo",
-            tel: "2604000000",
-            matricula: med.mat,
-            especialidad: med.esp,
-            uid: "dummy_" + Date.now(), // Fake UID (No interfiere con Auth real)
-            timestamp: new Date()
+            password: "demo", correo: med.nom.split(' ')[1].toLowerCase() + "@hospital.demo",
+            tel: "2604000000", matricula: med.mat, especialidad: med.esp,
+            uid: "dummy_" + Date.now(), timestamp: new Date()
         };
 
-        try {
-            await addDoc(collection(window.db, "usuarios"), payload);
-        } catch(e) {
-            console.error("Fallo inyectando a:", med.nom);
-        }
+        try { await addDoc(collection(window.db, "usuarios"), payload); } 
+        catch(e) { console.error("Fallo inyectando a:", med.nom); }
 
         completados++;
         let porcentaje = Math.round((completados / total) * 100);
-        barra.style.width = porcentaje + '%';
-        texto.innerText = `Procesando: ${med.nom} (${completados}/${total})`;
+        if(barra) barra.style.width = porcentaje + '%';
+        if(texto) texto.innerText = `Procesando: ${med.nom} (${completados}/${total})`;
 
-        // PAUSA DE 500ms PARA NO SATURAR FIREBASE NI SER MARCADO COMO SPAM
+        // Pausa de 500ms
         await new Promise(resolve => setTimeout(resolve, 500));
     }
 
     cerrarModal('modal-progreso');
-    mostrarExito("Inyección Exitosa", "Los 15 médicos de prueba fueron agregados al sistema. Las listas públicas ya están actualizadas.");
+    mostrarExito("Inyección Exitosa", "Los médicos de prueba fueron agregados al sistema. Las listas públicas ya están actualizadas.");
     
-    cargarUsuariosAdmin('init'); // Recargamos la tabla (que ahora tiene paginación)
-    cargarEspecialistasFirebase(); // Actualiza los selects para que se vean al instante
+    cargarUsuariosAdmin('init'); 
+    cargarEspecialistasFirebase();
 }
 
 // ==========================================
