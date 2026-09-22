@@ -1,35 +1,75 @@
-/* Clases para cambiar entre pantallas (Single Page Application) */
-.view { display: none; }
-.view.active { display: block; }
+/* ==========================================
+   ESTILOS PERSONALIZADOS - HOSPITAL SCHESTAKOW
+   ========================================== */
 
-/* Clases para mostrar/ocultar los modales flotantes */
-.modal { display: none; }
-.modal.active { display: flex; }
-
-/* Efectos visuales para el historial clínico (acordeón) */
-.colapsable-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
-.colapsable-content.abierto { max-height: 500px; overflow-y: auto; }
-
-/* Barra de scroll personalizada para que no se vea la nativa de Windows */
-.custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-.custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
-
-/* Estilos de las pestañas en el panel de administrador */
-.admin-tab { cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
-.admin-tab.active { border-bottom-color: #1f2937; color: #1f2937; font-weight: bold; }
-
-/* Animación de "rebote" (pop) para los iconos de los modales (Éxito, Error, Alerta) */
-@keyframes scaleCheck {
-    0% { transform: scale(0); opacity: 0; }
-    50% { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
+/* 1. Estructura Base */
+body { 
+    display: flex; 
+    flex-direction: column; 
+    min-height: 100vh; 
+    background-color: #f8fafc; 
 }
-.animate-check { animation: scaleCheck 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
-/* Animación para que los paneles entren flotando desde abajo suavemente */
+/* 2. Control de Vistas (Navegación del Sistema) */
+.view { 
+    display: none; 
+}
+.view.active { 
+    display: block; 
+    animation: fadeIn 0.4s ease-out; 
+}
+
+/* 3. Animaciones Generales */
+.animate-fade-in-up { 
+    animation: fadeInUp 0.4s ease-out forwards; 
+}
+.animate-fade-in-up-fast { 
+    animation: fadeInUp 0.2s ease-out forwards; 
+    opacity: 0; 
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(15px); }
     to { opacity: 1; transform: translateY(0); }
 }
-.animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
-.animate-fade-in-up-fast { animation: fadeInUp 0.3s ease-out forwards; }
+
+/* 4. Modales (Ventanas Emergentes) */
+.modal-overlay { 
+    background-color: rgba(15, 23, 42, 0.7); 
+    backdrop-filter: blur(4px); 
+}
+.modal { 
+    display: none; 
+}
+.modal.active { 
+    display: flex; 
+    animation: fadeIn 0.2s ease-out; 
+}
+
+/* 5. Pestañas Fluidas de Administración (Animación de línea azul) */
+.admin-tab { 
+    position: relative; 
+    transition: color 0.3s ease-in-out; 
+    outline: none; 
+}
+.admin-tab::after {
+    content: ''; 
+    position: absolute; 
+    bottom: -2px; 
+    left: 0; 
+    width: 100%; 
+    height: 3px;
+    background-color: #1e40af; 
+    transform: scaleX(0); 
+    transform-origin: right;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.admin-tab.active::after { 
+    transform: scaleX(1); 
+    transform-origin: left; 
+}
