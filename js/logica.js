@@ -61,6 +61,11 @@ function establecerLimitesFecha() {
     if(document.getElementById('input-fecha-proxima-visita')) document.getElementById('input-fecha-proxima-visita').min = fechaMinima;
 }
 
+// Función vacía para que el botón viejo de RESET DB no tire error si lo tocan
+function forzarReseedDB() {
+    mostrarAlerta("Aviso", "El sistema de prueba fue eliminado. Ahora el software está en modo producción (100% limpio).");
+}
+
 async function cargarEspecialistasFirebase() {
     try {
         const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
@@ -109,7 +114,7 @@ async function iniciarCargaDeDatos() {
 }
 
 // ==========================================
-// SESIÓN Y NAVEGACIÓN
+// SESIÓN Y NAVEGACIÓN (PURA FIREBASE AUTH)
 // ==========================================
 function switchView(viewName) {
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -139,40 +144,36 @@ async function iniciarSesionReal() {
     const pass = document.getElementById('login-pass').value.trim();
     
     if (!inputUsuario || !pass) { 
-        mostrarAlerta("Datos Faltantes", "Ingrese usuario y contraseña."); 
+        mostrarAlerta("Datos Faltantes", "Ingrese correo o usuario y contraseña."); 
         return; 
     }
     
     try {
-        let correoReal = "";
+        let correoReal = inputUsuario;
+        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
 
-        if (inputUsuario.includes("@")) {
-            correoReal = inputUsuario;
-        } else {
-            const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+        // Si no puso un '@', asumimos que puso su nombre de usuario ("admin", "nacho", etc.)
+        if (!inputUsuario.includes("@")) {
             const snap = await getDocs(query(collection(window.db, "usuarios"), where("username", "==", inputUsuario)));
-            
             if (!snap.empty) {
-                snap.forEach((doc) => {
-                    correoReal = doc.data().correo;
-                });
+                snap.forEach((doc) => { correoReal = doc.data().correo; });
             } else {
-                mostrarAlerta("Error de Acceso", "El nombre de usuario no existe en la base de datos.");
+                mostrarAlerta("Error de Acceso", "El nombre de usuario no existe en los registros.");
                 return;
             }
         }
 
-        // Autenticación segura mediante Firebase Auth
+        // 1. Firebase Auth valida la contraseña (seguridad real)
         await signInWithEmailAndPassword(window.auth, correoReal, pass);
         
-        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+        // 2. Si pasó, leemos su perfil de Firestore para saber a qué panel mandarlo
         const snapUser = await getDocs(query(collection(window.db, "usuarios"), where("correo", "==", correoReal)));
         
         let datosUser = null;
         if (!snapUser.empty) {
             snapUser.forEach((doc) => { datosUser = doc.data(); });
         } else {
-            mostrarAlerta("Error de Permisos", "Usuario autenticado pero sin rol asignado en el sistema.");
+            mostrarAlerta("Error de Permisos", "Usuario autenticado pero sin perfil en la base de datos. Avisar a sistemas.");
             return;
         }
 
@@ -187,7 +188,7 @@ async function iniciarSesionReal() {
 
     } catch (error) {
         console.error("Error de autenticación:", error);
-        mostrarAlerta("Acceso Denegado", "Usuario o contraseña incorrectos.");
+        mostrarAlerta("Acceso Denegado", "Credenciales incorrectas según Firebase Auth.");
     }
 }
 
@@ -784,7 +785,7 @@ async function guardarEvolucionMedico() {
 }
 
 // ==========================================
-// ADMIN Y MÉTRICAS
+// ADMIN Y MÉTRICAS (VISUALIZACIÓN DE CLAVES Y SINCRONIZACIÓN)
 // ==========================================
 function toggleCamposMedico() {
     const rol = document.getElementById('input-usuario-rol').value;
@@ -847,7 +848,7 @@ async function cargarUsuariosAdmin() {
                     <div class="text-xs text-gray-500">Clave: <span class="bg-gray-100 px-1 rounded border font-mono">${u.password || 'No registrada'}</span></div>
                 </td>
                 <td class="p-3 text-center">
-                    <button onclick="editarUsuarioAdmin('${j}')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1 rounded hover:bg-gray-200 font-bold text-xs transition">Editar</button> 
+                    <button onclick="editarUsuarioAdmin('${j}')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1 rounded hover:bg-gray-200 font-bold text-xs transition">Editar / Clave</button> 
                     <button onclick="eliminarUsuarioAdmin('${u.id}')" class="text-red-600 hover:text-red-800 font-bold text-xs ml-2 transition">Borrar</button>
                 </td>
             </tr>`;
@@ -884,7 +885,7 @@ async function guardarUsuarioAdminFirebase() {
     const esp = document.getElementById('input-usuario-especialidad').value;
 
     if (!nom || !user || !pass || !cor) { 
-        mostrarAlerta("Datos Faltantes", "Nombre, Usuario, Contraseña y Correo Electrónico son obligatorios."); 
+        mostrarAlerta("Datos Faltantes", "Nombre, Usuario, Contraseña y Correo Electrónico son obligatorios para la sincronización con Firebase Auth."); 
         return; 
     }
 
@@ -903,6 +904,7 @@ async function guardarUsuarioAdminFirebase() {
             await updateDoc(doc(window.db, "usuarios", id), payload); 
             mostrarExito("Usuario Actualizado", "Los datos se guardaron correctamente.");
         } else {
+            // Sincronización automática con Firebase Authentication
             try {
                 await createUserWithEmailAndPassword(window.auth, cor, pass);
             } catch (authError) {
@@ -910,7 +912,7 @@ async function guardarUsuarioAdminFirebase() {
             }
 
             await addDoc(collection(window.db, "usuarios"), payload); 
-            mostrarExito("Usuario Sincronizado", "El nuevo usuario fue añadido y registrado de forma automática.");
+            mostrarExito("Usuario Sincronizado", "El nuevo usuario fue añadido y registrado de forma automática en Firebase.");
         }
         
         cerrarModal('modal-usuario'); 
@@ -1182,6 +1184,7 @@ window.descargarReporteMetricasIndividual = descargarReporteMetricasIndividual;
 window.toggleHistorial = toggleHistorial;
 window.simularAutocompletado = simularAutocompletado;
 window.toggleTimeSelector = toggleTimeSelector;
+window.forzarReseedDB = forzarReseedDB;
 
 // ==========================================
 // ARRANQUE DEL SISTEMA
