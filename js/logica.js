@@ -101,18 +101,18 @@ let modulacionPorMedico = {};
 // PERMISOS VISUALES (LLAVE MAESTRA)
 // ==========================================
 function aplicarPermisosVisuales() {
-    // Buscamos los botones en el HTML
-    const btnAdmin = document.getElementById('btn-nav-admin') || document.querySelector('[onclick*="admin"]');
-    const btnRec = document.getElementById('btn-nav-reception') || document.querySelector('[onclick*="reception"]');
-    const btnDoc = document.getElementById('btn-nav-doctor') || document.querySelector('[onclick*="doctor"]');
+    const btnAdmin = document.getElementById('btn-nav-admin');
+    const btnRec = document.getElementById('btn-nav-reception');
+    const btnDoc = document.getElementById('btn-nav-doctor');
+    const btnDummies = document.getElementById('btn-cargar-dummies'); // NUEVO
 
-    // Por defecto, ocultamos todos
     if(btnAdmin) btnAdmin.classList.add('hidden');
     if(btnRec) btnRec.classList.add('hidden');
     if(btnDoc) btnDoc.classList.add('hidden');
+    if(btnDummies) btnDummies.classList.add('hidden'); // NUEVO
 
     const sesionStr = localStorage.getItem("sesionHospitalActiva");
-    if (!sesionStr) return; // Si no hay sesión, se quedan ocultos
+    if (!sesionStr) return;
 
     const sesion = JSON.parse(sesionStr);
     
@@ -121,6 +121,7 @@ function aplicarPermisosVisuales() {
         if(btnAdmin) btnAdmin.classList.remove('hidden');
         if(btnRec) btnRec.classList.remove('hidden');
         if(btnDoc) btnDoc.classList.remove('hidden');
+        if(btnDummies) btnDummies.classList.remove('hidden'); // SOLAMENTE VOS VES ESTO
     } 
     // EMPLEADOS NORMALES
     else {
