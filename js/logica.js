@@ -1,8 +1,9 @@
 // ==========================================
-// IMPORTACIONES DE FIREBASE
+// IMPORTACIONES DE FIREBASE Y AUTH
 // ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 // ==========================================
 // CONFIGURACIÓN DE FIREBASE
@@ -18,7 +19,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-window.db = db; // Lo guardamos global para usarlo en otras funciones
+const auth = getAuth(app);
+window.db = db;
+window.auth = auth;
 
 // ==========================================
 // CONFIGURACIÓN DE EMAILJS
@@ -111,8 +114,8 @@ async function forzarReseedDB() {
                 especialidad: medico.especialidad, timestamp: new Date()
             });
         });
-        promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Admin Sistema", rol: "Administración", username: "admin", password: "123", tel: "", correo: "", matricula: "", especialidad: "", timestamp: new Date() }));
-        promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Recepción Turnos", rol: "Administrativo", username: "recepcion", password: "123", tel: "", correo: "", matricula: "", especialidad: "", timestamp: new Date() }));
+        promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Admin Sistema", rol: "Administración", username: "admin", password: "123", tel: "", correo: "admin@hospital.gov.ar", matricula: "", especialidad: "", timestamp: new Date() }));
+        promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Recepción Turnos", rol: "Administrativo", username: "recepcion", password: "123", tel: "", correo: "recepcion@hospital.gov.ar", matricula: "", especialidad: "", timestamp: new Date() }));
         
         await Promise.all(promesas);
         mostrarExito("Base de Datos Reiniciada", "Se han cargado todos los especialistas por defecto.");
@@ -132,8 +135,8 @@ async function verificarYCargarMedicosPorDefecto() {
                     especialidad: medico.especialidad, timestamp: new Date()
                 });
             });
-            promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Admin Sistema", rol: "Administración", username: "admin", password: "123", tel: "", correo: "", matricula: "", especialidad: "", timestamp: new Date() }));
-            promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Recepción Turnos", rol: "Administrativo", username: "recepcion", password: "123", tel: "", correo: "", matricula: "", especialidad: "", timestamp: new Date() }));
+            promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Admin Sistema", rol: "Administración", username: "admin", password: "123", tel: "", correo: "admin@hospital.gov.ar", matricula: "", especialidad: "", timestamp: new Date() }));
+            promesas.push(addDoc(collection(window.db, "usuarios"), { nombre: "Recepción Turnos", rol: "Administrativo", username: "recepcion", password: "123", tel: "", correo: "recepcion@hospital.gov.ar", matricula: "", especialidad: "", timestamp: new Date() }));
             await Promise.all(promesas); await cargarEspecialistasFirebase();
         } else { 
             await cargarEspecialistasFirebase(); 
@@ -189,7 +192,7 @@ async function iniciarCargaDeDatos() {
 }
 
 // ==========================================
-// SESIÓN Y NAVEGACIÓN
+// SESIÓN Y NAVEGACIÓN (CON FIREBASE AUTH)
 // ==========================================
 function switchView(viewName) {
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -215,18 +218,52 @@ function switchView(viewName) {
 }
 
 async function iniciarSesionReal() {
-    const user = document.getElementById('login-user').value.trim();
+    const inputUsuario = document.getElementById('login-user').value.trim();
     const pass = document.getElementById('login-pass').value.trim();
     
-    if (!user || !pass) { mostrarAlerta("Datos Faltantes", "Ingrese usuario y contraseña."); return; }
+    if (!inputUsuario || !pass) { 
+        mostrarAlerta("Datos Faltantes", "Ingrese usuario y contraseña."); 
+        return; 
+    }
     
     try {
-        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
-        const snap = await getDocs(query(collection(window.db, "usuarios"), where("username", "==", user), where("password", "==", pass)));
-        if (snap.empty) { mostrarAlerta("Error de Acceso", "Credenciales incorrectas."); return; }
+        let correoReal = "";
+
+        if (inputUsuario.includes("@")) {
+            correoReal = inputUsuario;
+        } else {
+            const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+            const snap = await getDocs(query(collection(window.db, "usuarios"), where("username", "==", inputUsuario)));
+            
+            if (!snap.empty) {
+                snap.forEach((doc) => {
+                    correoReal = doc.data().correo;
+                });
+            } else {
+                if (inputUsuario === "admin") correoReal = "admin@hospital.gov.ar";
+                else if (inputUsuario === "recepcion") correoReal = "recepcion@hospital.gov.ar";
+                else {
+                    mostrarAlerta("Error de Acceso", "El nombre de usuario no existe.");
+                    return;
+                }
+            }
+        }
+
+        // Autenticación segura mediante Firebase Auth
+        await signInWithEmailAndPassword(window.auth, correoReal, pass);
         
-        let datosUser = {}; 
-        snap.forEach((doc) => { datosUser = doc.data(); });
+        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+        const snapUser = await getDocs(query(collection(window.db, "usuarios"), where("correo", "==", correoReal)));
+        
+        let datosUser = { nombre: inputUsuario, rol: "Médico" };
+        if (!snapUser.empty) {
+            snapUser.forEach((doc) => { datosUser = doc.data(); });
+        } else if (correoReal.includes("admin")) {
+            datosUser = { nombre: "Administrador General", rol: "Administración" };
+        } else if (correoReal.includes("recepcion")) {
+            datosUser = { nombre: "Personal de Admisión", rol: "Administrativo" };
+        }
+
         localStorage.setItem("sesionHospitalActiva", JSON.stringify(datosUser));
         
         document.getElementById('login-user').value = ''; 
@@ -235,7 +272,11 @@ async function iniciarSesionReal() {
         if (datosUser.rol === "Médico") switchView("doctor");
         else if (datosUser.rol === "Administrativo" || datosUser.rol === "Recepción") switchView("reception");
         else if (datosUser.rol === "Administración") switchView("admin");
-    } catch (error) { console.error(error); mostrarAlerta("Error de Red", "Error al conectar con la base de datos."); }
+
+    } catch (error) {
+        console.error("Error de autenticación:", error);
+        mostrarAlerta("Acceso Denegado", "Usuario o contraseña incorrectos.");
+    }
 }
 
 function cerrarSesionReal() { 
@@ -1203,5 +1244,8 @@ window.toggleHistorial = toggleHistorial;
 window.simularAutocompletado = simularAutocompletado;
 window.toggleTimeSelector = toggleTimeSelector;
 window.forzarReseedDB = forzarReseedDB;
-// Arrancar el motor del sistema y buscar los datos en Firebase
+
+// ==========================================
+// ARRANQUE DEL SISTEMA
+// ==========================================
 iniciarCargaDeDatos();
