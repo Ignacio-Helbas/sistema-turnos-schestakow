@@ -675,6 +675,18 @@
         </div>
     </div>
 </div>
+
+    <!-- MODAL DE PROGRESO DE CARGA -->
+<div id="modal-progreso" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden cursor-wait">
+    <div class="bg-white rounded-lg shadow-xl w-11/12 max-w-sm p-6 text-center">
+        <h3 class="text-lg font-bold text-gray-800 mb-2">Inyectando Base de Datos</h3>
+        <p id="progreso-texto" class="text-sm text-gray-600 font-mono mb-4">Iniciando...</p>
+        <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden border border-gray-300">
+            <div id="progreso-barra" class="bg-purple-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <p class="text-xs text-gray-400 mt-3">Por favor no cierre esta ventana.</p>
+    </div>
+</div>
     
 </body>
 </html>
