@@ -1045,10 +1045,22 @@ async function eliminarUsuarioAdmin(id) {
 }
 
 function cambiarTabAdmin(tabId) {
-    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.admin-tab').forEach(t => {
+        t.classList.remove('active', 'text-blue-800');
+        t.classList.add('text-gray-500');
+    });
+    
     document.querySelectorAll('.admin-section').forEach(s => s.classList.add('hidden'));
-    document.getElementById('tab-' + tabId).classList.add('active');
-    document.getElementById('admin-sec-' + tabId).classList.remove('hidden');
+    
+    const tabActiva = document.getElementById('tab-' + tabId);
+    if(tabActiva) {
+        tabActiva.classList.add('active', 'text-blue-800');
+        tabActiva.classList.remove('text-gray-500');
+    }
+    
+    const secActiva = document.getElementById('admin-sec-' + tabId);
+    if(secActiva) secActiva.classList.remove('hidden');
+
     if(tabId === 'metricas') cargarMetricas('todos');
 }
 
