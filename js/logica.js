@@ -1115,5 +1115,12 @@ window.forzarReseedDB = forzarReseedDB;
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
     iniciarCargaDeDatos();
+
+    // Soporte para tecla Enter en el login
+    const inputUser = document.getElementById('login-user');
+    const inputPass = document.getElementById('login-pass');
+    if(inputUser) inputUser.addEventListener('keypress', e => { if(e.key === 'Enter') iniciarSesionReal(); });
+    if(inputPass) inputPass.addEventListener('keypress', e => { if(e.key === 'Enter') iniciarSesionReal(); });
+
     console.log("Sistema cargado y exportado al Scope Global sin errores.");
 });
