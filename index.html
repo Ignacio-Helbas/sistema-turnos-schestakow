@@ -29,31 +29,30 @@
     <!-- ========================================== -->
     <!-- CABECERA Y NAVEGACIÓN -->
     <!-- ========================================== -->
-    <header class="bg-white shadow-md sticky top-0 z-40">
+    <header class="bg-white/95 backdrop-blur shadow-md sticky top-0 z-40 border-b border-blue-900/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Cambio responsivo: flex-col en móvil, flex-row en escritorio -->
-            <div class="flex flex-col md:flex-row justify-between min-h-[5rem] py-3 items-center gap-4 md:gap-0">
+            <div class="flex justify-between h-20 items-center">
                 
                 <!-- Logo Exclusivo en Imagen con LOGIN SECRETO (Doble Clic) -->
-                <div class="flex items-center cursor-pointer select-none" ondblclick="switchView('login')" title="Doble clic para acceso Staff">
+                <div class="flex items-center cursor-pointer py-2 select-none" ondblclick="switchView('login')" title="Doble clic para acceso Staff">
                     <img src="img/LogoHospital.png" alt="Hospital Teodoro J. Schestakow" class="h-14 w-auto object-contain">
                 </div>
 
                 <!-- Botones de Navegación del Staff (Ocultos al público) -->
-                <nav class="flex flex-wrap justify-center gap-2 md:gap-4 items-center">
+                <nav class="flex gap-4 items-center">
                     <!-- Estos botones solo aparecen vía JS si hay sesión iniciada -->
-                    <button id="btn-nav-reception" onclick="switchView('reception')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-sm px-2 py-2 transition">Recepción</button>
-                    <button id="btn-nav-doctor" onclick="switchView('doctor')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-sm px-2 py-2 transition">Consultorio</button>
-                    <button id="btn-nav-admin" onclick="switchView('admin')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-sm px-2 py-2 transition">Administración</button>
-                    <button id="btn-logout" onclick="cerrarSesionReal()" class="hidden ml-2 bg-slate-800 text-white px-4 py-2 rounded-md font-bold text-xs sm:text-sm hover:bg-slate-700 shadow transition">Cerrar Sesión</button>
+                    <button id="btn-nav-reception" onclick="switchView('reception')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-sm px-3 py-2 transition">Recepción</button>
+                    <button id="btn-nav-doctor" onclick="switchView('doctor')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-sm px-3 py-2 transition">Consultorio</button>
+                    <button id="btn-nav-admin" onclick="switchView('admin')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-sm px-3 py-2 transition">Administración</button>
+                    <button id="btn-logout" onclick="cerrarSesionReal()" class="hidden ml-2 bg-slate-800 text-white px-4 py-2 rounded-md font-bold text-sm hover:bg-slate-700 shadow transition">Cerrar Sesión</button>
                     
                     <!-- Indicador de Sistema En Vivo -->
-                    <div id="indicador-vivo" class="flex items-center gap-2 ml-2 md:ml-4">
+                    <div id="indicador-vivo" class="flex items-center gap-2 ml-4">
                         <span class="relative flex h-3 w-3">
                           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                           <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                         </span>
-                        <span class="text-emerald-500 font-bold text-xs sm:text-sm">Sistema En Vivo</span>
+                        <span class="text-emerald-500 font-bold text-sm hidden sm:block">Sistema En Vivo</span>
                     </div>
                 </nav>
 
