@@ -304,8 +304,10 @@
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 bg-white/90 p-4 rounded-xl shadow-sm gap-4">
                         <h3 class="text-lg font-bold text-slate-800">Gestión de Usuarios Activos</h3>
                         <div class="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
-                            <!-- Botón Secreto Dummies -->
+                            <!-- Botones Secretos de SuperAdmin -->
+                            <button id="btn-reset-db" onclick="limpiarBaseDeDatos()" class="w-full sm:w-auto bg-red-600 text-white px-4 py-2 rounded font-bold hover:bg-red-700 shadow transition hidden text-sm">Reset de Fábrica</button>
                             <button id="btn-cargar-dummies" onclick="inyectarMedicosDePrueba()" class="w-full sm:w-auto bg-purple-700 text-white px-4 py-2 rounded font-bold hover:bg-purple-800 shadow transition hidden text-sm">Inyectar Datos</button>
+                            
                             <button onclick="abrirModalUsuarioNulo()" class="w-full sm:w-auto bg-blue-800 text-white px-4 py-2 rounded font-bold hover:bg-blue-900 shadow transition text-sm">+ Nuevo Usuario</button>
                         </div>
                     </div>
@@ -529,20 +531,40 @@
                 <div id="div-usuario-especialidad" class="hidden col-span-1">
                     <label class="block text-sm font-bold text-slate-700 mb-1">Especialidad</label>
                     <select id="input-usuario-especialidad" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="Clínica Médica">Clínica Médica</option>
-                        <option value="Cardiología">Cardiología</option>
-                        <option value="Pediatría">Pediatría</option>
-                        <option value="Gastroenterología">Gastroenterología</option>
-                        <option value="Neurología">Neurología</option>
-                        <option value="Endocrinología">Endocrinología</option>
-                        <option value="Neumonología">Neumonología</option>
-                        <option value="Cirugía General">Cirugía General</option>
-                        <option value="Traumatología">Traumatología</option>
-                        <option value="Urología">Urología</option>
-                        <option value="Ginecología y Obstetricia">Ginecología y Obstetricia</option>
-                        <option value="Diagnóstico por Imágenes">Diagnóstico por Imágenes</option>
-                        <option value="Laboratorio de Análisis Clínicos">Laboratorio de Análisis Clínicos</option>
-                        <option value="Terapia Intensiva">Terapia Intensiva</option>
+                        <optgroup label="Especialidades Clínicas">
+                            <option value="Clínica Médica">Clínica Médica</option>
+                            <option value="Cardiología">Cardiología</option>
+                            <option value="Pediatría">Pediatría</option>
+                            <option value="Neurología">Neurología</option>
+                            <option value="Endocrinología">Endocrinología</option>
+                            <option value="Gastroenterología">Gastroenterología</option>
+                            <option value="Neumonología">Neumonología</option>
+                            <option value="Nefrología">Nefrología</option>
+                            <option value="Infectología">Infectología</option>
+                            <option value="Dermatología">Dermatología</option>
+                            <option value="Geriatría">Geriatría</option>
+                            <option value="Hematología">Hematología</option>
+                            <option value="Alergia e Inmunología">Alergia e Inmunología</option>
+                        </optgroup>
+                        <optgroup label="Especialidades Quirúrgicas">
+                            <option value="Cirugía General">Cirugía General</option>
+                            <option value="Cirugía Cardiovascular">Cirugía Cardiovascular</option>
+                            <option value="Cirugía Plástica y Reparadora">Cirugía Plástica y Reparadora</option>
+                            <option value="Traumatología y Ortopedia">Traumatología y Ortopedia</option>
+                            <option value="Neurocirugía">Neurocirugía</option>
+                            <option value="Urología">Urología</option>
+                            <option value="Otorrinolaringología">Otorrinolaringología</option>
+                            <option value="Oftalmología">Oftalmología</option>
+                            <option value="Ginecología y Obstetricia">Ginecología y Obstetricia</option>
+                        </optgroup>
+                        <optgroup label="Diagnóstico, Tratamiento y Guardia">
+                            <option value="Diagnóstico por Imágenes">Diagnóstico por Imágenes</option>
+                            <option value="Anatomía Patológica">Anatomía Patológica</option>
+                            <option value="Anestesiología">Anestesiología</option>
+                            <option value="Terapia Intensiva">Terapia Intensiva</option>
+                            <option value="Medicina Física y Rehabilitación">Medicina Física y Rehabilitación</option>
+                            <option value="Medicina de Emergencias">Medicina de Emergencias</option>
+                        </optgroup>
                     </select>
                 </div>
 
