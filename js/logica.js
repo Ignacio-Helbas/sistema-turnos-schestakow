@@ -1111,40 +1111,104 @@ async function ejecutarGuardadoModulacion() {
 async function cargarMetricas(segmento) {
     const tbody = document.getElementById('metricas-tbody');
     const kpiContainer = document.getElementById('metricas-kpi-container');
-    tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Procesando registros...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-bold animate-pulse">Procesando inteligencia de datos...</td></tr>';
     
     try {
         const turnosSnap = await getDocs(collection(window.db, "turnos"));
         const usuariosSnap = await getDocs(collection(window.db, "usuarios"));
         
-        let todosLosTurnos = [];
-        turnosSnap.forEach(t => todosLosTurnos.push(t.data()));
-        let datosAgrupados = {};
+        let turnosTotales = 0;
+        let atendidosTotales = 0;
+        let ausentesTotales = 0;
+        let canceladosTotales = 0;
+        let canalWeb = 0;
+        let canalPresencial = 0;
+
+        let datosMedicos = {};
         
-        usuariosSnap.forEach(documento => {
-            const u = documento.data();
-            datosAgrupados[u.nombre] = { nombre: u.nombre, rol: u.rol, totalTurnos: 0, atendidos: 0 };
+        // 1. Inicializar diccionario de médicos
+        usuariosSnap.forEach(doc => {
+            const u = doc.data();
+            if (u.rol === "Médico") {
+                datosMedicos[u.nombre] = { nombre: u.nombre, especialidad: u.especialidad, total: 0, atendidos: 0, ausentes: 0, cancelados: 0 };
+            }
         });
         
-        todosLosTurnos.forEach(t => {
-            if (datosAgrupados[t.medico]) {
-                datosAgrupados[t.medico].totalTurnos++;
-                if(t.estado === "Atendido") datosAgrupados[t.medico].atendidos++;
+        // 2. Procesar todos los turnos históricos
+        turnosSnap.forEach(doc => {
+            const t = doc.data();
+            turnosTotales++;
+            
+            // Métricas Globales
+            if (t.estado === "Atendido") atendidosTotales++;
+            if (t.estado === "Ausente") ausentesTotales++;
+            if (t.estado.includes("Cancelado")) canceladosTotales++;
+
+            if (t.estado.includes("Web")) canalWeb++;
+            else canalPresencial++;
+
+            // Métricas Particulares por Médico
+            if (datosMedicos[t.medico]) {
+                datosMedicos[t.medico].total++;
+                if (t.estado === "Atendido") datosMedicos[t.medico].atendidos++;
+                if (t.estado === "Ausente") datosMedicos[t.medico].ausentes++;
+                if (t.estado.includes("Cancelado")) datosMedicos[t.medico].cancelados++;
             }
         });
 
-        kpiContainer.innerHTML = `<div class="bg-blue-50 border border-blue-200 p-4 rounded text-center col-span-4"><p class="text-xs text-blue-600 font-bold uppercase">Total Citas Registradas</p><p class="text-3xl font-bold text-blue-900">${todosLosTurnos.length}</p></div>`;
+        // 3. Cálculos de Porcentajes Globales
+        let pctAusentismo = turnosTotales > 0 ? Math.round((ausentesTotales / turnosTotales) * 100) : 0;
+        let pctEfectividad = turnosTotales > 0 ? Math.round((atendidosTotales / turnosTotales) * 100) : 0;
+        let pctWeb = turnosTotales > 0 ? Math.round((canalWeb / turnosTotales) * 100) : 0;
 
+        // 4. Renderizar KPIs Globales (Tarjetas Superiores)
+        kpiContainer.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl shadow-sm text-center">
+                    <p class="text-xs text-blue-600 font-bold uppercase tracking-wide">Volumen Institucional</p>
+                    <p class="text-3xl font-bold text-blue-900 mt-2">${turnosTotales}</p>
+                    <p class="text-xs text-blue-500 mt-1 font-medium">Turnos Totales</p>
+                </div>
+                <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl shadow-sm text-center">
+                    <p class="text-xs text-emerald-600 font-bold uppercase tracking-wide">Efectividad Global</p>
+                    <p class="text-3xl font-bold text-emerald-900 mt-2">${pctEfectividad}%</p>
+                    <p class="text-xs text-emerald-600 mt-1 font-medium">${atendidosTotales} Atendidos</p>
+                </div>
+                <div class="bg-red-50 border border-red-200 p-4 rounded-xl shadow-sm text-center">
+                    <p class="text-xs text-red-600 font-bold uppercase tracking-wide">Tasa de Ausentismo</p>
+                    <p class="text-3xl font-bold text-red-900 mt-2">${pctAusentismo}%</p>
+                    <p class="text-xs text-red-500 mt-1 font-medium">${ausentesTotales} Pacientes</p>
+                </div>
+                <div class="bg-purple-50 border border-purple-200 p-4 rounded-xl shadow-sm text-center">
+                    <p class="text-xs text-purple-600 font-bold uppercase tracking-wide">Canal de Ingreso</p>
+                    <p class="text-3xl font-bold text-purple-900 mt-2">${pctWeb}% <span class="text-lg">Web</span></p>
+                    <p class="text-xs text-purple-500 mt-1 font-medium">${canalPresencial} Presenciales</p>
+                </div>
+            </div>
+        `;
+
+        // 5. Renderizar Tabla Particular por Especialista
         let htmlTabla = ''; 
-        let datosMetricasCache = Object.values(datosAgrupados); 
-        
-        datosMetricasCache.forEach(d => {
-            let efectividad = d.totalTurnos > 0 ? Math.round((d.atendidos / d.totalTurnos) * 100) : 0;
-            htmlTabla += `<tr class="border-b hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">${d.nombre}</td><td class="p-3 text-xs text-gray-500 uppercase font-bold">${d.rol}</td><td class="p-3 font-mono font-bold">${d.totalTurnos}</td><td class="p-3 text-sm">${d.atendidos} (${efectividad}%)</td><td class="p-3 text-center">-</td></tr>`;
+        Object.values(datosMedicos).forEach(d => {
+            if(d.total > 0) { // Solo mostrar médicos que tengan al menos 1 turno
+                let efectividad = Math.round((d.atendidos / d.total) * 100);
+                let ausentismo = Math.round((d.ausentes / d.total) * 100);
+                htmlTabla += `
+                <tr class="border-b hover:bg-slate-50 transition">
+                    <td class="p-3 font-bold text-slate-800">${d.nombre}</td>
+                    <td class="p-3 text-xs text-slate-500 font-bold uppercase">${d.especialidad}</td>
+                    <td class="p-3 font-mono font-bold text-center text-slate-600">${d.total}</td>
+                    <td class="p-3 text-sm text-emerald-600 font-bold text-center">${d.atendidos} <span class="text-xs text-emerald-400">(${efectividad}%)</span></td>
+                    <td class="p-3 text-sm text-red-600 font-bold text-center">${d.ausentes} <span class="text-xs text-red-400">(${ausentismo}%)</span></td>
+                </tr>`;
+            }
         });
         
-        tbody.innerHTML = htmlTabla || '<tr><td colspan="5" class="p-4 text-center text-gray-500">No hay datos suficientes.</td></tr>';
-    } catch(e) { console.error(e); }
+        tbody.innerHTML = htmlTabla || '<tr><td colspan="5" class="p-4 text-center text-slate-500">No hay datos de turnos suficientes para generar métricas.</td></tr>';
+    } catch(e) { 
+        console.error(e); 
+        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500 font-bold">Error al procesar las métricas.</td></tr>';
+    }
 }
 
 function toggleHistorial() { document.getElementById('historial-paciente').classList.toggle('abierto'); }
