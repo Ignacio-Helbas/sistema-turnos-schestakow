@@ -67,6 +67,7 @@ window.toggleTimeSelector = toggleTimeSelector;
 window.verificarLimpiezaAnual = verificarLimpiezaAnual;
 window.ejecutarLimpiezaYDescarga = ejecutarLimpiezaYDescarga;
 window.inyectarMedicosDePrueba = inyectarMedicosDePrueba;
+window.limpiarBaseDeDatos = limpiarBaseDeDatos; // NUEVO EXPORT
 
 // ==========================================
 // CONFIGURACIÓN DE EMAILJS
@@ -95,7 +96,7 @@ let duracionTurnoGlobal = 15;
 let modulacionPorMedico = {}; 
 let usuariosPageSnapshots = []; 
 let currentUsuariosPage = 0;
-const USUARIOS_PER_PAGE = 5; // Cambialo a 10 si preferís listas más largas
+const USUARIOS_PER_PAGE = 5; 
 
 let fechaRecepcionSeleccionada = '';
 let medicoSeleccionadoRecepcion = '';
@@ -113,11 +114,13 @@ function aplicarPermisosVisuales() {
     const btnRec = document.getElementById('btn-nav-reception');
     const btnDoc = document.getElementById('btn-nav-doctor');
     const btnDummies = document.getElementById('btn-cargar-dummies');
+    const btnReset = document.getElementById('btn-reset-db');
 
     if(btnAdmin) btnAdmin.classList.add('hidden');
     if(btnRec) btnRec.classList.add('hidden');
     if(btnDoc) btnDoc.classList.add('hidden');
     if(btnDummies) btnDummies.classList.add('hidden');
+    if(btnReset) btnReset.classList.add('hidden');
 
     const sesionStr = localStorage.getItem("sesionHospitalActiva");
     if (!sesionStr) return; 
@@ -130,6 +133,7 @@ function aplicarPermisosVisuales() {
         if(btnRec) btnRec.classList.remove('hidden');
         if(btnDoc) btnDoc.classList.remove('hidden');
         if(btnDummies) btnDummies.classList.remove('hidden');
+        if(btnReset) btnReset.classList.remove('hidden');
     } 
     // EMPLEADOS NORMALES
     else {
@@ -147,7 +151,7 @@ function aplicarPermisosVisuales() {
 }
 
 // ==========================================
-// INICIALIZACIÓN
+// INICIALIZACIÓN Y CATEGORÍAS CLÍNICAS
 // ==========================================
 function establecerLimitesFecha() {
     const hoy = new Date();
@@ -168,9 +172,7 @@ async function cargarEspecialistasFirebase() {
         snap.forEach((documento) => {
             const u = documento.data();
             if(u.especialidad && u.nombre) {
-                // Agrupamos los médicos por especialidad
                 if (!bdMedicosDinamica[u.especialidad]) bdMedicosDinamica[u.especialidad] = [];
-                // Evitamos duplicados
                 if (!bdMedicosDinamica[u.especialidad].includes(u.nombre)) {
                     bdMedicosDinamica[u.especialidad].push(u.nombre);
                     if(selectAlcance) selectAlcance.innerHTML += `<option value="${u.nombre}">Solo: ${u.nombre}</option>`;
@@ -178,22 +180,45 @@ async function cargarEspecialistasFirebase() {
             }
         });
 
-        // ==========================================
-        // LA MAGIA QUE FALTABA: Llenar los desplegables
-        // ==========================================
+        // AGRUPACIÓN PROFESIONAL POR CATEGORÍAS (OPTGROUP)
+        const categoriasBase = {
+            "Especialidades Clínicas": ["Clínica Médica", "Cardiología", "Pediatría", "Neurología", "Endocrinología", "Gastroenterología", "Neumonología", "Nefrología", "Infectología", "Dermatología", "Geriatría", "Hematología", "Alergia e Inmunología"],
+            "Especialidades Quirúrgicas": ["Cirugía General", "Cirugía Cardiovascular", "Cirugía Plástica y Reparadora", "Traumatología y Ortopedia", "Neurocirugía", "Urología", "Otorrinolaringología", "Oftalmología", "Ginecología y Obstetricia"],
+            "Diagnóstico, Tratamiento y Guardia": ["Diagnóstico por Imágenes", "Anatomía Patológica", "Anestesiología", "Terapia Intensiva", "Medicina Física y Rehabilitación", "Medicina de Emergencias"]
+        };
+
         const selectEspPublico = document.getElementById('select-especialidad');
         const selectEspRecepcion = document.getElementById('reception-especialidad');
         
         let opcionesHtml = '<option value="">-- Elija una especialidad --</option>';
-        
-        // Agarramos las especialidades, las ordenamos alfabéticamente y creamos el menú
-        Object.keys(bdMedicosDinamica).sort().forEach(esp => {
-            opcionesHtml += `<option value="${esp}">${esp}</option>`;
-        });
+        let especialidadesEncontradas = Object.keys(bdMedicosDinamica);
+
+        for (const [categoria, especialidades] of Object.entries(categoriasBase)) {
+            let optgroup = `<optgroup label="${categoria}">`;
+            let tieneItems = false;
+            
+            especialidades.forEach(esp => {
+                if (especialidadesEncontradas.includes(esp)) {
+                    optgroup += `<option value="${esp}">${esp}</option>`;
+                    tieneItems = true;
+                    especialidadesEncontradas = especialidadesEncontradas.filter(e => e !== esp);
+                }
+            });
+            optgroup += `</optgroup>`;
+            if (tieneItems) opcionesHtml += optgroup;
+        }
+
+        // Si quedó alguna especialidad suelta fuera del listado principal
+        if (especialidadesEncontradas.length > 0) {
+            opcionesHtml += `<optgroup label="Otras Especialidades">`;
+            especialidadesEncontradas.sort().forEach(esp => {
+                opcionesHtml += `<option value="${esp}">${esp}</option>`;
+            });
+            opcionesHtml += `</optgroup>`;
+        }
 
         if (selectEspPublico) selectEspPublico.innerHTML = opcionesHtml;
         if (selectEspRecepcion) selectEspRecepcion.innerHTML = opcionesHtml;
-        // ==========================================
 
     } catch(e) { console.warn("No se pudieron cargar especialistas.", e); }
 }
@@ -254,11 +279,13 @@ function switchView(viewName) {
         actualizarMedicosRecepcion();
         if (fechaRecepcionSeleccionada) generarAgendaRecepcion();
     }
-    if (viewName === 'public') actualizarMedicosPublico();
+    if (viewName === 'public') {
+        cargarEspecialistasFirebase();
+    }
     if (viewName === 'doctor') cargarAgendaMedico();
     if (viewName === 'admin') {
         cargarUsuariosAdmin();
-        verificarLimpiezaAnual(); // Detonador de limpieza anual
+        verificarLimpiezaAnual();
     }
 }
 
@@ -362,16 +389,17 @@ function actualizarMedicosPublico() {
     
     if (!esp) { 
         selectMed.disabled = true; 
-        selectMed.className = "w-full border rounded p-3 bg-gray-100 text-gray-500 outline-none";
+        selectMed.className = "w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-500 outline-none transition";
         selectMed.innerHTML = '<option>Primero seleccione especialidad</option>';
         generarHorariosPublicos(); 
         return; 
     }
     
     selectMed.disabled = false;
-    selectMed.className = "w-full border rounded p-3 bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow";
+    selectMed.className = "w-full border border-slate-300 rounded p-2.5 bg-white text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none transition";
     
     if (bdMedicosDinamica[esp] && bdMedicosDinamica[esp].length > 0) {
+        selectMed.innerHTML = '<option value="">-- Seleccione Profesional --</option>';
         bdMedicosDinamica[esp].sort().forEach(m => selectMed.innerHTML += `<option value="${m}">${m}</option>`);
     } else {
         selectMed.innerHTML = '<option value="">No hay profesionales registrados en esta área</option>';
@@ -404,11 +432,11 @@ async function generarHorariosPublicos() {
     const container = document.getElementById('horarios-publicos');
     if(!container) return;
     
-    if(!input || !medico || medico.includes("Primero") || medico.includes("No hay")) {
-        container.innerHTML = '<p class="text-sm text-gray-500 col-span-3">Seleccione Profesional y Fecha.</p>'; 
+    if(!input || !medico || medico.includes("Primero") || medico.includes("No hay") || medico.includes("--")) {
+        container.innerHTML = '<p class="text-sm text-slate-500 col-span-2 sm:col-span-3 text-center mt-2">Seleccione Profesional y Fecha.</p>'; 
         return;
     }
-    container.innerHTML = '<div class="col-span-3 flex justify-center py-4"><p class="text-sm text-blue-600 font-bold ml-2">Consultando disponibilidad...</p></div>';
+    container.innerHTML = '<div class="col-span-2 sm:col-span-3 flex justify-center py-4"><p class="text-sm text-blue-600 font-bold ml-2">Consultando disponibilidad...</p></div>';
 
     let turnosOcupados = {};
     try {
@@ -441,7 +469,7 @@ async function generarHorariosPublicos() {
         
         if (esCanalWeb) {
             if (turnosOcupados[hsStr]) { 
-                html += `<button type="button" class="bg-gray-100 text-gray-400 font-bold rounded p-2 border cursor-not-allowed animate-fade-in-up-fast" style="animation-delay: ${delay}ms" disabled>${hsStr} (Ocupado)</button>`;
+                html += `<button type="button" class="bg-slate-100 text-slate-400 font-bold rounded p-2 border cursor-not-allowed animate-fade-in-up-fast" style="animation-delay: ${delay}ms" disabled>${hsStr} (Ocupado)</button>`;
             } else if (esHoy && (minBucle - minActuales) < 60) {
                 html += `<button type="button" class="bg-red-50 text-red-400 font-bold rounded p-2 border border-red-200 cursor-not-allowed animate-fade-in-up-fast" style="animation-delay: ${delay}ms" disabled>${hsStr} (Cerrado)</button>`;
             } else { 
@@ -452,7 +480,7 @@ async function generarHorariosPublicos() {
         esCanalWeb = !esCanalWeb; 
         minBucle += duracionActual; 
     }
-    container.innerHTML = html || '<p class="text-sm text-gray-500 col-span-3">No hay turnos web disponibles.</p>';
+    container.innerHTML = html || '<p class="text-sm text-slate-500 col-span-2 sm:col-span-3 text-center">No hay turnos web disponibles.</p>';
 }
 
 function seleccionarHorario(btnClickeado) {
@@ -495,7 +523,7 @@ async function confirmarTurnoFirebase() {
         document.getElementById('paciente-email').value = ''; 
         document.getElementById('input-fecha-paciente').value = ''; 
         document.getElementById('select-especialidad').value = ''; 
-        document.getElementById('horarios-publicos').innerHTML = '<p class="text-sm text-gray-500 col-span-3">Seleccione una fecha.</p>'; 
+        document.getElementById('horarios-publicos').innerHTML = '<p class="text-sm text-slate-500 col-span-2 sm:col-span-3 text-center mt-2">Seleccione una fecha.</p>'; 
         document.getElementById('select-medico').innerHTML = '<option>Primero seleccione especialidad</option>'; 
         document.getElementById('select-medico').disabled = true;
 
@@ -516,14 +544,14 @@ async function buscarTurnosPaciente() {
         
         let html = '';
         if (snap.empty) { 
-            html = `<p class="text-sm text-red-600 font-semibold text-center">No hay turnos activos para este DNI.</p>`; 
+            html = `<p class="text-sm text-red-600 font-semibold text-center mt-4">No hay turnos activos para este DNI.</p>`; 
         } else {
             snap.forEach((doc) => {
                 const t = doc.data();
                 const cancelado = t.estado.includes("Cancelado");
                 const badge = cancelado ? `<span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${t.estado}</span>` : '';
                 const btn = cancelado || t.estado==="Atendido" || t.estado==="Ausente" ? '' : `<button onclick="cancelarTurnoFirebase('${doc.id}')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>`;
-                html += `<div class="bg-gray-50 border p-3 rounded flex justify-between items-center mb-2"><div><p class="font-bold text-sm">${t.especialidad} - ${t.medico}</p><p class="text-xs text-gray-600">${t.fecha} - ${t.horario} hs ${badge}</p></div>${btn}</div>`;
+                html += `<div class="bg-slate-50 border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2"><div class="w-full"><p class="font-bold text-sm text-blue-900">${t.especialidad} - ${t.medico}</p><p class="text-xs text-slate-600 mt-1">${t.fecha} - ${t.horario} hs ${badge}</p></div>${btn}</div>`;
             });
         }
         res.innerHTML = html; 
@@ -562,13 +590,13 @@ function actualizarMedicosRecepcion() {
     
     if (!esp) { 
         selectMed.disabled = true; 
-        selectMed.className = "w-full border border-gray-300 rounded p-2 bg-gray-100 text-gray-500 outline-none";
+        selectMed.className = "w-full border border-slate-300 rounded-lg p-2.5 bg-slate-50 text-slate-500 outline-none";
         selectMed.innerHTML = '<option>Primero seleccione especialidad</option>';
         return; 
     }
     
     selectMed.disabled = false;
-    selectMed.className = "w-full border border-gray-300 rounded p-2 bg-white text-gray-800 focus:ring-2 focus:ring-indigo-600 outline-none";
+    selectMed.className = "w-full border border-slate-300 rounded-lg p-2.5 bg-white text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none";
     
     if (bdMedicosDinamica[esp] && bdMedicosDinamica[esp].length > 0) {
         bdMedicosDinamica[esp].sort().forEach(m => selectMed.innerHTML += `<option value="${m}">${m}</option>`);
@@ -623,29 +651,29 @@ async function generarAgendaRecepcion() {
         let horaStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
         
         const canalStr = esCanalWeb ? 'Web' : 'Presencial';
-        const styleCanal = esCanalWeb ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800';
+        const styleCanal = esCanalWeb ? 'bg-blue-100 text-blue-800' : 'bg-slate-200 text-slate-800';
         
-        let htmlPaciente = '<i class="text-gray-400">Libre</i>';
-        let htmlEstado = '<span class="text-green-700 font-bold text-sm">Disponible</span>';
-        let htmlAccion = `<button onclick="abrirModalDarTurno('${horaStr}')" class="bg-indigo-700 text-white text-xs px-3 py-2 rounded font-bold hover:bg-indigo-800 shadow-sm transition">Asignar Turno</button>`;
+        let htmlPaciente = '<i class="text-slate-400">Libre</i>';
+        let htmlEstado = '<span class="text-emerald-700 font-bold text-sm">Disponible</span>';
+        let htmlAccion = `<button onclick="abrirModalDarTurno('${horaStr}')" class="bg-blue-800 text-white text-xs px-3 py-2 rounded font-bold hover:bg-blue-900 shadow-sm transition">Asignar Turno</button>`;
         
         if (turnosOcupados[horaStr]) {
             const t = turnosOcupados[horaStr];
-            htmlPaciente = `<span class="font-bold text-gray-800">${t.pacienteNombre}</span> <span class="text-xs text-gray-500">(DNI: ${t.pacienteDni})</span>`;
+            htmlPaciente = `<span class="font-bold text-slate-800">${t.pacienteNombre}</span> <span class="text-xs text-slate-500 block sm:inline">(DNI: ${t.pacienteDni})</span>`;
             
             if(t.estado.includes("Cancelado")) {
                 htmlEstado = `<span class="text-red-600 font-bold text-xs uppercase">${t.estado}</span>`;
-                htmlAccion = `<span class="text-xs text-gray-400 font-bold">Bloqueado</span>`;
+                htmlAccion = `<span class="text-xs text-slate-400 font-bold">Bloqueado</span>`;
             } else {
-                htmlEstado = `<span class="text-yellow-700 font-bold text-sm">${t.estado}</span>`;
-                htmlAccion = `<button onclick="cancelarTurnoRecepcion('${t.id}')" class="bg-white border border-red-500 text-red-700 text-xs px-3 py-2 rounded font-bold hover:bg-red-50 transition shadow-sm">Cancelar</button>`;
+                htmlEstado = `<span class="text-amber-600 font-bold text-sm">${t.estado}</span>`;
+                htmlAccion = `<button onclick="cancelarTurnoRecepcion('${t.id}')" class="bg-white border border-red-500 text-red-600 text-xs px-3 py-2 rounded font-bold hover:bg-red-50 transition shadow-sm">Cancelar</button>`;
             }
         }
 
         html += `
-        <tr class="border-b hover:bg-gray-50 bg-white">
-            <td class="p-3 font-bold text-gray-800">${horaStr}</td>
-            <td class="p-3"><span class="text-xs px-2 py-1 rounded font-bold border border-gray-300 ${styleCanal}">${canalStr}</span></td>
+        <tr class="border-b hover:bg-slate-50 bg-white">
+            <td class="p-3 font-bold text-slate-800">${horaStr}</td>
+            <td class="p-3"><span class="text-xs px-2 py-1 rounded font-bold border border-slate-300 ${styleCanal}">${canalStr}</span></td>
             <td class="p-3">${htmlPaciente}</td>
             <td class="p-3">${htmlEstado}</td>
             <td class="p-3">${htmlAccion}</td>
@@ -786,7 +814,7 @@ async function cargarAgendaMedico() {
         let primerPaciente = "Ningún paciente en espera";
 
         if(turnosMedicoHoy.length === 0) { 
-            html = '<p class="text-sm text-gray-500 p-2">No tiene pacientes para hoy.</p>'; 
+            html = '<p class="text-sm text-slate-500 p-2">No tiene pacientes para hoy.</p>'; 
         } else {
             let contador = 0;
             turnosMedicoHoy.forEach((t) => {
@@ -796,22 +824,22 @@ async function cargarAgendaMedico() {
                 }
                 if (t.estado !== "Atendido" && t.estado !== "Ausente") contador++;
 
-                let color = "bg-yellow-200 text-yellow-800";
-                if(t.estado === "En consultorio") color = "bg-green-200 text-green-800";
-                if(t.estado === "Atendido") color = "bg-gray-200 text-gray-800";
+                let color = "bg-amber-200 text-amber-800";
+                if(t.estado === "En consultorio") color = "bg-emerald-200 text-emerald-800";
+                if(t.estado === "Atendido") color = "bg-slate-200 text-slate-800";
                 if(t.estado === "Ausente") color = "bg-red-200 text-red-800";
 
                 let btnHtml = '';
                 if (t.estado !== "Atendido" && t.estado !== "Ausente") {
-                    btnHtml = `<div class="mt-3 flex gap-2"><button onclick="llamarPaciente('${t.id}')" class="flex-1 bg-teal-600 text-white text-xs font-bold py-1.5 rounded shadow">Llamar</button><button onclick="marcarAusente('${t.id}')" class="flex-1 bg-white border border-red-50 text-red-700 text-xs font-bold py-1.5 rounded shadow">Ausente</button></div>`;
+                    btnHtml = `<div class="mt-3 flex gap-2"><button onclick="llamarPaciente('${t.id}')" class="flex-1 bg-blue-600 text-white text-xs font-bold py-2 rounded shadow hover:bg-blue-700 transition">Llamar</button><button onclick="marcarAusente('${t.id}')" class="flex-1 bg-white border border-red-100 text-red-600 text-xs font-bold py-2 rounded shadow hover:bg-red-50 transition">Ausente</button></div>`;
                 }
 
                 const opacidad = (t.estado === 'Atendido' || t.estado === 'Ausente') ? 'opacity-60' : 'opacity-100';
-                const borde = t.estado === 'En consultorio' ? 'border-green-600 bg-green-50' : 'border-teal-600 bg-teal-50';
+                const borde = t.estado === 'En consultorio' ? 'border-emerald-500 bg-emerald-50' : 'border-blue-500 bg-blue-50';
 
-                html += `<div class="border-l-4 ${borde} p-3 rounded shadow-sm border ${opacidad}"><div class="flex justify-between text-sm mb-1"><span class="font-bold text-teal-800">${t.horario} hs</span><span class="text-xs ${color} px-2 py-0.5 rounded font-bold">${t.estado}</span></div><p class="font-bold text-lg text-gray-800">${t.pacienteNombre}</p><p class="text-xs text-gray-600">DNI: ${t.pacienteDni} | Tel: ${t.pacienteCelular}</p>${btnHtml}</div>`;
+                html += `<div class="border-l-4 ${borde} p-4 rounded-lg shadow-sm border border-slate-200 ${opacidad}"><div class="flex justify-between items-center text-sm mb-2"><span class="font-bold text-blue-900">${t.horario} hs</span><span class="text-xs ${color} px-2 py-0.5 rounded font-bold">${t.estado}</span></div><p class="font-bold text-lg text-slate-800 leading-tight">${t.pacienteNombre}</p><p class="text-xs text-slate-500 mt-1">DNI: ${t.pacienteDni} | Tel: ${t.pacienteCelular}</p>${btnHtml}</div>`;
             });
-            if(contador === 0) html += '<p class="text-sm text-gray-500 p-2 mt-4 border-t pt-2">No hay más pacientes en espera.</p>';
+            if(contador === 0) html += '<p class="text-sm text-slate-500 p-2 mt-4 border-t border-slate-200 pt-4">No hay más pacientes en espera.</p>';
         }
         container.innerHTML = html; 
         if(lblPacienteActivo) lblPacienteActivo.innerText = primerPaciente;
@@ -873,7 +901,7 @@ function toggleCamposMedico() {
         divMatricula.classList.add('hidden'); 
         divEspecialidad.classList.add('hidden'); 
         document.getElementById('input-usuario-matricula').value = ''; 
-        document.getElementById('input-usuario-especialidad').value = 'clinica'; 
+        document.getElementById('input-usuario-especialidad').value = 'Clínica Médica'; 
     }
 }
 
@@ -887,7 +915,7 @@ function abrirModalUsuarioNulo() {
     document.getElementById('input-usuario-pass').value = "";
     document.getElementById('input-usuario-tel').value = "";
     document.getElementById('input-usuario-matricula').value = "";
-    document.getElementById('input-usuario-especialidad').value = "clinica";
+    document.getElementById('input-usuario-especialidad').value = "Clínica Médica";
     toggleCamposMedico();
     abrirModal('modal-usuario');
 }
@@ -896,7 +924,7 @@ async function cargarUsuariosAdmin(direccion = 'init') {
     const tbody = document.getElementById('admin-users-tbody');
     if(!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500 font-bold animate-pulse">Cargando base de datos...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-bold animate-pulse">Cargando base de datos...</td></tr>';
 
     let q;
     const refCol = collection(window.db, "usuarios");
@@ -926,7 +954,7 @@ async function cargarUsuariosAdmin(direccion = 'init') {
         
         if (snap.empty) {
             if (direccion === 'next') currentUsuariosPage--; 
-            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">No hay más usuarios registrados.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">No hay más usuarios registrados.</td></tr>';
             actualizarBotonesPaginacion(false);
             return;
         }
@@ -939,23 +967,23 @@ async function cargarUsuariosAdmin(direccion = 'init') {
         let html = '';
         snap.forEach(documento => {
             const u = { id: documento.id, ...documento.data() };
-            let color = u.rol === 'Médico' ? 'text-teal-700' : (u.rol === 'Administración' ? 'text-gray-800' : 'text-indigo-700');
+            let color = u.rol === 'Médico' ? 'text-emerald-700' : (u.rol === 'Administración' ? 'text-slate-800' : 'text-blue-700');
             const j = encodeURIComponent(JSON.stringify(u));
             
             html += `
-            <tr class="border-b hover:bg-gray-50 bg-white">
+            <tr class="border-b hover:bg-slate-50 bg-white transition">
                 <td class="p-3">
-                    <p class="font-bold text-gray-800">${u.nombre || 'Sin Nombre'}</p>
-                    <p class="text-xs text-gray-500">${u.tel || 'Sin teléfono'}</p>
+                    <p class="font-bold text-slate-800">${u.nombre || 'Sin Nombre'}</p>
+                    <p class="text-xs text-slate-500">${u.tel || 'Sin teléfono'}</p>
                 </td>
-                <td class="p-3 font-bold ${color}">${u.rol} ${u.matricula ? `<span class="text-xs text-gray-400 block font-normal">MP: ${u.matricula} (${u.especialidad})</span>` : ''}</td>
-                <td class="p-3 font-mono text-sm text-gray-600">
+                <td class="p-3 font-bold ${color}">${u.rol} ${u.matricula ? `<span class="text-xs text-slate-400 block font-normal mt-0.5">MP: ${u.matricula} (${u.especialidad})</span>` : ''}</td>
+                <td class="p-3 font-mono text-sm text-slate-600">
                     <div><b>${u.correo}</b></div>
-                    <div class="text-xs text-gray-500">UID: <span class="text-indigo-600">${u.uid || 'No vinculado'}</span></div>
-                    <div class="text-xs text-gray-500">Usr: <b>${u.username || 'N/A'}</b> | Clave: <span class="bg-gray-100 px-1 rounded border font-mono text-gray-800">${u.password || '******'}</span></div>
+                    <div class="text-xs text-slate-500 mt-0.5">UID: <span class="text-blue-600">${u.uid || 'No vinculado'}</span></div>
+                    <div class="text-xs text-slate-500 mt-0.5">Usr: <b>${u.username || 'N/A'}</b> | Clave: <span class="bg-slate-100 px-1 rounded border border-slate-200 font-mono text-slate-800">${u.password || '******'}</span></div>
                 </td>
-                <td class="p-3 text-center">
-                    <button onclick="editarUsuarioAdmin('${j}')" class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1 rounded hover:bg-gray-200 font-bold text-xs transition">Editar</button> 
+                <td class="p-3 text-center whitespace-nowrap">
+                    <button onclick="editarUsuarioAdmin('${j}')" class="bg-slate-100 text-slate-700 border border-slate-300 px-3 py-1 rounded hover:bg-slate-200 font-bold text-xs transition shadow-sm">Editar</button> 
                     <button onclick="eliminarUsuarioAdmin('${u.id}')" class="text-red-600 hover:text-red-800 font-bold text-xs ml-2 transition">Borrar</button>
                 </td>
             </tr>`;
@@ -991,7 +1019,7 @@ function editarUsuarioAdmin(userJSONEncoded) {
     document.getElementById('input-usuario-pass').value = u.password || '';
     document.getElementById('input-usuario-tel').value = u.tel || '';
     document.getElementById('input-usuario-matricula').value = u.matricula || '';
-    document.getElementById('input-usuario-especialidad').value = u.especialidad || 'clinica';
+    document.getElementById('input-usuario-especialidad').value = u.especialidad || 'Clínica Médica';
     toggleCamposMedico();
     abrirModal('modal-usuario');
 }
@@ -1069,20 +1097,20 @@ async function eliminarUsuarioAdmin(id) {
 function cambiarTabAdmin(tabId) {
     document.querySelectorAll('.admin-tab').forEach(t => {
         t.classList.remove('active', 'text-blue-800');
-        t.classList.add('text-gray-500');
+        t.classList.add('text-slate-500');
     });
     document.querySelectorAll('.admin-section').forEach(s => s.classList.add('hidden'));
     
     const tabActiva = document.getElementById('tab-' + tabId);
     if(tabActiva) {
         tabActiva.classList.add('active', 'text-blue-800');
-        tabActiva.classList.remove('text-gray-500');
+        tabActiva.classList.remove('text-slate-500');
     }
     
     const secActiva = document.getElementById('admin-sec-' + tabId);
     if(secActiva) secActiva.classList.remove('hidden');
 
-    if(tabId === 'metricas') cargarMetricas('todos');
+    if(tabId === 'metricas') cargarMetricas();
 }
 
 function iniciarGuardadoModulacion() {
@@ -1108,7 +1136,7 @@ async function ejecutarGuardadoModulacion() {
     } catch(e) { mostrarAlerta("Error", "No se pudo guardar la configuración."); }
 }
 
-async function cargarMetricas(segmento) {
+async function cargarMetricas() {
     const tbody = document.getElementById('metricas-tbody');
     const kpiContainer = document.getElementById('metricas-kpi-container');
     tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-bold animate-pulse">Procesando inteligencia de datos...</td></tr>';
@@ -1126,7 +1154,6 @@ async function cargarMetricas(segmento) {
 
         let datosMedicos = {};
         
-        // 1. Inicializar diccionario de médicos
         usuariosSnap.forEach(doc => {
             const u = doc.data();
             if (u.rol === "Médico") {
@@ -1134,12 +1161,10 @@ async function cargarMetricas(segmento) {
             }
         });
         
-        // 2. Procesar todos los turnos históricos
         turnosSnap.forEach(doc => {
             const t = doc.data();
             turnosTotales++;
             
-            // Métricas Globales
             if (t.estado === "Atendido") atendidosTotales++;
             if (t.estado === "Ausente") ausentesTotales++;
             if (t.estado.includes("Cancelado")) canceladosTotales++;
@@ -1147,7 +1172,6 @@ async function cargarMetricas(segmento) {
             if (t.estado.includes("Web")) canalWeb++;
             else canalPresencial++;
 
-            // Métricas Particulares por Médico
             if (datosMedicos[t.medico]) {
                 datosMedicos[t.medico].total++;
                 if (t.estado === "Atendido") datosMedicos[t.medico].atendidos++;
@@ -1156,14 +1180,12 @@ async function cargarMetricas(segmento) {
             }
         });
 
-        // 3. Cálculos de Porcentajes Globales
         let pctAusentismo = turnosTotales > 0 ? Math.round((ausentesTotales / turnosTotales) * 100) : 0;
         let pctEfectividad = turnosTotales > 0 ? Math.round((atendidosTotales / turnosTotales) * 100) : 0;
         let pctWeb = turnosTotales > 0 ? Math.round((canalWeb / turnosTotales) * 100) : 0;
 
-        // 4. Renderizar KPIs Globales (Tarjetas Superiores)
         kpiContainer.innerHTML = `
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl shadow-sm text-center">
                     <p class="text-xs text-blue-600 font-bold uppercase tracking-wide">Volumen Institucional</p>
                     <p class="text-3xl font-bold text-blue-900 mt-2">${turnosTotales}</p>
@@ -1175,26 +1197,25 @@ async function cargarMetricas(segmento) {
                     <p class="text-xs text-emerald-600 mt-1 font-medium">${atendidosTotales} Atendidos</p>
                 </div>
                 <div class="bg-red-50 border border-red-200 p-4 rounded-xl shadow-sm text-center">
-                    <p class="text-xs text-red-600 font-bold uppercase tracking-wide">Tasa de Ausentismo</p>
+                    <p class="text-xs text-red-600 font-bold uppercase tracking-wide">Tasa Ausentismo</p>
                     <p class="text-3xl font-bold text-red-900 mt-2">${pctAusentismo}%</p>
                     <p class="text-xs text-red-500 mt-1 font-medium">${ausentesTotales} Pacientes</p>
                 </div>
                 <div class="bg-purple-50 border border-purple-200 p-4 rounded-xl shadow-sm text-center">
-                    <p class="text-xs text-purple-600 font-bold uppercase tracking-wide">Canal de Ingreso</p>
+                    <p class="text-xs text-purple-600 font-bold uppercase tracking-wide">Canal Ingreso</p>
                     <p class="text-3xl font-bold text-purple-900 mt-2">${pctWeb}% <span class="text-lg">Web</span></p>
                     <p class="text-xs text-purple-500 mt-1 font-medium">${canalPresencial} Presenciales</p>
                 </div>
             </div>
         `;
 
-        // 5. Renderizar Tabla Particular por Especialista
         let htmlTabla = ''; 
         Object.values(datosMedicos).forEach(d => {
-            if(d.total > 0) { // Solo mostrar médicos que tengan al menos 1 turno
+            if(d.total > 0) {
                 let efectividad = Math.round((d.atendidos / d.total) * 100);
                 let ausentismo = Math.round((d.ausentes / d.total) * 100);
                 htmlTabla += `
-                <tr class="border-b hover:bg-slate-50 transition">
+                <tr class="border-b hover:bg-slate-50 transition bg-white">
                     <td class="p-3 font-bold text-slate-800">${d.nombre}</td>
                     <td class="p-3 text-xs text-slate-500 font-bold uppercase">${d.especialidad}</td>
                     <td class="p-3 font-mono font-bold text-center text-slate-600">${d.total}</td>
@@ -1263,11 +1284,11 @@ function pedirConfirmacion(titulo, mensaje, textoAceptar = "Aceptar") {
 }
 
 // ==========================================
-// MANTENIMIENTO INTELIGENTE (SIMULACIÓN CLOUD FUNCTION)
+// MANTENIMIENTO INTELIGENTE
 // ==========================================
 async function verificarLimpiezaAnual() {
     const hoy = new Date();
-    hoy.setFullYear(hoy.getFullYear() - 1); // Restamos exactamente 1 año
+    hoy.setFullYear(hoy.getFullYear() - 1); 
     const fechaLimite = hoy.toISOString().split('T')[0];
 
     try {
@@ -1308,36 +1329,98 @@ async function ejecutarLimpiezaYDescarga() {
 
         cerrarModal('modal-limpieza-anual');
         mostrarExito("Depuración Exitosa", `Se descargó el archivo y se eliminaron ${snap.docs.length} registros históricos de la base de datos operativa.`);
-        cargarMetricas('todos');
+        cargarMetricas();
         
     } catch (error) { console.error(error); mostrarAlerta("Error Crítico", "Fallo al realizar la exportación."); }
 }
 
 // ==========================================
-// HERRAMIENTA DE DESARROLLO: INYECCIÓN DE PRUEBA
+// HERRAMIENTAS DE DESARROLLO (SUPER ADMIN)
 // ==========================================
+
+async function limpiarBaseDeDatos() {
+    const input = prompt("⚠️ ADVERTENCIA DE SEGURIDAD ⚠️\nEsta acción borrará TODOS los turnos y TODOS los usuarios del sistema (excepto su cuenta maestra).\n\nEl sistema quedará en blanco, como recién instalado.\n\nPara confirmar, escriba exactamente la palabra: BORRAR");
+    
+    if (input !== "BORRAR") {
+        mostrarAlerta("Cancelado", "Palabra de seguridad incorrecta. No se ha borrado ningún dato.");
+        return;
+    }
+
+    abrirModal('modal-progreso');
+    const barra = document.getElementById('progreso-barra');
+    const texto = document.getElementById('progreso-texto');
+    
+    if(texto) texto.innerText = "Vaciando base de datos...";
+    if(barra) barra.style.width = '30%';
+
+    try {
+        // 1. Borrar todos los turnos
+        const turnosSnap = await getDocs(collection(window.db, "turnos"));
+        const promesasTurnos = turnosSnap.docs.map(d => deleteDoc(doc(window.db, "turnos", d.id)));
+        await Promise.all(promesasTurnos);
+        if(barra) barra.style.width = '60%';
+
+        // 2. Borrar usuarios (Excepto el admin)
+        const usuariosSnap = await getDocs(collection(window.db, "usuarios"));
+        const promesasUsuarios = [];
+        usuariosSnap.forEach(d => {
+            const u = d.data();
+            // No borramos la cuenta maestra actual
+            if (u.correo !== "nachohelbas@gmail.com") {
+                promesasUsuarios.push(deleteDoc(doc(window.db, "usuarios", d.id)));
+            }
+        });
+        await Promise.all(promesasUsuarios);
+
+        if(barra) barra.style.width = '100%';
+        cerrarModal('modal-progreso');
+        mostrarExito("Reinicio Exitoso", "El sistema ha sido restaurado a su estado de fábrica. Turnos y usuarios de prueba eliminados.");
+        
+        // Recargar datos en la UI
+        cargarUsuariosAdmin('init');
+        cargarEspecialistasFirebase();
+        cargarMetricas();
+    } catch (e) {
+        console.error(e);
+        cerrarModal('modal-progreso');
+        mostrarAlerta("Error", "Ocurrió un problema al intentar vaciar la base de datos.");
+    }
+}
+
 async function inyectarMedicosDePrueba() {
-    const confirm = await pedirConfirmacion("¿Inyectar Médicos de Prueba?", "Se cargarán profesionales ficticios en la base de datos para la presentación. Este proceso tomará unos segundos.", "Sí, Inyectar");
+    const confirm = await pedirConfirmacion("¿Inyectar Base de Datos?", "Se cargarán 28 profesionales ficticios categorizados en la base de datos para la presentación. Este proceso tomará unos 15 segundos para no saturar el servidor.", "Sí, Inyectar");
     if (!confirm) return;
 
     const medicosDemo = [
         { nom: "Dr. Esteban Quiroga", esp: "Clínica Médica", mat: "44019" },
         { nom: "Dra. Valeria Román", esp: "Clínica Médica", mat: "45021" },
         { nom: "Dr. Carlos San Martín", esp: "Cardiología", mat: "10293" },
-        { nom: "Dra. Lucía Fernández", esp: "Cardiología", mat: "11928" },
         { nom: "Dra. María Antonieta", esp: "Pediatría", mat: "22019" },
-        { nom: "Dr. Jorge Medina", esp: "Pediatría", mat: "20192" },
-        { nom: "Dr. Martín Ríos", esp: "Gastroenterología", mat: "90182" },
         { nom: "Dra. Sofía Castro", esp: "Neurología", mat: "80291" },
         { nom: "Dra. Analía Montes", esp: "Endocrinología", mat: "70331" },
+        { nom: "Dr. Martín Ríos", esp: "Gastroenterología", mat: "90182" },
         { nom: "Dr. Roberto Sánchez", esp: "Neumonología", mat: "60442" },
+        { nom: "Dr. Hugo Silva", esp: "Nefrología", mat: "11223" },
+        { nom: "Dra. Laura Méndez", esp: "Infectología", mat: "33445" },
+        { nom: "Dr. Pablo Gómez", esp: "Dermatología", mat: "55667" },
+        { nom: "Dra. Silvia Paz", esp: "Geriatría", mat: "77889" },
+        { nom: "Dr. Andrés Luna", esp: "Hematología", mat: "99001" },
+        { nom: "Dra. Clara Vega", esp: "Alergia e Inmunología", mat: "22334" },
         { nom: "Dr. Fernando Ruiz", esp: "Cirugía General", mat: "50553" },
-        { nom: "Dr. Ricardo Silva", esp: "Traumatología", mat: "33918" },
-        { nom: "Dr. Marcos Herrera", esp: "Urología", mat: "40664" },
+        { nom: "Dr. Jorge Medina", esp: "Cirugía Cardiovascular", mat: "20192" },
+        { nom: "Dra. Luciana Herrera", esp: "Cirugía Plástica y Reparadora", mat: "44556" },
+        { nom: "Dr. Ricardo Silva", esp: "Traumatología y Ortopedia", mat: "33918" },
+        { nom: "Dr. Marcos Torres", esp: "Neurocirugía", mat: "66778" },
+        { nom: "Dr. Javier López", esp: "Urología", mat: "88990" },
+        { nom: "Dra. Elena Castro", esp: "Otorrinolaringología", mat: "11224" },
+        { nom: "Dr. Matías Rojas", esp: "Oftalmología", mat: "33446" },
         { nom: "Dra. Carmen López", esp: "Ginecología y Obstetricia", mat: "60293" },
         { nom: "Dr. Javier Blanco", esp: "Diagnóstico por Imágenes", mat: "30775" },
-        { nom: "Dra. Silvia Torres", esp: "Laboratorio de Análisis Clínicos", mat: "20886" },
-        { nom: "Dr. Hugo Varela", esp: "Terapia Intensiva", mat: "10997" }
+        { nom: "Dra. Silvia Torres", esp: "Anatomía Patológica", mat: "20886" },
+        { nom: "Dr. Mario Domínguez", esp: "Anestesiología", mat: "55668" },
+        { nom: "Dr. Hugo Varela", esp: "Terapia Intensiva", mat: "10997" },
+        { nom: "Dra. Natalia Cruz", esp: "Medicina Física y Rehabilitación", mat: "77880" },
+        { nom: "Dr. Diego Ponce", esp: "Medicina de Emergencias", mat: "99002" }
     ];
 
     abrirModal('modal-progreso');
@@ -1364,15 +1447,16 @@ async function inyectarMedicosDePrueba() {
         if(barra) barra.style.width = porcentaje + '%';
         if(texto) texto.innerText = `Procesando: ${med.nom} (${completados}/${total})`;
 
-        // Pausa de 500ms
+        // Pausa de 500ms para evitar bloqueo de red por "Spam"
         await new Promise(resolve => setTimeout(resolve, 500));
     }
 
     cerrarModal('modal-progreso');
-    mostrarExito("Inyección Exitosa", "Los médicos de prueba fueron agregados al sistema. Las listas públicas ya están actualizadas.");
+    mostrarExito("Inyección Exitosa", "Los 29 médicos de prueba fueron agregados al sistema con sus respectivas especialidades.");
     
     cargarUsuariosAdmin('init'); 
     cargarEspecialistasFirebase();
+    cargarMetricas();
 }
 
 // ==========================================
@@ -1387,5 +1471,5 @@ document.addEventListener("DOMContentLoaded", () => {
     if(inputUser) inputUser.addEventListener('keypress', e => { if(e.key === 'Enter') iniciarSesionReal(); });
     if(inputPass) inputPass.addEventListener('keypress', e => { if(e.key === 'Enter') iniciarSesionReal(); });
 
-    console.log("Sistema cargado y exportado al Scope Global sin errores.");
+    console.log("Sistema cargado. Vistas inicializadas.");
 });
