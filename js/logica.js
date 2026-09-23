@@ -168,11 +168,33 @@ async function cargarEspecialistasFirebase() {
         snap.forEach((documento) => {
             const u = documento.data();
             if(u.especialidad && u.nombre) {
+                // Agrupamos los médicos por especialidad
                 if (!bdMedicosDinamica[u.especialidad]) bdMedicosDinamica[u.especialidad] = [];
-                bdMedicosDinamica[u.especialidad].push(u.nombre);
-                if(selectAlcance) selectAlcance.innerHTML += `<option value="${u.nombre}">Solo: ${u.nombre}</option>`;
+                // Evitamos duplicados
+                if (!bdMedicosDinamica[u.especialidad].includes(u.nombre)) {
+                    bdMedicosDinamica[u.especialidad].push(u.nombre);
+                    if(selectAlcance) selectAlcance.innerHTML += `<option value="${u.nombre}">Solo: ${u.nombre}</option>`;
+                }
             }
         });
+
+        // ==========================================
+        // LA MAGIA QUE FALTABA: Llenar los desplegables
+        // ==========================================
+        const selectEspPublico = document.getElementById('select-especialidad');
+        const selectEspRecepcion = document.getElementById('reception-especialidad');
+        
+        let opcionesHtml = '<option value="">-- Elija una especialidad --</option>';
+        
+        // Agarramos las especialidades, las ordenamos alfabéticamente y creamos el menú
+        Object.keys(bdMedicosDinamica).sort().forEach(esp => {
+            opcionesHtml += `<option value="${esp}">${esp}</option>`;
+        });
+
+        if (selectEspPublico) selectEspPublico.innerHTML = opcionesHtml;
+        if (selectEspRecepcion) selectEspRecepcion.innerHTML = opcionesHtml;
+        // ==========================================
+
     } catch(e) { console.warn("No se pudieron cargar especialistas.", e); }
 }
 
