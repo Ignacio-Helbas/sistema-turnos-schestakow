@@ -160,14 +160,12 @@
 
         <!-- 3. VISTA RECEPCIÓN -->
         <div id="view-reception" class="view">
-            <!-- Cambio responsivo: flex-col en móvil -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 border-b pb-4 bg-white/90 px-4 pt-4 rounded-t-lg gap-4">
                 <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Panel de Recepción</h2>
                 <button onclick="abrirModal('modal-ausencia-emergencia')" class="w-full sm:w-auto bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-bold hover:bg-red-100 transition text-sm text-center">Reportar Ausencia Médica</button>
             </div>
 
             <div class="bg-white/95 backdrop-blur p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
-                <!-- Cambio responsivo: grid 1 columna a 4 columnas -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-1">Especialidad</label>
@@ -193,7 +191,6 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> Exportar a Excel
                     </button>
                 </div>
-                <!-- Overflow horizontal vital para móviles -->
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-[600px]">
                         <thead class="bg-slate-100 text-slate-600 text-xs uppercase font-bold">
@@ -206,7 +203,6 @@
                             </tr>
                         </thead>
                         <tbody id="reception-tbody" class="text-sm">
-                            <!-- Filas dinámicas -->
                         </tbody>
                     </table>
                 </div>
@@ -215,7 +211,6 @@
 
         <!-- 4. VISTA CONSULTORIO MÉDICO -->
         <div id="view-doctor" class="view">
-            <!-- Cambio responsivo: flex-col en móvil -->
             <div id="titulo-medico-dashboard-container" class="hidden mb-4 sm:mb-6 border-b pb-4 flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/90 p-4 rounded-lg">
                 <h2 id="titulo-medico-dashboard" class="text-xl sm:text-2xl font-bold text-slate-800">Mi Consultorio</h2>
                 <button onclick="cargarAgendaMedico()" class="w-full sm:w-auto justify-center bg-blue-50 sm:bg-transparent border border-blue-200 sm:border-none p-2 sm:p-0 rounded text-blue-600 hover:text-blue-800 font-bold text-sm flex items-center gap-1">
@@ -224,7 +219,7 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Columna Izquierda: Sala de Espera (Altura adaptable) -->
+                <!-- Columna Izquierda: Sala de Espera -->
                 <div class="lg:col-span-1 bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[400px] lg:h-[600px]">
                     <div class="bg-slate-800 text-white p-4">
                         <h3 class="font-bold text-lg">Sala de Espera</h3>
@@ -234,7 +229,7 @@
                     </div>
                 </div>
 
-                <!-- Columna Derecha: Evolución del Paciente (Altura adaptable) -->
+                <!-- Columna Derecha: Evolución del Paciente -->
                 <div class="lg:col-span-2 bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[500px] lg:h-[600px]">
                     <div class="bg-blue-50 border-b border-blue-100 p-4">
                         <p class="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Paciente en Consultorio</p>
@@ -422,14 +417,26 @@
     <div id="modal-cancelar-paciente" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-fade-in-up max-h-[90vh] overflow-y-auto">
             <h3 class="text-xl font-bold text-slate-800 mb-4">Mis Turnos Asignados</h3>
+            
+            <!-- 1. Campo DNI (Único) -->
             <label class="block text-sm font-bold text-slate-700 mb-1">Ingrese su DNI</label>
-            <div class="flex gap-2 mb-4">
-                <input type="number" inputmode="numeric" pattern="[0-9]*" id="input-buscar-dni" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                <button onclick="buscarTurnosPaciente()" class="bg-blue-800 text-white px-4 rounded-lg font-bold hover:bg-blue-900 transition">Buscar</button>
+            <div class="mb-4">
+                <input type="number" inputmode="numeric" pattern="[0-9]*" id="input-buscar-dni" placeholder="Sin puntos" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition">
             </div>
-            <div id="resultado-turnos-paciente" class="hidden mt-4 space-y-2 max-h-60 overflow-y-auto"></div>
-            <div class="mt-6 text-right">
-                <button onclick="cerrarModal('modal-cancelar-paciente')" class="text-slate-500 hover:text-slate-800 font-bold transition">Cerrar</button>
+
+            <!-- 2. Campo Código de Confirmación y Botón (Únicos) -->
+            <label class="block text-sm font-bold text-slate-700 mb-1">Código de confirmación</label>
+            <div class="flex gap-2 mb-2">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="input-buscar-codigo" placeholder="Enviado a su email al reservar" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <button onclick="buscarTurnosPaciente()" class="bg-blue-800 text-white px-6 rounded-lg font-bold hover:bg-blue-900 transition shadow-sm flex-shrink-0">Buscar</button>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">El código de 6 dígitos es requerido por seguridad.</p>
+
+            <!-- 3. Contenedor de Resultados -->
+            <div id="resultado-turnos-paciente" class="hidden mt-4 space-y-2 max-h-60 overflow-y-auto border-t border-slate-100 pt-4"></div>
+            
+            <div class="mt-4 text-right">
+                <button onclick="cerrarModal('modal-cancelar-paciente')" class="text-slate-500 hover:text-slate-800 font-bold transition text-sm">Cerrar ventana</button>
             </div>
         </div>
     </div>
