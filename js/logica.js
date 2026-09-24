@@ -1,8 +1,9 @@
 // ==========================================
 // MODO MAQUETA (LOCALSTORAGE)
 // ==========================================
-// Este archivo simula el comportamiento de Firebase usando el almacenamiento del navegador.
-// Ideal para presentaciones, ferias de ciencias y demostraciones sin conexión.
+// Este archivo simula el comportamiento de una base de datos usando el almacenamiento del navegador.
+// Ideal para presentaciones, ferias de ciencias y demostraciones sin conexión,
+// manteniendo el envío real de correos mediante EmailJS.
 
 // ==========================================
 // FUNCIONES DE BASE DE DATOS LOCAL
@@ -25,7 +26,7 @@ function generateId() {
 }
 
 // ==========================================
-// EXPORTACIÓN INMEDIATA AL SCOPE GLOBAL (No tocar, conecta con el HTML)
+// EXPORTACIÓN INMEDIATA AL SCOPE GLOBAL
 // ==========================================
 window.switchView = switchView;
 window.iniciarSesionReal = iniciarSesionReal;
@@ -73,10 +74,22 @@ window.enviarResetPasswordUsuario = enviarResetPasswordUsuario;
 window.crearCuentaMaestra = crearCuentaMaestra; 
 
 // ==========================================
-// CONFIGURACIÓN DE EMAILJS (Simulado para no tirar error)
+// CONFIGURACIÓN DE EMAILJS (REAL)
 // ==========================================
+const EMAILJS_PUBLIC_KEY = "eXBPLCSkZcKDBBz9h"; 
+const EMAILJS_SERVICE_ID = "service_xitx594"; 
+const EMAILJS_TEMPLATE_CONFIRMACION = "template_confirmacion"; 
+const EMAILJS_TEMPLATE_CANCELACION = "template_cancelacion"; 
+
+try {
+    if(typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY) {
+        emailjs.init(EMAILJS_PUBLIC_KEY);
+    }
+} catch(e) { console.warn("Librería EmailJS no detectada."); }
+
 function enviarCorreoNotificacion(templateId, templateParams) {
-    console.log(`[SIMULACIÓN EMAILJS] Enviando a ${templateParams.email_destino}...`, templateParams);
+    if (!templateParams.email_destino || typeof emailjs === 'undefined') return;
+    emailjs.send(EMAILJS_SERVICE_ID, templateId, templateParams).catch(e => console.error(e));
 }
 
 // ==========================================
