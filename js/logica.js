@@ -91,6 +91,20 @@ function enviarCorreoNotificacion(templateId, templateParams) {
 }
 
 // ==========================================
+// SEGURIDAD: ESCAPE DE HTML (previene XSS)
+// ==========================================
+// Cualquier dato que venga de un formulario (nombre, DNI, motivo, etc.)
+// pasa por acá ANTES de insertarse en innerHTML. Así, si alguien escribe
+// algo como <script>...</script> en un campo, se muestra como texto
+// plano en vez de ejecutarse como código.
+function escaparHTML(texto) {
+    if (texto === null || texto === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(texto);
+    return div.innerHTML;
+}
+
+// ==========================================
 // VARIABLES GLOBALES
 // ==========================================
 let bdMedicosDinamica = {};
@@ -180,7 +194,7 @@ async function cargarEspecialistasFirebase() {
                 if (!bdMedicosDinamica[u.especialidad]) bdMedicosDinamica[u.especialidad] = [];
                 if (!bdMedicosDinamica[u.especialidad].includes(u.nombre)) {
                     bdMedicosDinamica[u.especialidad].push(u.nombre);
-                    if(selectAlcance) selectAlcance.innerHTML += `<option value="${u.nombre}">Solo: ${u.nombre}</option>`;
+                    if(selectAlcance) selectAlcance.innerHTML += `<option value="${escaparHTML(u.nombre)}">Solo: ${escaparHTML(u.nombre)}</option>`;
                 }
             }
         });
@@ -408,7 +422,7 @@ function actualizarMedicosPublico() {
     
     if (bdMedicosDinamica[esp] && bdMedicosDinamica[esp].length > 0) {
         selectMed.innerHTML = '<option value="">-- Seleccione Profesional --</option>';
-        bdMedicosDinamica[esp].sort().forEach(m => selectMed.innerHTML += `<option value="${m}">${m}</option>`);
+        bdMedicosDinamica[esp].sort().forEach(m => selectMed.innerHTML += `<option value="${escaparHTML(m)}">${escaparHTML(m)}</option>`);
     } else {
         selectMed.innerHTML = '<option value="">No hay profesionales registrados en esta área</option>';
     }
@@ -561,9 +575,9 @@ async function buscarTurnosPaciente() {
         codigoBusquedaActivo = codigo;
 
         const cancelado = t.estado.includes("Cancelado");
-        const badge = cancelado ? `<span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${t.estado}</span>` : '';
+        const badge = cancelado ? `<span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${escaparHTML(t.estado)}</span>` : '';
         const btn = cancelado || t.estado === "Atendido" || t.estado === "Ausente" ? '' : `<button onclick="cancelarTurnoFirebase('${t.id}')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>`;
-        res.innerHTML = `<div class="bg-slate-50 border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2"><div class="w-full"><p class="font-bold text-sm text-blue-900">${t.especialidad} - ${t.medico}</p><p class="text-xs text-slate-600 mt-1">${t.fecha} - ${t.horario} hs ${badge}</p></div>${btn}</div>`;
+        res.innerHTML = `<div class="bg-slate-50 border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2"><div class="w-full"><p class="font-bold text-sm text-blue-900">${escaparHTML(t.especialidad)} - ${escaparHTML(t.medico)}</p><p class="text-xs text-slate-600 mt-1">${escaparHTML(t.fecha)} - ${escaparHTML(t.horario)} hs ${badge}</p></div>${btn}</div>`;
         res.classList.remove('hidden');
     } catch (error) {
         console.error(error);
@@ -611,7 +625,7 @@ function actualizarMedicosRecepcion() {
     selectMed.className = "w-full border border-slate-300 rounded-lg p-2.5 bg-white text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none";
     
     if (bdMedicosDinamica[esp] && bdMedicosDinamica[esp].length > 0) {
-        bdMedicosDinamica[esp].sort().forEach(m => selectMed.innerHTML += `<option value="${m}">${m}</option>`);
+        bdMedicosDinamica[esp].sort().forEach(m => selectMed.innerHTML += `<option value="${escaparHTML(m)}">${escaparHTML(m)}</option>`);
     } else {
         selectMed.innerHTML = '<option value="">No hay profesionales registrados en esta área</option>';
     }
@@ -671,13 +685,13 @@ async function generarAgendaRecepcion() {
         
         if (turnosOcupados[horaStr]) {
             const t = turnosOcupados[horaStr];
-            htmlPaciente = `<span class="font-bold text-slate-800">${t.pacienteNombre}</span> <span class="text-xs text-slate-500 block sm:inline">(DNI: ${t.pacienteDni})</span>`;
+            htmlPaciente = `<span class="font-bold text-slate-800">${escaparHTML(t.pacienteNombre)}</span> <span class="text-xs text-slate-500 block sm:inline">(DNI: ${escaparHTML(t.pacienteDni)})</span>`;
             
             if(t.estado.includes("Cancelado")) {
-                htmlEstado = `<span class="text-red-600 font-bold text-xs uppercase">${t.estado}</span>`;
+                htmlEstado = `<span class="text-red-600 font-bold text-xs uppercase">${escaparHTML(t.estado)}</span>`;
                 htmlAccion = `<span class="text-xs text-slate-400 font-bold">Bloqueado</span>`;
             } else {
-                htmlEstado = `<span class="text-amber-600 font-bold text-sm">${t.estado}</span>`;
+                htmlEstado = `<span class="text-amber-600 font-bold text-sm">${escaparHTML(t.estado)}</span>`;
                 htmlAccion = `<button onclick="cancelarTurnoRecepcion('${t.id}')" class="bg-white border border-red-500 text-red-600 text-xs px-3 py-2 rounded font-bold hover:bg-red-50 transition shadow-sm">Cancelar</button>`;
             }
         }
@@ -849,7 +863,7 @@ async function cargarAgendaMedico() {
                 const opacidad = (t.estado === 'Atendido' || t.estado === 'Ausente') ? 'opacity-60' : 'opacity-100';
                 const borde = t.estado === 'En consultorio' ? 'border-emerald-500 bg-emerald-50' : 'border-blue-500 bg-blue-50';
 
-                html += `<div class="border-l-4 ${borde} p-4 rounded-lg shadow-sm border border-slate-200 ${opacidad}"><div class="flex justify-between items-center text-sm mb-2"><span class="font-bold text-blue-900">${t.horario} hs</span><span class="text-xs ${color} px-2 py-0.5 rounded font-bold">${t.estado}</span></div><p class="font-bold text-lg text-slate-800 leading-tight">${t.pacienteNombre}</p><p class="text-xs text-slate-500 mt-1">DNI: ${t.pacienteDni} | Tel: ${t.pacienteCelular}</p>${btnHtml}</div>`;
+                html += `<div class="border-l-4 ${borde} p-4 rounded-lg shadow-sm border border-slate-200 ${opacidad}"><div class="flex justify-between items-center text-sm mb-2"><span class="font-bold text-blue-900">${escaparHTML(t.horario)} hs</span><span class="text-xs ${color} px-2 py-0.5 rounded font-bold">${escaparHTML(t.estado)}</span></div><p class="font-bold text-lg text-slate-800 leading-tight">${escaparHTML(t.pacienteNombre)}</p><p class="text-xs text-slate-500 mt-1">DNI: ${escaparHTML(t.pacienteDni)} | Tel: ${escaparHTML(t.pacienteCelular)}</p>${btnHtml}</div>`;
             });
             if(contador === 0) html += '<p class="text-sm text-slate-500 p-2 mt-4 border-t border-slate-200 pt-4">No hay más pacientes en espera.</p>';
         }
@@ -985,14 +999,14 @@ async function cargarUsuariosAdmin(direccion = 'init') {
             html += `
             <tr class="border-b hover:bg-slate-50 bg-white transition">
                 <td class="p-3">
-                    <p class="font-bold text-slate-800">${u.nombre || 'Sin Nombre'}</p>
-                    <p class="text-xs text-slate-500">${u.tel || 'Sin teléfono'}</p>
+                    <p class="font-bold text-slate-800">${escaparHTML(u.nombre) || 'Sin Nombre'}</p>
+                    <p class="text-xs text-slate-500">${escaparHTML(u.tel) || 'Sin teléfono'}</p>
                 </td>
-                <td class="p-3 font-bold ${color}">${u.rol} ${u.matricula ? `<span class="text-xs text-slate-400 block font-normal mt-0.5">MP: ${u.matricula} (${u.especialidad})</span>` : ''}</td>
+                <td class="p-3 font-bold ${color}">${escaparHTML(u.rol)} ${u.matricula ? `<span class="text-xs text-slate-400 block font-normal mt-0.5">MP: ${escaparHTML(u.matricula)} (${escaparHTML(u.especialidad)})</span>` : ''}</td>
                 <td class="p-3 font-mono text-sm text-slate-600">
-                    <div><b>${u.correo}</b></div>
-                    <div class="text-xs text-slate-500 mt-0.5">UID: <span class="text-blue-600">${u.uid || 'No vinculado'}</span></div>
-                    <div class="text-xs text-slate-500 mt-0.5">Usr: <b>${u.username || 'N/A'}</b></div>
+                    <div><b>${escaparHTML(u.correo)}</b></div>
+                    <div class="text-xs text-slate-500 mt-0.5">UID: <span class="text-blue-600">${escaparHTML(u.uid) || 'No vinculado'}</span></div>
+                    <div class="text-xs text-slate-500 mt-0.5">Usr: <b>${escaparHTML(u.username) || 'N/A'}</b></div>
                 </td>
                 <td class="p-3 text-center whitespace-nowrap">
                     <button onclick="editarUsuarioAdmin('${j}')" class="bg-slate-100 text-slate-700 border border-slate-300 px-3 py-1 rounded hover:bg-slate-200 font-bold text-xs transition shadow-sm">Editar</button> 
