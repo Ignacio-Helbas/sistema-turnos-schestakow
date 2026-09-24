@@ -3,8 +3,7 @@
 // ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, query, where, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, getDoc, orderBy, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-functions.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 // ==========================================
 // CONFIGURACIÓN DE FIREBASE
@@ -21,7 +20,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-const functionsInstancia = getFunctions(app);
 window.db = db;
 window.auth = auth;
 
@@ -69,7 +67,9 @@ window.toggleTimeSelector = toggleTimeSelector;
 window.verificarLimpiezaAnual = verificarLimpiezaAnual;
 window.ejecutarLimpiezaYDescarga = ejecutarLimpiezaYDescarga;
 window.inyectarMedicosDePrueba = inyectarMedicosDePrueba;
-window.limpiarBaseDeDatos = limpiarBaseDeDatos; // NUEVO EXPORT
+window.limpiarBaseDeDatos = limpiarBaseDeDatos; 
+window.enviarResetPasswordUsuario = enviarResetPasswordUsuario;
+window.crearCuentaMaestra = crearCuentaMaestra; // Script para el admin
 
 // ==========================================
 // CONFIGURACIÓN DE EMAILJS
@@ -91,17 +91,20 @@ function enviarCorreoNotificacion(templateId, templateParams) {
 }
 
 // ==========================================
-// SEGURIDAD: ESCAPE DE HTML (previene XSS)
+// UTILIDADES: ESCAPE Y CÓDIGOS
 // ==========================================
-// Cualquier dato que venga de un formulario (nombre, DNI, motivo, etc.)
-// pasa por acá ANTES de insertarse en innerHTML. Así, si alguien escribe
-// algo como <script>...</script> en un campo, se muestra como texto
-// plano en vez de ejecutarse como código.
 function escaparHTML(texto) {
     if (texto === null || texto === undefined) return '';
     const div = document.createElement('div');
     div.textContent = String(texto);
     return div.innerHTML;
+}
+
+function generarCodigoConfirmacion() {
+    return Array.from(crypto.getRandomValues(new Uint8Array(10)))
+        .map(b => (b % 36).toString(36))
+        .join('')
+        .toUpperCase();
 }
 
 // ==========================================
@@ -146,7 +149,6 @@ function aplicarPermisosVisuales() {
 
     const sesion = JSON.parse(sesionStr);
     
-    // MODO DESARROLLADOR: Ve absolutamente todo
     if (sesion.correo === "nachohelbas@gmail.com") {
         if(btnAdmin) btnAdmin.classList.remove('hidden');
         if(btnRec) btnRec.classList.remove('hidden');
@@ -154,7 +156,6 @@ function aplicarPermisosVisuales() {
         if(btnDummies) btnDummies.classList.remove('hidden');
         if(btnReset) btnReset.classList.remove('hidden');
     } 
-    // EMPLEADOS NORMALES
     else {
         if (sesion.rol === "Administración") {
             if(btnAdmin) btnAdmin.classList.remove('hidden');
@@ -199,7 +200,6 @@ async function cargarEspecialistasFirebase() {
             }
         });
 
-        // AGRUPACIÓN PROFESIONAL POR CATEGORÍAS (OPTGROUP)
         const categoriasBase = {
             "Especialidades Clínicas": ["Clínica Médica", "Cardiología", "Pediatría", "Neurología", "Endocrinología", "Gastroenterología", "Neumonología", "Nefrología", "Infectología", "Dermatología", "Geriatría", "Hematología", "Alergia e Inmunología"],
             "Especialidades Quirúrgicas": ["Cirugía General", "Cirugía Cardiovascular", "Cirugía Plástica y Reparadora", "Traumatología y Ortopedia", "Neurocirugía", "Urología", "Otorrinolaringología", "Oftalmología", "Ginecología y Obstetricia"],
@@ -227,7 +227,6 @@ async function cargarEspecialistasFirebase() {
             if (tieneItems) opcionesHtml += optgroup;
         }
 
-        // Si quedó alguna especialidad suelta fuera del listado principal
         if (especialidadesEncontradas.length > 0) {
             opcionesHtml += `<optgroup label="Otras Especialidades">`;
             especialidadesEncontradas.sort().forEach(esp => {
@@ -529,12 +528,13 @@ async function confirmarTurnoFirebase() {
     if (!nom || !dni || !cel) { mostrarAlerta("Faltan Datos del Paciente", "Nombre, DNI y Celular son campos obligatorios."); return; }
 
     try {
-        const llamarCrearTurno = httpsCallable(functionsInstancia, 'crearTurnoPublico');
-        const respuesta = await llamarCrearTurno({
+        const codigo = generarCodigoConfirmacion();
+
+        await setDoc(doc(window.db, "turnos", codigo), {
             especialidad: esp, medico: med, fecha: fec, horario: hor,
-            pacienteNombre: nom, pacienteDni: dni, pacienteCelular: cel, pacienteEmail: email
+            pacienteNombre: nom, pacienteDni: dni, pacienteCelular: cel, pacienteEmail: email,
+            estado: "Reservado Web", codigoConfirmacion: codigo, timestamp: new Date()
         });
-        const codigo = respuesta.data.codigo;
 
         enviarCorreoNotificacion(EMAILJS_TEMPLATE_CONFIRMACION, {
             nombre_paciente: nom, medico: med, especialidad: esp, fecha: fec, hora: hor,
@@ -542,7 +542,7 @@ async function confirmarTurnoFirebase() {
         });
 
         mostrarExito("¡Turno Confirmado!", `Tu código de confirmación es ${codigo}. Guardalo: lo vas a necesitar para cancelar o consultar este turno. También te lo enviamos por email.`);
-        
+
         document.getElementById('paciente-nombre').value = ''; 
         document.getElementById('paciente-dni').value = ''; 
         document.getElementById('paciente-celular').value = ''; 
@@ -555,33 +555,38 @@ async function confirmarTurnoFirebase() {
 
     } catch (error) { 
         console.error(error); 
-        mostrarAlerta("Error de Conexión", error.message || "Hubo un error al registrar el turno. Intente nuevamente."); 
+        mostrarAlerta("Error de Conexión", "Hubo un error al registrar el turno. Intente nuevamente."); 
     } 
 }
 
 async function buscarTurnosPaciente() {
     const dni = document.getElementById('input-buscar-dni').value.trim();
-    const codigo = document.getElementById('input-buscar-codigo').value.trim();
+    const codigo = document.getElementById('input-buscar-codigo').value.trim().toUpperCase();
     const res = document.getElementById('resultado-turnos-paciente');
 
     if (!dni || !codigo) { mostrarAlerta("Dato Faltante", "Ingresá tu DNI y el código de confirmación."); return; }
 
     try {
-        const llamarBuscarTurno = httpsCallable(functionsInstancia, 'buscarTurnoPorCodigo');
-        const respuesta = await llamarBuscarTurno({ dni, codigo });
-        const t = respuesta.data.turno;
+        const docSnap = await getDoc(doc(window.db, "turnos", codigo));
 
-        turnoEncontradoActivo = t;
+        if (!docSnap.exists() || docSnap.data().pacienteDni !== dni) {
+            res.innerHTML = `<p class="text-sm text-red-600 font-semibold text-center mt-4">No encontramos ningún turno con esos datos.</p>`;
+            res.classList.remove('hidden');
+            return;
+        }
+
+        const t = docSnap.data();
+        turnoEncontradoActivo = { id: docSnap.id, ...t };
         codigoBusquedaActivo = codigo;
 
         const cancelado = t.estado.includes("Cancelado");
         const badge = cancelado ? `<span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${escaparHTML(t.estado)}</span>` : '';
-        const btn = cancelado || t.estado === "Atendido" || t.estado === "Ausente" ? '' : `<button onclick="cancelarTurnoFirebase('${t.id}')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>`;
+        const btn = cancelado || t.estado === "Atendido" || t.estado === "Ausente" ? '' : `<button onclick="cancelarTurnoFirebase('${docSnap.id}')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>`;
         res.innerHTML = `<div class="bg-slate-50 border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2"><div class="w-full"><p class="font-bold text-sm text-blue-900">${escaparHTML(t.especialidad)} - ${escaparHTML(t.medico)}</p><p class="text-xs text-slate-600 mt-1">${escaparHTML(t.fecha)} - ${escaparHTML(t.horario)} hs ${badge}</p></div>${btn}</div>`;
         res.classList.remove('hidden');
     } catch (error) {
         console.error(error);
-        res.innerHTML = `<p class="text-sm text-red-600 font-semibold text-center mt-4">${error.message || 'No encontramos ningún turno con esos datos.'}</p>`;
+        res.innerHTML = `<p class="text-sm text-red-600 font-semibold text-center mt-4">No encontramos ningún turno con esos datos.</p>`;
         res.classList.remove('hidden');
     }
 }
@@ -591,9 +596,9 @@ async function cancelarTurnoFirebase(id) {
     if (!confirmado) return;
 
     try {
-        const llamarCancelarTurno = httpsCallable(functionsInstancia, 'cancelarTurnoConCodigo');
-        const respuesta = await llamarCancelarTurno({ id, codigo: codigoBusquedaActivo });
-        const t = respuesta.data.turno;
+        const t = turnoEncontradoActivo;
+
+        await updateDoc(doc(window.db, "turnos", id), { estado: "Cancelado: Solicitado por el paciente" });
 
         enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
             nombre_paciente: t.pacienteNombre, medico: t.medico, especialidad: t.especialidad, fecha: t.fecha, hora: t.horario, email_destino: t.pacienteEmail
@@ -601,7 +606,7 @@ async function cancelarTurnoFirebase(id) {
 
         mostrarExito("Turno Cancelado", "Su turno ha sido cancelado.");
         buscarTurnosPaciente(); 
-    } catch (error) { console.error(error); mostrarAlerta("Error", error.message || "No se pudo cancelar el turno."); }
+    } catch (error) { console.error(error); mostrarAlerta("Error", "No se pudo cancelar el turno."); }
 }
 
 // ==========================================
@@ -730,11 +735,13 @@ async function confirmarTurnoRecepcionFirebase() {
     if (!nombre || !celular) { mostrarAlerta("Datos Obligatorios", "Nombre y celular son obligatorios."); return; }
 
     try {
-        await addDoc(collection(window.db, "turnos"), {
+        const codigo = generarCodigoConfirmacion();
+
+        await setDoc(doc(window.db, "turnos", codigo), {
             especialidad: especialidadSeleccionadaRecepcion, medico: medicoSeleccionadoRecepcion,
             fecha: fechaRecepcionSeleccionada, horario: horaSeleccionadaRecepcion,
             pacienteNombre: nombre, pacienteDni: dni, pacienteCelular: celular, pacienteEmail: email,
-            estado: "Confirmado Presencial", timestamp: new Date()
+            estado: "Confirmado Presencial", codigoConfirmacion: codigo, timestamp: new Date()
         });
 
         cerrarModal('modal-dar-turno'); 
@@ -1037,12 +1044,12 @@ function actualizarBotonesPaginacion(hayMas) {
 function editarUsuarioAdmin(userJSONEncoded) {
     const u = JSON.parse(decodeURIComponent(userJSONEncoded));
     document.getElementById('titulo-modal-usuario').innerText = "Actualizar Datos de Usuario";
-    document.getElementById('input-usuario-id').value = u.id;
+    document.getElementById('input-usuario-id').value = u.id; // En esta versión el ID de Firestore = UID de Auth
     document.getElementById('input-usuario-nombre').value = u.nombre || '';
     document.getElementById('input-usuario-rol').value = u.rol || 'Administrativo';
     document.getElementById('input-usuario-username').value = u.username || '';
     document.getElementById('input-usuario-correo').value = u.correo || '';
-    document.getElementById('input-usuario-pass').value = ''; // Ya no viaja el password guardado: se deja vacío = "no cambiar"
+    document.getElementById('input-usuario-pass').value = ''; // Se deja vacío = "no cambiar contraseña"
     document.getElementById('input-usuario-tel').value = u.tel || '';
     document.getElementById('input-usuario-matricula').value = u.matricula || '';
     document.getElementById('input-usuario-especialidad').value = u.especialidad || 'Clínica Médica';
@@ -1051,7 +1058,7 @@ function editarUsuarioAdmin(userJSONEncoded) {
 }
 
 async function guardarUsuarioAdminFirebase() {
-    const id = document.getElementById('input-usuario-id').value;
+    const id = document.getElementById('input-usuario-id').value; 
     const nom = document.getElementById('input-usuario-nombre').value.trim();
     const rol = document.getElementById('input-usuario-rol').value;
     const user = document.getElementById('input-usuario-username').value.trim();
@@ -1070,29 +1077,34 @@ async function guardarUsuarioAdminFirebase() {
         return;
     }
 
-    // A partir de acá, la creación/edición del usuario (incluida la contraseña
-    // y el rol como custom claim) la hace la Cloud Function "guardarUsuarioAdmin".
-    // El cliente NUNCA vuelve a escribir el password en Firestore.
-    const payload = {
-        id: id || null,
-        nombre: nom,
-        rol: rol,
-        username: user,
-        password: pass || null, // null = "no cambiar" al editar
-        correo: cor,
-        tel: tel,
+    const datosFirestore = {
+        nombre: nom, rol: rol, username: user, correo: cor, tel: tel,
         matricula: rol === 'Médico' ? mat : '',
         especialidad: rol === 'Médico' ? esp : '',
+        timestamp: new Date()
     };
 
     try {
-        const llamarGuardarUsuario = httpsCallable(functionsInstancia, 'guardarUsuarioAdmin');
-        await llamarGuardarUsuario(payload);
+        if (id) {
+            await updateDoc(doc(window.db, "usuarios", id), datosFirestore);
 
-        mostrarExito(
-            id ? "Actualizado" : "Sincronizado",
-            id ? "Los datos se guardaron correctamente en el perfil." : "Usuario creado en Auth y Firestore correctamente."
-        );
+            if (pass) {
+                await enviarResetPasswordUsuario(cor);
+            } else {
+                mostrarExito("Actualizado", "Los datos se guardaron correctamente en el perfil.");
+            }
+        } else {
+            const appSecundaria = initializeApp(firebaseConfig, "AppTemporal_" + Date.now());
+            const authSecundario = getAuth(appSecundaria);
+            const credencial = await createUserWithEmailAndPassword(authSecundario, cor, pass);
+            const nuevoUid = credencial.user.uid;
+            await signOut(authSecundario);
+
+            datosFirestore.uid = nuevoUid;
+            await setDoc(doc(window.db, "usuarios", nuevoUid), datosFirestore);
+
+            mostrarExito("Sincronizado", "Usuario creado en Auth y Firestore correctamente.");
+        }
 
         cerrarModal('modal-usuario');
         cargarUsuariosAdmin();
@@ -1101,6 +1113,16 @@ async function guardarUsuarioAdminFirebase() {
     } catch (error) {
         console.error(error);
         mostrarAlerta("Error", error.message || "Fallo al comunicar con la base de datos.");
+    }
+}
+
+async function enviarResetPasswordUsuario(correo) {
+    try {
+        await sendPasswordResetEmail(window.auth, correo);
+        mostrarExito("Email Enviado", `Se envió un correo a ${correo} para que defina su nueva contraseña.`);
+    } catch (error) {
+        console.error(error);
+        mostrarAlerta("Error", "No se pudo enviar el correo de restablecimiento.");
     }
 }
 
@@ -1374,18 +1396,15 @@ async function limpiarBaseDeDatos() {
     if(barra) barra.style.width = '30%';
 
     try {
-        // 1. Borrar todos los turnos
         const turnosSnap = await getDocs(collection(window.db, "turnos"));
         const promesasTurnos = turnosSnap.docs.map(d => deleteDoc(doc(window.db, "turnos", d.id)));
         await Promise.all(promesasTurnos);
         if(barra) barra.style.width = '60%';
 
-        // 2. Borrar usuarios (Excepto el admin)
         const usuariosSnap = await getDocs(collection(window.db, "usuarios"));
         const promesasUsuarios = [];
         usuariosSnap.forEach(d => {
             const u = d.data();
-            // No borramos la cuenta maestra actual
             if (u.correo !== "nachohelbas@gmail.com") {
                 promesasUsuarios.push(deleteDoc(doc(window.db, "usuarios", d.id)));
             }
@@ -1396,7 +1415,6 @@ async function limpiarBaseDeDatos() {
         cerrarModal('modal-progreso');
         mostrarExito("Reinicio Exitoso", "El sistema ha sido restaurado a su estado de fábrica. Turnos y usuarios de prueba eliminados.");
         
-        // Recargar datos en la UI
         cargarUsuariosAdmin('init');
         cargarEspecialistasFirebase();
         cargarMetricas();
@@ -1454,7 +1472,7 @@ async function inyectarMedicosDePrueba() {
         const payload = {
             nombre: med.nom, rol: "Médico",
             username: med.nom.split(' ')[1].toLowerCase() + Math.floor(Math.random() * 1000),
-            password: "demo", correo: med.nom.split(' ')[1].toLowerCase() + "@hospital.demo",
+            correo: med.nom.split(' ')[1].toLowerCase() + "@hospital.demo",
             tel: "2604000000", matricula: med.mat, especialidad: med.esp,
             uid: "dummy_" + Date.now(), timestamp: new Date()
         };
@@ -1467,7 +1485,6 @@ async function inyectarMedicosDePrueba() {
         if(barra) barra.style.width = porcentaje + '%';
         if(texto) texto.innerText = `Procesando: ${med.nom} (${completados}/${total})`;
 
-        // Pausa de 500ms para evitar bloqueo de red por "Spam"
         await new Promise(resolve => setTimeout(resolve, 500));
     }
 
@@ -1479,13 +1496,25 @@ async function inyectarMedicosDePrueba() {
     cargarMetricas();
 }
 
+async function crearCuentaMaestra() {
+    const sesionStr = localStorage.getItem("sesionHospitalActiva");
+    if (!sesionStr) {
+        console.warn("Iniciá sesión primero con nachohelbas@gmail.com para crear el documento base.");
+        return;
+    }
+    const uid = JSON.parse(sesionStr).uid;
+    await setDoc(doc(window.db, "usuarios", uid), {
+        nombre: "Ignacio Ezequiel Helbas", rol: "Administración", username: "nachohelbas", correo: "nachohelbas@gmail.com", tel: "", matricula: "", especialidad: "", uid: uid, timestamp: new Date()
+    });
+    console.log("¡Documento maestro creado con éxito bajo tu UID!");
+}
+
 // ==========================================
 // ARRANQUE SEGURO
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
     iniciarCargaDeDatos();
     
-    // Permitir inicio de sesión presionando "Enter"
     const inputUser = document.getElementById('login-user');
     const inputPass = document.getElementById('login-pass');
     if(inputUser) inputUser.addEventListener('keypress', e => { if(e.key === 'Enter') iniciarSesionReal(); });
