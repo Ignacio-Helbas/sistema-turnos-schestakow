@@ -4,6 +4,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, query, where, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, getDoc, orderBy, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-functions.js";
 
 // ==========================================
 // CONFIGURACIÓN DE FIREBASE
@@ -20,6 +21,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const functionsInstancia = getFunctions(app);
 window.db = db;
 window.auth = auth;
 
@@ -105,6 +107,9 @@ let horaSeleccionadaRecepcion = '';
 
 let turnosMedicoHoy = [];
 let pacienteActivoId = null;
+
+let turnoEncontradoActivo = null;
+let codigoBusquedaActivo = '';
 
 // ==========================================
 // PERMISOS VISUALES (LLAVE MAESTRA)
@@ -366,10 +371,13 @@ function cerrarModal(id) {
     
     if (id === 'modal-cancelar-paciente') { 
         if(document.getElementById('input-buscar-dni')) document.getElementById('input-buscar-dni').value = ''; 
+        if(document.getElementById('input-buscar-codigo')) document.getElementById('input-buscar-codigo').value = ''; 
         if(document.getElementById('resultado-turnos-paciente')) {
             document.getElementById('resultado-turnos-paciente').innerHTML = ''; 
             document.getElementById('resultado-turnos-paciente').classList.add('hidden');
         }
+        turnoEncontradoActivo = null;
+        codigoBusquedaActivo = '';
     } 
     if (id === 'modal-ausencia-emergencia') { 
         if(document.getElementById('motivo-ausencia')) document.getElementById('motivo-ausencia').value = ''; 
@@ -507,15 +515,19 @@ async function confirmarTurnoFirebase() {
     if (!nom || !dni || !cel) { mostrarAlerta("Faltan Datos del Paciente", "Nombre, DNI y Celular son campos obligatorios."); return; }
 
     try {
-        await addDoc(collection(window.db, "turnos"), {
-            especialidad: esp, medico: med, fecha: fec, horario: hor, pacienteNombre: nom, pacienteDni: dni, pacienteCelular: cel, pacienteEmail: email, estado: "Reservado Web", timestamp: new Date()
+        const llamarCrearTurno = httpsCallable(functionsInstancia, 'crearTurnoPublico');
+        const respuesta = await llamarCrearTurno({
+            especialidad: esp, medico: med, fecha: fec, horario: hor,
+            pacienteNombre: nom, pacienteDni: dni, pacienteCelular: cel, pacienteEmail: email
         });
-        
+        const codigo = respuesta.data.codigo;
+
         enviarCorreoNotificacion(EMAILJS_TEMPLATE_CONFIRMACION, {
-            nombre_paciente: nom, medico: med, especialidad: esp, fecha: fec, hora: hor, email_destino: email
+            nombre_paciente: nom, medico: med, especialidad: esp, fecha: fec, hora: hor,
+            email_destino: email, codigo_confirmacion: codigo
         });
-        
-        mostrarExito("¡Turno Confirmado!", "El turno ha sido guardado exitosamente.");
+
+        mostrarExito("¡Turno Confirmado!", `Tu código de confirmación es ${codigo}. Guardalo: lo vas a necesitar para cancelar o consultar este turno. También te lo enviamos por email.`);
         
         document.getElementById('paciente-nombre').value = ''; 
         document.getElementById('paciente-dni').value = ''; 
@@ -529,53 +541,53 @@ async function confirmarTurnoFirebase() {
 
     } catch (error) { 
         console.error(error); 
-        mostrarAlerta("Error de Conexión", "Hubo un error al registrar el turno. Intente nuevamente."); 
+        mostrarAlerta("Error de Conexión", error.message || "Hubo un error al registrar el turno. Intente nuevamente."); 
     } 
 }
 
 async function buscarTurnosPaciente() {
     const dni = document.getElementById('input-buscar-dni').value.trim();
+    const codigo = document.getElementById('input-buscar-codigo').value.trim();
     const res = document.getElementById('resultado-turnos-paciente');
-    
-    if (!dni) { mostrarAlerta("Dato Faltante", "Por favor ingrese su número de DNI para realizar la búsqueda."); return; }
+
+    if (!dni || !codigo) { mostrarAlerta("Dato Faltante", "Ingresá tu DNI y el código de confirmación."); return; }
 
     try {
-        const snap = await getDocs(query(collection(window.db, "turnos"), where("pacienteDni", "==", dni)));
-        
-        let html = '';
-        if (snap.empty) { 
-            html = `<p class="text-sm text-red-600 font-semibold text-center mt-4">No hay turnos activos para este DNI.</p>`; 
-        } else {
-            snap.forEach((doc) => {
-                const t = doc.data();
-                const cancelado = t.estado.includes("Cancelado");
-                const badge = cancelado ? `<span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${t.estado}</span>` : '';
-                const btn = cancelado || t.estado==="Atendido" || t.estado==="Ausente" ? '' : `<button onclick="cancelarTurnoFirebase('${doc.id}')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>`;
-                html += `<div class="bg-slate-50 border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2"><div class="w-full"><p class="font-bold text-sm text-blue-900">${t.especialidad} - ${t.medico}</p><p class="text-xs text-slate-600 mt-1">${t.fecha} - ${t.horario} hs ${badge}</p></div>${btn}</div>`;
-            });
-        }
-        res.innerHTML = html; 
+        const llamarBuscarTurno = httpsCallable(functionsInstancia, 'buscarTurnoPorCodigo');
+        const respuesta = await llamarBuscarTurno({ dni, codigo });
+        const t = respuesta.data.turno;
+
+        turnoEncontradoActivo = t;
+        codigoBusquedaActivo = codigo;
+
+        const cancelado = t.estado.includes("Cancelado");
+        const badge = cancelado ? `<span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${t.estado}</span>` : '';
+        const btn = cancelado || t.estado === "Atendido" || t.estado === "Ausente" ? '' : `<button onclick="cancelarTurnoFirebase('${t.id}')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>`;
+        res.innerHTML = `<div class="bg-slate-50 border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2"><div class="w-full"><p class="font-bold text-sm text-blue-900">${t.especialidad} - ${t.medico}</p><p class="text-xs text-slate-600 mt-1">${t.fecha} - ${t.horario} hs ${badge}</p></div>${btn}</div>`;
         res.classList.remove('hidden');
-    } catch (error) { console.error(error); mostrarAlerta("Error", "Error al conectar con la base de datos."); }
+    } catch (error) {
+        console.error(error);
+        res.innerHTML = `<p class="text-sm text-red-600 font-semibold text-center mt-4">${error.message || 'No encontramos ningún turno con esos datos.'}</p>`;
+        res.classList.remove('hidden');
+    }
 }
 
 async function cancelarTurnoFirebase(id) {
-    const confirmado = await pedirConfirmacion("¿Cancelar este turno?", "Se eliminará la reserva y se enviará un correo notificando la cancelación.", "Sí, cancelar turno");
+    const confirmado = await pedirConfirmacion("¿Cancelar este turno?", "Se cancelará la reserva y se enviará un correo notificando la cancelación.", "Sí, cancelar turno");
     if (!confirmado) return;
 
     try {
-        const docSnap = await getDoc(doc(window.db, "turnos", id));
-        if (docSnap.exists()) {
-            const t = docSnap.data();
-            enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
-                nombre_paciente: t.pacienteNombre, medico: t.medico, especialidad: t.especialidad, fecha: t.fecha, hora: t.horario, email_destino: t.pacienteEmail
-            });
-        }
+        const llamarCancelarTurno = httpsCallable(functionsInstancia, 'cancelarTurnoConCodigo');
+        const respuesta = await llamarCancelarTurno({ id, codigo: codigoBusquedaActivo });
+        const t = respuesta.data.turno;
 
-        await deleteDoc(doc(window.db, "turnos", id));
+        enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
+            nombre_paciente: t.pacienteNombre, medico: t.medico, especialidad: t.especialidad, fecha: t.fecha, hora: t.horario, email_destino: t.pacienteEmail
+        });
+
         mostrarExito("Turno Cancelado", "Su turno ha sido cancelado.");
         buscarTurnosPaciente(); 
-    } catch (error) { console.error(error); mostrarAlerta("Error", "No se pudo cancelar el turno."); }
+    } catch (error) { console.error(error); mostrarAlerta("Error", error.message || "No se pudo cancelar el turno."); }
 }
 
 // ==========================================
@@ -980,7 +992,7 @@ async function cargarUsuariosAdmin(direccion = 'init') {
                 <td class="p-3 font-mono text-sm text-slate-600">
                     <div><b>${u.correo}</b></div>
                     <div class="text-xs text-slate-500 mt-0.5">UID: <span class="text-blue-600">${u.uid || 'No vinculado'}</span></div>
-                    <div class="text-xs text-slate-500 mt-0.5">Usr: <b>${u.username || 'N/A'}</b> | Clave: <span class="bg-slate-100 px-1 rounded border border-slate-200 font-mono text-slate-800">${u.password || '******'}</span></div>
+                    <div class="text-xs text-slate-500 mt-0.5">Usr: <b>${u.username || 'N/A'}</b></div>
                 </td>
                 <td class="p-3 text-center whitespace-nowrap">
                     <button onclick="editarUsuarioAdmin('${j}')" class="bg-slate-100 text-slate-700 border border-slate-300 px-3 py-1 rounded hover:bg-slate-200 font-bold text-xs transition shadow-sm">Editar</button> 
@@ -1016,7 +1028,7 @@ function editarUsuarioAdmin(userJSONEncoded) {
     document.getElementById('input-usuario-rol').value = u.rol || 'Administrativo';
     document.getElementById('input-usuario-username').value = u.username || '';
     document.getElementById('input-usuario-correo').value = u.correo || '';
-    document.getElementById('input-usuario-pass').value = u.password || '';
+    document.getElementById('input-usuario-pass').value = ''; // Ya no viaja el password guardado: se deja vacío = "no cambiar"
     document.getElementById('input-usuario-tel').value = u.tel || '';
     document.getElementById('input-usuario-matricula').value = u.matricula || '';
     document.getElementById('input-usuario-especialidad').value = u.especialidad || 'Clínica Médica';
@@ -1035,52 +1047,46 @@ async function guardarUsuarioAdminFirebase() {
     const mat = document.getElementById('input-usuario-matricula').value.trim();
     const esp = document.getElementById('input-usuario-especialidad').value;
 
-    if (!cor || !pass || !nom || !user) { 
-        mostrarAlerta("Datos Faltantes", "Nombre, Usuario, Correo y Contraseña son obligatorios."); 
-        return; 
+    if (!cor || !nom || !user) {
+        mostrarAlerta("Datos Faltantes", "Nombre, Usuario y Correo son obligatorios.");
+        return;
+    }
+    if (!id && !pass) {
+        mostrarAlerta("Datos Faltantes", "La contraseña es obligatoria para crear un usuario nuevo.");
+        return;
     }
 
-    let payload = { 
-        nombre: nom, 
-        rol: rol, 
+    // A partir de acá, la creación/edición del usuario (incluida la contraseña
+    // y el rol como custom claim) la hace la Cloud Function "guardarUsuarioAdmin".
+    // El cliente NUNCA vuelve a escribir el password en Firestore.
+    const payload = {
+        id: id || null,
+        nombre: nom,
+        rol: rol,
         username: user,
-        password: pass, 
-        correo: cor, 
+        password: pass || null, // null = "no cambiar" al editar
+        correo: cor,
         tel: tel,
-        matricula: rol === 'Médico' ? mat : '', 
-        especialidad: rol === 'Médico' ? esp : '', 
-        timestamp: new Date() 
+        matricula: rol === 'Médico' ? mat : '',
+        especialidad: rol === 'Médico' ? esp : '',
     };
 
     try {
-        if (id) {
-            await updateDoc(doc(window.db, "usuarios", id), payload); 
-            mostrarExito("Actualizado", "Los datos se guardaron correctamente en el perfil.");
-        } else {
-            try {
-                const appSecundaria = initializeApp(firebaseConfig, "AppTemporal_" + Date.now());
-                const authSecundario = getAuth(appSecundaria);
+        const llamarGuardarUsuario = httpsCallable(functionsInstancia, 'guardarUsuarioAdmin');
+        await llamarGuardarUsuario(payload);
 
-                const credencial = await createUserWithEmailAndPassword(authSecundario, cor, pass);
-                payload.uid = credencial.user.uid; 
+        mostrarExito(
+            id ? "Actualizado" : "Sincronizado",
+            id ? "Los datos se guardaron correctamente en el perfil." : "Usuario creado en Auth y Firestore correctamente."
+        );
 
-                await signOut(authSecundario); 
-            } catch (authError) {
-                console.warn("Aviso Auth:", authError.message);
-                payload.uid = "Fallo Auth o Ya existente";
-            }
-
-            await addDoc(collection(window.db, "usuarios"), payload); 
-            mostrarExito("Sincronizado", "Usuario creado en Auth y Firestore correctamente.");
-        }
-        
-        cerrarModal('modal-usuario'); 
-        cargarUsuariosAdmin(); 
+        cerrarModal('modal-usuario');
+        cargarUsuariosAdmin();
         cargarEspecialistasFirebase();
-        
-    } catch (error) { 
-        console.error(error); 
-        mostrarAlerta("Error", "Fallo al comunicar con la base de datos."); 
+
+    } catch (error) {
+        console.error(error);
+        mostrarAlerta("Error", error.message || "Fallo al comunicar con la base de datos.");
     }
 }
 
