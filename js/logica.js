@@ -1,9 +1,9 @@
 // ==========================================
-// MODO MAQUETA (LOCALSTORAGE)
+// MODO REAL (FIREBASE) + DATOS LOCALES
 // ==========================================
-// Este archivo simula el comportamiento de una base de datos usando el almacenamiento del navegador.
-// Ideal para presentaciones, ferias de ciencias y demostraciones sin conexión,
-// manteniendo el envío real de correos mediante EmailJS.
+// La autenticación y los roles se manejan con Firebase Auth + Firestore.
+// Los turnos y médicos siguen en localStorage como datos de demostración.
+import { iniciarSesionFirebase, cerrarSesionFirebase, observarSesion, firebaseConfigurada } from './firebase-config.js';
 
 // ==========================================
 // FUNCIONES DE BASE DE DATOS LOCAL
@@ -31,7 +31,6 @@ function generateId() {
 window.switchView = switchView;
 window.iniciarSesionReal = iniciarSesionReal;
 window.cerrarSesionReal = cerrarSesionReal;
-window.loginAs = loginAs;
 window.abrirModal = abrirModal;
 window.cerrarModal = cerrarModal;
 window.actualizarMedicosPublico = actualizarMedicosPublico;
@@ -71,7 +70,6 @@ window.ejecutarLimpiezaYDescarga = ejecutarLimpiezaYDescarga;
 window.inyectarMedicosDePrueba = inyectarMedicosDePrueba;
 window.limpiarBaseDeDatos = limpiarBaseDeDatos; 
 window.enviarResetPasswordUsuario = enviarResetPasswordUsuario;
-window.crearCuentaMaestra = crearCuentaMaestra; 
 
 // ==========================================
 // CONFIGURACIÓN DE EMAILJS (REAL)
@@ -151,7 +149,7 @@ function aplicarPermisosVisuales() {
 
     const sesion = JSON.parse(sesionStr);
     
-    if (sesion.correo === "nachohelbas@gmail.com" || sesion.rol === "Administración") {
+    if (sesion.rol === "Administración") {
         if(btnAdmin) btnAdmin.classList.remove('hidden');
         if(btnRec) btnRec.classList.remove('hidden');
         if(btnDoc) btnDoc.classList.remove('hidden');
@@ -304,42 +302,46 @@ function switchView(viewName) {
 async function iniciarSesionReal() {
     const inputUsuario = document.getElementById('login-user').value.trim();
     const pass = document.getElementById('login-pass').value.trim();
-    
-    if (!inputUsuario || !pass) { 
-        mostrarAlerta("Datos Faltantes", "Ingrese correo o usuario y contraseña."); 
-        return; 
-    }
-    
-    const usuarios = getDB('usuarios');
-    const user = usuarios.find(u => (u.correo === inputUsuario || u.username === inputUsuario) && u.password === pass);
 
-    if (user) {
-        localStorage.setItem("sesionHospitalActiva", JSON.stringify({
-            correo: user.correo,
-            nombre: user.nombre,
-            rol: user.rol,
-            uid: user.id
-        }));
-        
+    if (!inputUsuario || !pass) {
+        mostrarAlerta("Datos Faltantes", "Ingrese su correo electrónico y contraseña.");
+        return;
+    }
+    if (!firebaseConfigurada) {
+        mostrarAlerta("Configuración Pendiente", "Falta pegar la apiKey de Firebase en js/firebase-config.js.");
+        return;
+    }
+
+    try {
+        const sesion = await iniciarSesionFirebase(inputUsuario, pass);
+
+        localStorage.setItem("sesionHospitalActiva", JSON.stringify(sesion));
+
         aplicarPermisosVisuales();
-        document.getElementById('login-user').value = ''; 
+        document.getElementById('login-user').value = '';
         document.getElementById('login-pass').value = '';
-        
-        if (user.rol === "Médico") switchView("doctor");
-        else if (user.rol === "Administrativo" || user.rol === "Recepción") switchView("reception");
+
+        if (sesion.rol === "Médico") switchView("doctor");
+        else if (sesion.rol === "Administrativo" || sesion.rol === "Recepción") switchView("reception");
         else switchView("admin");
-    } else {
-        mostrarAlerta("Acceso Denegado", "Las credenciales son incorrectas.");
+    } catch (error) {
+        console.error("Error de login:", error);
+        if (error.message === "SIN_PERFIL") {
+            mostrarAlerta("Acceso Denegado", "Su usuario no tiene un perfil asignado. Contacte al administrador.");
+        } else if (error.message === "USUARIO_INACTIVO") {
+            mostrarAlerta("Acceso Denegado", "Su usuario está deshabilitado. Contacte al administrador.");
+        } else {
+            mostrarAlerta("Acceso Denegado", "Las credenciales son incorrectas.");
+        }
     }
 }
 
-function cerrarSesionReal() { 
-    localStorage.removeItem("sesionHospitalActiva"); 
+async function cerrarSesionReal() {
+    try { await cerrarSesionFirebase(); } catch (e) { console.error(e); }
+    localStorage.removeItem("sesionHospitalActiva");
     aplicarPermisosVisuales();
-    switchView("public"); 
+    switchView("public");
 }
-
-function loginAs(role) { switchView(role); }
 
 function abrirModal(id) { 
     const modal = document.getElementById(id);
@@ -1407,34 +1409,29 @@ async function inyectarMedicosDePrueba() {
     cargarMetricas();
 }
 
-async function crearCuentaMaestra() {
-    let usuarios = getDB('usuarios');
-    const existe = usuarios.find(u => u.correo === "nachohelbas@gmail.com");
-    if (!existe) {
-        usuarios.push({
-            id: "admin_master",
-            nombre: "Ignacio Ezequiel Helbas", rol: "Administración", username: "nacho", password: "123", correo: "nachohelbas@gmail.com", tel: "", matricula: "", especialidad: "", timestamp: new Date().toISOString()
-        });
-        saveDB('usuarios', usuarios);
-        console.log("¡Documento maestro creado con éxito en LocalStorage! Podés iniciar sesión con nachohelbas@gmail.com y clave 123");
-    } else {
-        console.log("El administrador maestro ya existe.");
-    }
-}
-
 // ==========================================
 // ARRANQUE SEGURO
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
-    // Si es la primera vez que se abre, crea tu cuenta admin automáticamente
-    crearCuentaMaestra();
-    
     iniciarCargaDeDatos();
-    
+
+    // Restaura la sesión si el usuario ya estaba autenticado en Firebase
+    if (firebaseConfigurada) {
+        observarSesion((sesion) => {
+            if (sesion) {
+                localStorage.setItem("sesionHospitalActiva", JSON.stringify(sesion));
+                aplicarPermisosVisuales();
+            } else {
+                localStorage.removeItem("sesionHospitalActiva");
+                aplicarPermisosVisuales();
+            }
+        });
+    }
+
     const inputUser = document.getElementById('login-user');
     const inputPass = document.getElementById('login-pass');
     if(inputUser) inputUser.addEventListener('keypress', e => { if(e.key === 'Enter') iniciarSesionReal(); });
     if(inputPass) inputPass.addEventListener('keypress', e => { if(e.key === 'Enter') iniciarSesionReal(); });
 
-    console.log("Sistema cargado. Modo Maqueta Offline activado.");
+    console.log("Sistema cargado. Autenticación real con Firebase activada.");
 });
