@@ -1,34 +1,29 @@
 // ==========================================
-// MODO REAL (FIREBASE) + FUNCIONES SEGURAS
+// IMPORTACIONES DE FIREBASE Y AUTH
 // ==========================================
-import { 
-    app, 
-    iniciarSesionFirebase, 
-    cerrarSesionFirebase, 
-    observarSesion, 
-    firebaseConfigurada, 
-    enviarRecuperacionPass 
-} from './firebase-config.js';
-
-import { 
-    getFunctions, 
-    httpsCallable 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
-
-const functions = getFunctions(app);
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, query, where, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, getDoc, orderBy, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-functions.js";
 
 // ==========================================
-// FUNCIONES DE BASE DE DATOS LOCAL (Solo lectura/Legacy para UI no migrada)
+// CONFIGURACIÓN DE FIREBASE
 // ==========================================
-function getDB(collection) {
-    return JSON.parse(localStorage.getItem('schestakow_db_' + collection)) || [];
-}
+const firebaseConfig = {
+    apiKey: "AIzaSyAghXQKrYy6EJGD5IqEdO4c_E-ntozUmz8",
+    authDomain: "sistema-turnos-utn.firebaseapp.com",
+    projectId: "sistema-turnos-utn",
+    storageBucket: "sistema-turnos-utn.firebasestorage.app",
+    messagingSenderId: "588893912264",
+    appId: "1:588893912264:web:c5d56455f06cf178d979fd"
+};
 
-function saveDB(collection, data) {
-    // [MEJORA DE SEGURIDAD]: Se mantiene solo para retrocompatibilidad de lecturas no sensibles.
-    // Operaciones sensibles ahora usan Cloud Functions.
-    localStorage.setItem('schestakow_db_' + collection, JSON.stringify(data));
-}
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const functionsInstancia = getFunctions(app);
+window.db = db;
+window.auth = auth;
 
 // ==========================================
 // EXPORTACIÓN INMEDIATA AL SCOPE GLOBAL
@@ -36,6 +31,7 @@ function saveDB(collection, data) {
 window.switchView = switchView;
 window.iniciarSesionReal = iniciarSesionReal;
 window.cerrarSesionReal = cerrarSesionReal;
+window.loginAs = loginAs;
 window.abrirModal = abrirModal;
 window.cerrarModal = cerrarModal;
 window.actualizarMedicosPublico = actualizarMedicosPublico;
@@ -75,7 +71,6 @@ window.ejecutarLimpiezaYDescarga = ejecutarLimpiezaYDescarga;
 window.inyectarMedicosDePrueba = inyectarMedicosDePrueba;
 window.limpiarBaseDeDatos = limpiarBaseDeDatos; 
 window.enviarResetPasswordUsuario = enviarResetPasswordUsuario;
-window.togglePasswordVisibility = togglePasswordVisibility;
 
 // ==========================================
 // CONFIGURACIÓN DE EMAILJS
@@ -97,9 +92,8 @@ function enviarCorreoNotificacion(templateId, templateParams) {
 }
 
 // ==========================================
-// UTILIDADES: SEGURIDAD, ESCAPE Y CÓDIGOS
+// UTILIDADES: ESCAPE Y CÓDIGOS
 // ==========================================
-// [MEJORA DE SEGURIDAD]: Sanitización estricta contra XSS
 function escaparHTML(texto) {
     if (texto === null || texto === undefined) return '';
     const div = document.createElement('div');
@@ -107,32 +101,11 @@ function escaparHTML(texto) {
     return div.innerHTML;
 }
 
-// [MEJORA DE SEGURIDAD]: Sanitización de inputs numéricos (DNI, Celular)
-function sanitizarSoloNumeros(texto) {
-    if (!texto) return '';
-    return texto.replace(/\D/g, ''); // Elimina todo lo que no sea dígito
-}
-
 function generarCodigoConfirmacion() {
     return Array.from(crypto.getRandomValues(new Uint8Array(10)))
         .map(b => (b % 36).toString(36))
         .join('')
-        .toUpperCase()
-        .substring(0, 6); // [MEJORA DE SEGURIDAD]: Estandarizado a 6 caracteres
-}
-
-function togglePasswordVisibility() {
-    const input = document.getElementById('input-usuario-pass');
-    const icon = document.getElementById('eye-icon');
-    if (!input || !icon) return;
-    
-    if (input.type === 'password') {
-        input.type = 'text';
-        icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />`;
-    } else {
-        input.type = 'password';
-        icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />`;
-    }
+        .toUpperCase();
 }
 
 // ==========================================
@@ -177,23 +150,29 @@ function aplicarPermisosVisuales() {
 
     const sesion = JSON.parse(sesionStr);
     
-    if (sesion.rol === "Administración") {
+    if (sesion.correo === "nachohelbas@gmail.com") {
         if(btnAdmin) btnAdmin.classList.remove('hidden');
         if(btnRec) btnRec.classList.remove('hidden');
         if(btnDoc) btnDoc.classList.remove('hidden');
         if(btnDummies) btnDummies.classList.remove('hidden');
         if(btnReset) btnReset.classList.remove('hidden');
     } 
-    else if (sesion.rol === "Recepcionista" || sesion.rol === "Administrativo" || sesion.rol === "Recepción") {
-        if(btnRec) btnRec.classList.remove('hidden');
-    } 
-    else if (sesion.rol === "Médico") {
-        if(btnDoc) btnDoc.classList.remove('hidden');
+    else {
+        if (sesion.rol === "Administración") {
+            if(btnAdmin) btnAdmin.classList.remove('hidden');
+            if(btnRec) btnRec.classList.remove('hidden');
+        } 
+        else if (sesion.rol === "Recepcionista" || sesion.rol === "Administrativo" || sesion.rol === "Recepción") {
+            if(btnRec) btnRec.classList.remove('hidden');
+        } 
+        else if (sesion.rol === "Médico") {
+            if(btnDoc) btnDoc.classList.remove('hidden');
+        }
     }
 }
 
 // ==========================================
-// INICIALIZACIÓN
+// INICIALIZACIÓN Y CATEGORÍAS CLÍNICAS
 // ==========================================
 function establecerLimitesFecha() {
     const hoy = new Date();
@@ -206,14 +185,13 @@ function establecerLimitesFecha() {
 
 async function cargarEspecialistasFirebase() {
     try {
-        const usuarios = getDB('usuarios');
-        const medicos = usuarios.filter(u => u.rol === "Médico");
-        
+        const snap = await getDocs(query(collection(window.db, "usuarios"), where("rol", "==", "Médico")));
         bdMedicosDinamica = {}; 
         const selectAlcance = document.getElementById('admin-select-alcance');
         if(selectAlcance) selectAlcance.innerHTML = '<option value="global">Todas las especialidades (Global)</option>';
         
-        medicos.forEach((u) => {
+        snap.forEach((documento) => {
+            const u = documento.data();
             if(u.especialidad && u.nombre) {
                 if (!bdMedicosDinamica[u.especialidad]) bdMedicosDinamica[u.especialidad] = [];
                 if (!bdMedicosDinamica[u.especialidad].includes(u.nombre)) {
@@ -236,12 +214,12 @@ async function cargarEspecialistasFirebase() {
         let especialidadesEncontradas = Object.keys(bdMedicosDinamica);
 
         for (const [categoria, especialidades] of Object.entries(categoriasBase)) {
-            let optgroup = `<optgroup label="${escaparHTML(categoria)}">`;
+            let optgroup = `<optgroup label="${categoria}">`;
             let tieneItems = false;
             
             especialidades.forEach(esp => {
                 if (especialidadesEncontradas.includes(esp)) {
-                    optgroup += `<option value="${escaparHTML(esp)}">${escaparHTML(esp)}</option>`;
+                    optgroup += `<option value="${esp}">${esp}</option>`;
                     tieneItems = true;
                     especialidadesEncontradas = especialidadesEncontradas.filter(e => e !== esp);
                 }
@@ -253,7 +231,7 @@ async function cargarEspecialistasFirebase() {
         if (especialidadesEncontradas.length > 0) {
             opcionesHtml += `<optgroup label="Otras Especialidades">`;
             especialidadesEncontradas.sort().forEach(esp => {
-                opcionesHtml += `<option value="${escaparHTML(esp)}">${escaparHTML(esp)}</option>`;
+                opcionesHtml += `<option value="${esp}">${esp}</option>`;
             });
             opcionesHtml += `</optgroup>`;
         }
@@ -265,16 +243,19 @@ async function cargarEspecialistasFirebase() {
 }
 
 async function cargarConfiguracionModulacion() {
-    const config = getDB('configuracion');
-    if (config.length > 0) {
-        let globalConfig = config.find(c => c.id === 'general');
-        if (globalConfig) duracionTurnoGlobal = globalConfig.duracionBase || 15;
-        
-        modulacionPorMedico = {};
-        config.forEach(c => {
-            if (c.id !== 'general') modulacionPorMedico[c.id] = c.duracionBase;
-        });
-    }
+    try {
+        const snapGlobal = await getDoc(doc(window.db, "configuracion", "general"));
+        if(snapGlobal.exists()) {
+            duracionTurnoGlobal = snapGlobal.data().duracionBase || 15;
+            const selectAdmin = document.getElementById('admin-select-duracion');
+            if(selectAdmin && document.getElementById('admin-select-alcance').value === 'global') {
+                selectAdmin.value = duracionTurnoGlobal;
+            }
+        }
+        const snapIndividual = await getDocs(collection(window.db, "modulacion_medicos"));
+        modulacionPorMedico = {}; 
+        snapIndividual.forEach(documento => { modulacionPorMedico[documento.id] = documento.data().duracionBase; });
+    } catch(e) { console.log("Configuración por defecto cargada."); }
 }
 
 async function iniciarCargaDeDatos() {
@@ -330,60 +311,77 @@ function switchView(viewName) {
 async function iniciarSesionReal() {
     const inputUsuario = document.getElementById('login-user').value.trim();
     const pass = document.getElementById('login-pass').value.trim();
-
-    if (!inputUsuario || !pass) {
-        mostrarAlerta("Datos Faltantes", "Ingrese su correo electrónico y contraseña.");
-        return;
+    
+    if (!inputUsuario || !pass) { 
+        mostrarAlerta("Datos Faltantes", "Ingrese correo o usuario y contraseña."); 
+        return; 
     }
-    if (!firebaseConfigurada) {
-        mostrarAlerta("Configuración Pendiente", "Falta pegar la apiKey de Firebase en js/firebase-config.js.");
-        return;
-    }
-
+    
     try {
-        const sesion = await iniciarSesionFirebase(inputUsuario, pass);
-        localStorage.setItem("sesionHospitalActiva", JSON.stringify(sesion));
-        aplicarPermisosVisuales();
-        document.getElementById('login-user').value = '';
-        document.getElementById('login-pass').value = '';
-
-        if (sesion.rol === "Médico") switchView("doctor");
-        else if (sesion.rol === "Administrativo" || sesion.rol === "Recepción") switchView("reception");
-        else switchView("admin");
-    } catch (error) {
-        console.error("Error de login:", error);
-        if (error.message === "SIN_PERFIL") {
-            mostrarAlerta("Acceso Denegado", "Su usuario no tiene un perfil asignado. Contacte al administrador.");
-        } else if (error.message === "USUARIO_INACTIVO") {
-            mostrarAlerta("Acceso Denegado", "Su usuario está deshabilitado. Contacte al administrador.");
-        } else {
-            mostrarAlerta("Acceso Denegado", "Las credenciales son incorrectas.");
+        let correoAuth = inputUsuario;
+        if (!inputUsuario.includes('@')) {
+            const snapBusqueda = await getDocs(query(collection(window.db, "usuarios"), where("username", "==", inputUsuario)));
+            if (!snapBusqueda.empty) {
+                correoAuth = snapBusqueda.docs[0].data().correo;
+            } else {
+                mostrarAlerta("Acceso Denegado", "El nombre de usuario no existe en el sistema.");
+                return;
+            }
         }
+
+        const userCredential = await signInWithEmailAndPassword(window.auth, correoAuth, pass);
+        const user = userCredential.user;
+        
+        let rolUsuario = "Administración"; 
+        let nombreUsuario = user.email;
+
+        try {
+            const snapRol = await getDocs(query(collection(window.db, "usuarios"), where("correo", "==", user.email)));
+            if (!snapRol.empty) {
+                const data = snapRol.docs[0].data();
+                rolUsuario = data.rol;
+                if(data.nombre) nombreUsuario = data.nombre;
+            }
+        } catch (e) { console.warn("Rol no leído."); }
+
+        localStorage.setItem("sesionHospitalActiva", JSON.stringify({
+            correo: user.email,
+            nombre: nombreUsuario,
+            rol: rolUsuario,
+            uid: user.uid
+        }));
+        
+        aplicarPermisosVisuales();
+
+        document.getElementById('login-user').value = ''; 
+        document.getElementById('login-pass').value = '';
+        
+        if (rolUsuario === "Médico") switchView("doctor");
+        else if (rolUsuario === "Administrativo" || rolUsuario === "Recepción") switchView("reception");
+        else switchView("admin");
+
+    } catch (error) {
+        console.error("Auth Error:", error);
+        mostrarAlerta("Acceso Denegado", "Las credenciales son incorrectas en Firebase Auth.");
     }
 }
 
-async function cerrarSesionReal() {
-    try { await cerrarSesionFirebase(); } catch (e) { console.error(e); }
-    localStorage.removeItem("sesionHospitalActiva");
+function cerrarSesionReal() { 
+    localStorage.removeItem("sesionHospitalActiva"); 
     aplicarPermisosVisuales();
-    switchView("public");
+    switchView("public"); 
 }
+
+function loginAs(role) { switchView(role); }
 
 function abrirModal(id) { 
     const modal = document.getElementById(id);
-    // [MEJORA DE SEGURIDAD]: Unificar uso de clases utility de Tailwind (hidden)
-    if(modal) {
-        modal.classList.add('active'); 
-        modal.classList.remove('hidden');
-    }
+    if(modal) modal.classList.add('active'); 
 }
 
 function cerrarModal(id) { 
     const modal = document.getElementById(id);
-    if(modal) {
-        modal.classList.remove('active'); 
-        modal.classList.add('hidden');
-    }
+    if(modal) modal.classList.remove('active'); 
     
     if (id === 'modal-cancelar-paciente') { 
         if(document.getElementById('input-buscar-dni')) document.getElementById('input-buscar-dni').value = ''; 
@@ -463,12 +461,15 @@ async function generarHorariosPublicos() {
     container.innerHTML = '<div class="col-span-2 sm:col-span-3 flex justify-center py-4"><p class="text-sm text-blue-600 font-bold ml-2">Consultando disponibilidad...</p></div>';
 
     let turnosOcupados = {};
-    const turnos = getDB('turnos');
-    turnos.forEach((t) => {
-        if (t.fecha === input && t.medico === medico && !t.estado.includes("Cancelado") && t.estado !== "Ausente") {
-            turnosOcupados[t.horario] = true; 
-        }
-    });
+    try {
+        const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", input)));
+        snap.forEach((doc) => {
+            const data = doc.data();
+            if (data.medico === medico && !data.estado.includes("Cancelado") && data.estado !== "Ausente") {
+                turnosOcupados[data.horario] = true; 
+            }
+        });
+    } catch (error) { console.error(error); }
 
     const ahora = new Date();
     const esHoy = (input === (ahora.getFullYear() + "-" + String(ahora.getMonth() + 1).padStart(2, '0') + "-" + String(ahora.getDate()).padStart(2, '0')));
@@ -513,46 +514,35 @@ function seleccionarHorario(btnClickeado) {
     btnClickeado.classList.add('bg-blue-800', 'text-white');
 }
 
-// [MEJORA DE SEGURIDAD]: Delegación a Cloud Function para crear turnos
 async function confirmarTurnoFirebase() {
     const esp = document.getElementById('select-especialidad').value;
     const med = document.getElementById('select-medico').value;
     const fec = document.getElementById('input-fecha-paciente').value;
     const btn = document.querySelector('.btn-horario.bg-blue-800');
     const hor = btn ? btn.innerText.replace(' (Ocupado)', '').replace(' (Cerrado)', '').trim() : '';
-    
     const nom = document.getElementById('paciente-nombre').value.trim();
-    const dni = sanitizarSoloNumeros(document.getElementById('paciente-dni').value);
-    const cel = sanitizarSoloNumeros(document.getElementById('paciente-celular').value);
+    const dni = document.getElementById('paciente-dni').value.trim();
+    const cel = document.getElementById('paciente-celular').value.trim();
     const email = document.getElementById('paciente-email').value.trim();
 
     if (!esp || !med || !fec || !hor) { mostrarAlerta("Datos Incompletos", "Seleccione Especialidad, Profesional, Fecha y Horario."); return; }
-    if (!nom || !dni || !cel) { mostrarAlerta("Faltan Datos del Paciente", "Nombre, DNI y Celular son campos obligatorios y deben contener números válidos."); return; }
+    if (!nom || !dni || !cel) { mostrarAlerta("Faltan Datos del Paciente", "Nombre, DNI y Celular son campos obligatorios."); return; }
 
     try {
-        abrirModal('modal-progreso');
-        const crearTurnoFn = httpsCallable(functions, 'crearTurnoPublico');
-        const respuesta = await crearTurnoFn({
-            especialidad: esp,
-            medico: med,
-            fecha: fec,
-            horario: hor,
-            pacienteNombre: nom,
-            pacienteDni: dni,
-            pacienteCelular: cel,
-            pacienteEmail: email
+        const llamarCrearTurno = httpsCallable(functionsInstancia, 'crearTurnoPublico');
+        const respuesta = await llamarCrearTurno({
+            especialidad: esp, medico: med, fecha: fec, horario: hor,
+            pacienteNombre: nom, pacienteDni: dni, pacienteCelular: cel, pacienteEmail: email
         });
+        const codigo = respuesta.data.codigo;
 
-        const codigo = respuesta.data.codigoConfirmacion;
-
-        // Envío de correo opcional si la CF no lo hace
         enviarCorreoNotificacion(EMAILJS_TEMPLATE_CONFIRMACION, {
             nombre_paciente: nom, medico: med, especialidad: esp, fecha: fec, hora: hor,
             email_destino: email, codigo_confirmacion: codigo
         });
 
         mostrarExito("¡Turno Confirmado!", `Tu código de confirmación es ${codigo}. Guardalo: lo vas a necesitar para cancelar o consultar este turno. También te lo enviamos por email.`);
-
+        
         document.getElementById('paciente-nombre').value = ''; 
         document.getElementById('paciente-dni').value = ''; 
         document.getElementById('paciente-celular').value = ''; 
@@ -562,70 +552,56 @@ async function confirmarTurnoFirebase() {
         document.getElementById('horarios-publicos').innerHTML = '<p class="text-sm text-slate-500 col-span-2 sm:col-span-3 text-center mt-2">Seleccione una fecha.</p>'; 
         document.getElementById('select-medico').innerHTML = '<option>Primero seleccione especialidad</option>'; 
         document.getElementById('select-medico').disabled = true;
-    } catch(error) {
-        console.error("Error al crear turno:", error);
-        mostrarAlerta("Error", "No se pudo procesar la reserva. Verifique los datos o intente nuevamente.");
-    } finally {
-        cerrarModal('modal-progreso');
-    }
+
+    } catch (error) { 
+        console.error(error); 
+        mostrarAlerta("Error de Conexión", error.message || "Hubo un error al registrar el turno. Intente nuevamente."); 
+    } 
 }
 
-// [MEJORA DE SEGURIDAD]: Validación y consulta segura en el backend
 async function buscarTurnosPaciente() {
-    const dni = sanitizarSoloNumeros(document.getElementById('input-buscar-dni').value);
+    const dni = document.getElementById('input-buscar-dni').value.trim();
     const codigo = document.getElementById('input-buscar-codigo').value.trim().toUpperCase();
     const res = document.getElementById('resultado-turnos-paciente');
 
-    if (!dni || !codigo) { mostrarAlerta("Dato Faltante", "Ingresá tu DNI (solo números) y el código de confirmación."); return; }
+    if (!dni || !codigo) { mostrarAlerta("Dato Faltante", "Ingresá tu DNI y el código de confirmación."); return; }
 
     try {
-        abrirModal('modal-progreso');
-        const buscarTurnoFn = httpsCallable(functions, 'buscarTurnoPorCodigo');
-        const respuesta = await buscarTurnoFn({ dni: dni, codigo: codigo });
-        
+        const llamarBuscarTurno = httpsCallable(functionsInstancia, 'buscarTurnoPorCodigo');
+        const respuesta = await llamarBuscarTurno({ dni, codigo });
         const t = respuesta.data.turno;
-        
-        if (!t) {
-            res.innerHTML = `<p class="text-sm text-red-600 font-semibold text-center mt-4">No encontramos ningún turno con esos datos.</p>`;
-            res.classList.remove('hidden');
-            return;
-        }
 
         turnoEncontradoActivo = t;
         codigoBusquedaActivo = codigo;
 
         const cancelado = t.estado.includes("Cancelado");
         const badge = cancelado ? `<span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${escaparHTML(t.estado)}</span>` : '';
-        const btn = cancelado || t.estado === "Atendido" || t.estado === "Ausente" ? '' : `<button onclick="cancelarTurnoFirebase('${escaparHTML(t.id)}')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>`;
+        const btn = cancelado || t.estado === "Atendido" || t.estado === "Ausente" ? '' : `<button onclick="cancelarTurnoFirebase('${t.id}')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>`;
         res.innerHTML = `<div class="bg-slate-50 border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2"><div class="w-full"><p class="font-bold text-sm text-blue-900">${escaparHTML(t.especialidad)} - ${escaparHTML(t.medico)}</p><p class="text-xs text-slate-600 mt-1">${escaparHTML(t.fecha)} - ${escaparHTML(t.horario)} hs ${badge}</p></div>${btn}</div>`;
         res.classList.remove('hidden');
-    } catch(error) {
-        console.error("Error al buscar turno:", error);
-        res.innerHTML = `<p class="text-sm text-red-600 font-semibold text-center mt-4">Error al consultar el turno.</p>`;
+    } catch (error) {
+        console.error(error);
+        res.innerHTML = `<p class="text-sm text-red-600 font-semibold text-center mt-4">${error.message || 'No encontramos ningún turno con esos datos.'}</p>`;
         res.classList.remove('hidden');
-    } finally {
-        cerrarModal('modal-progreso');
     }
 }
 
-// [MEJORA DE SEGURIDAD]: Cancelación delegada al backend
 async function cancelarTurnoFirebase(id) {
     const confirmado = await pedirConfirmacion("¿Cancelar este turno?", "Se cancelará la reserva y se enviará un correo notificando la cancelación.", "Sí, cancelar turno");
     if (!confirmado) return;
 
     try {
-        abrirModal('modal-progreso');
-        const cancelarTurnoFn = httpsCallable(functions, 'cancelarTurnoConCodigo');
-        await cancelarTurnoFn({ idTurno: id });
-        
+        const llamarCancelarTurno = httpsCallable(functionsInstancia, 'cancelarTurnoConCodigo');
+        const respuesta = await llamarCancelarTurno({ id, codigo: codigoBusquedaActivo });
+        const t = respuesta.data.turno;
+
+        enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
+            nombre_paciente: t.pacienteNombre, medico: t.medico, especialidad: t.especialidad, fecha: t.fecha, hora: t.horario, email_destino: t.pacienteEmail
+        });
+
         mostrarExito("Turno Cancelado", "Su turno ha sido cancelado.");
-        buscarTurnosPaciente(); // Refrescar visualización
-    } catch(error) {
-        console.error("Error cancelando turno:", error);
-        mostrarAlerta("Error", "No se pudo cancelar el turno. Intente nuevamente.");
-    } finally {
-        cerrarModal('modal-progreso');
-    }
+        buscarTurnosPaciente(); 
+    } catch (error) { console.error(error); mostrarAlerta("Error", error.message || "No se pudo cancelar el turno."); }
 }
 
 // ==========================================
@@ -677,12 +653,15 @@ async function generarAgendaRecepcion() {
     if(!tbody) return;
 
     let turnosOcupados = {};
-    const turnos = getDB('turnos'); // TODO: Migrar lectura a Firestore
-    turnos.forEach((t) => {
-        if (t.fecha === fechaRecepcionSeleccionada && t.medico === medicoSeleccionadoRecepcion) {
-            turnosOcupados[t.horario] = t;
-        }
-    });
+    try {
+        const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", fechaRecepcionSeleccionada)));
+        snap.forEach((documento) => {
+            const data = documento.data();
+            if (data.medico === medicoSeleccionadoRecepcion) {
+                turnosOcupados[data.horario] = { id: documento.id, ...data };
+            }
+        });
+    } catch (error) { console.error("Error BD:", error); }
 
     let html = '';
     let minutosBucle = 7 * 60; 
@@ -713,7 +692,7 @@ async function generarAgendaRecepcion() {
                 htmlAccion = `<span class="text-xs text-slate-400 font-bold">Bloqueado</span>`;
             } else {
                 htmlEstado = `<span class="text-amber-600 font-bold text-sm">${escaparHTML(t.estado)}</span>`;
-                htmlAccion = `<button onclick="cancelarTurnoRecepcion('${escaparHTML(t.id)}')" class="bg-white border border-red-500 text-red-600 text-xs px-3 py-2 rounded font-bold hover:bg-red-50 transition shadow-sm">Cancelar</button>`;
+                htmlAccion = `<button onclick="cancelarTurnoRecepcion('${t.id}')" class="bg-white border border-red-500 text-red-600 text-xs px-3 py-2 rounded font-bold hover:bg-red-50 transition shadow-sm">Cancelar</button>`;
             }
         }
 
@@ -743,39 +722,36 @@ function abrirModalDarTurno(hora) {
 }
 
 async function confirmarTurnoRecepcionFirebase() {
-    const dni = sanitizarSoloNumeros(document.getElementById('auto-dni').value);
+    const dni = document.getElementById('auto-dni').value.trim();
     const nombre = document.getElementById('auto-nombre').value.trim();
-    const celular = sanitizarSoloNumeros(document.getElementById('auto-celular').value);
+    const celular = document.getElementById('auto-celular').value.trim();
     const email = document.getElementById('auto-email').value.trim();
 
     if (!nombre || !celular) { mostrarAlerta("Datos Obligatorios", "Nombre y celular son obligatorios."); return; }
 
-    const codigo = generarCodigoConfirmacion();
-    let turnos = getDB('turnos'); // TODO: Migrar escritura a Cloud Function / Firestore
-    turnos.push({
-        id: codigo,
-        especialidad: especialidadSeleccionadaRecepcion, medico: medicoSeleccionadoRecepcion,
-        fecha: fechaRecepcionSeleccionada, horario: horaSeleccionadaRecepcion,
-        pacienteNombre: nombre, pacienteDni: dni, pacienteCelular: celular, pacienteEmail: email,
-        estado: "Confirmado Presencial", codigoConfirmacion: codigo, timestamp: new Date().toISOString()
-    });
-    saveDB('turnos', turnos);
+    try {
+        await addDoc(collection(window.db, "turnos"), {
+            especialidad: especialidadSeleccionadaRecepcion, medico: medicoSeleccionadoRecepcion,
+            fecha: fechaRecepcionSeleccionada, horario: horaSeleccionadaRecepcion,
+            pacienteNombre: nombre, pacienteDni: dni, pacienteCelular: celular, pacienteEmail: email,
+            estado: "Confirmado Presencial", timestamp: new Date()
+        });
 
-    cerrarModal('modal-dar-turno'); 
-    mostrarExito("¡Turno Asignado!", "El turno presencial fue registrado.");
-    generarAgendaRecepcion();
+        cerrarModal('modal-dar-turno'); 
+        mostrarExito("¡Turno Asignado!", "El turno presencial fue registrado.");
+        generarAgendaRecepcion();
+    } catch (error) { console.error(error); mostrarAlerta("Error", "Error al registrar el turno."); }
 }
 
 async function cancelarTurnoRecepcion(idDoc) {
     const confirmado = await pedirConfirmacion("¿Liberar Horario?", "Se cancelará el turno de la agenda.", "Sí, liberar");
     if (!confirmado) return;
 
-    let turnos = getDB('turnos'); // TODO: Migrar borrado a Firestore
-    turnos = turnos.filter(t => t.id !== idDoc);
-    saveDB('turnos', turnos);
-
-    mostrarExito("Turno Cancelado", "El turno fue cancelado."); 
-    generarAgendaRecepcion();
+    try {
+        await deleteDoc(doc(window.db, "turnos", idDoc));
+        mostrarExito("Turno Cancelado", "El turno fue cancelado."); 
+        generarAgendaRecepcion();
+    } catch (error) { console.error(error); mostrarAlerta("Error", "No se pudo cancelar."); }
 }
 
 async function ejecutarAusenciaEmergencia() {
@@ -786,40 +762,47 @@ async function ejecutarAusenciaEmergencia() {
 
     if (alcance === 'desde_hora' && !horaDesde) { mostrarAlerta("Hora Requerida", "Indique la hora a partir de la cual se suspende."); return; }
 
-    let turnos = getDB('turnos');
-    let turnosCancelados = 0; 
+    try {
+        const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", fechaRecepcionSeleccionada)));
 
-    turnos = turnos.map((t) => {
-        if (t.fecha === fechaRecepcionSeleccionada && t.medico === medicoSeleccionadoRecepcion && !t.estado.includes("Cancelado")) {
-            let cancelar = (alcance === 'todo_dia') || (alcance === 'desde_hora' && t.horario >= horaDesde);
-            if (cancelar) {
-                t.estado = "Cancelado: " + motivo;
-                turnosCancelados++;
+        let turnosCancelados = 0; 
+        const promesas = [];
+
+        snap.forEach((documento) => {
+            const t = documento.data();
+            if (t.medico === medicoSeleccionadoRecepcion && !t.estado.includes("Cancelado")) {
+                let cancelar = (alcance === 'todo_dia') || (alcance === 'desde_hora' && t.horario >= horaDesde);
+                if (cancelar) {
+                    promesas.push(updateDoc(doc(window.db, "turnos", documento.id), { estado: "Cancelado: " + motivo }));
+                    turnosCancelados++;
+                }
             }
-        }
-        return t;
-    });
+        });
 
-    saveDB('turnos', turnos);
-    cerrarModal('modal-ausencia-emergencia'); 
-    mostrarExito("Agenda Suspendida", `Se han bloqueado ${turnosCancelados} turnos.`);
-    generarAgendaRecepcion(); 
+        await Promise.all(promesas);
+        cerrarModal('modal-ausencia-emergencia'); 
+        mostrarExito("Agenda Suspendida", `Se han bloqueado ${turnosCancelados} turnos.`);
+        generarAgendaRecepcion(); 
+    } catch (error) { console.error(error); mostrarAlerta("Error Crítico", "Fallo durante la suspensión."); }
 }
 
 async function descargarExcelRecepcion() {
     if(typeof XLSX === 'undefined') { mostrarAlerta("Error", "La librería de Excel no se pudo cargar."); return; }
     if (!fechaRecepcionSeleccionada || !medicoSeleccionadoRecepcion) { mostrarAlerta("Visualización Requerida", "Cargue una agenda primero."); return; }
-    
-    let turnos = getDB('turnos').filter(t => t.fecha === fechaRecepcionSeleccionada && t.medico === medicoSeleccionadoRecepcion);
-    turnos.sort((a, b) => a.horario.localeCompare(b.horario));
-    
-    let dataExcel = turnos.map(t => ({
-        "Hora": t.horario, "Paciente": t.pacienteNombre, "DNI": t.pacienteDni, "Celular": t.pacienteCelular, "Estado": t.estado, "Canal": t.estado.includes("Web") ? "Web" : "Presencial"
-    }));
-    let ws = XLSX.utils.json_to_sheet(dataExcel);
-    let wb = XLSX.utils.book_new(); 
-    XLSX.utils.book_append_sheet(wb, ws, "Agenda");
-    XLSX.writeFile(wb, `Agenda_${medicoSeleccionadoRecepcion}_${fechaRecepcionSeleccionada}.xlsx`);
+    try {
+        const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "==", fechaRecepcionSeleccionada)));
+        let turnos = []; 
+        snap.forEach((documento) => { if (documento.data().medico === medicoSeleccionadoRecepcion) turnos.push(documento.data()); });
+        turnos.sort((a, b) => a.horario.localeCompare(b.horario));
+        
+        let dataExcel = turnos.map(t => ({
+            "Hora": t.horario, "Paciente": t.pacienteNombre, "DNI": t.pacienteDni, "Celular": t.pacienteCelular, "Estado": t.estado, "Canal": t.estado.includes("Web") ? "Web" : "Presencial"
+        }));
+        let ws = XLSX.utils.json_to_sheet(dataExcel);
+        let wb = XLSX.utils.book_new(); 
+        XLSX.utils.book_append_sheet(wb, ws, "Agenda");
+        XLSX.writeFile(wb, `Agenda_${medicoSeleccionadoRecepcion}_${fechaRecepcionSeleccionada}.xlsx`);
+    } catch (error) { console.error(error); mostrarAlerta("Error", "Error al exportar planilla."); } 
 }
 
 // ==========================================
@@ -846,56 +829,55 @@ async function cargarAgendaMedico() {
     }
 
     const hoy = new Date().toISOString().split('T')[0];
-    let turnos = getDB('turnos').filter(t => t.fecha === hoy && (!nombreFiltro || t.medico === nombreFiltro) && !t.estado.includes("Cancelado"));
-    
-    turnosMedicoHoy = turnos.sort((a, b) => a.horario.localeCompare(b.horario));
+    try {
+        let q = nombreFiltro ? query(collection(window.db, "turnos"), where("fecha", "==", hoy), where("medico", "==", nombreFiltro)) : query(collection(window.db, "turnos"), where("fecha", "==", hoy));
+        const snap = await getDocs(q);
+        turnosMedicoHoy = [];
+        snap.forEach((documento) => { if (!documento.data().estado.includes("Cancelado")) turnosMedicoHoy.push({ id: documento.id, ...documento.data() }); });
+        turnosMedicoHoy.sort((a, b) => a.horario.localeCompare(b.horario));
 
-    let html = ''; 
-    let primerPaciente = "Ningún paciente en espera";
+        let html = ''; 
+        let primerPaciente = "Ningún paciente en espera";
 
-    if(turnosMedicoHoy.length === 0) { 
-        html = '<p class="text-sm text-slate-500 p-2">No tiene pacientes para hoy.</p>'; 
-    } else {
-        let contador = 0;
-        turnosMedicoHoy.forEach((t) => {
-            if (t.estado === "En consultorio" || (contador === 0 && t.estado !== "Atendido" && t.estado !== "Ausente")) {
-                if (!pacienteActivoId && t.estado === "En consultorio") pacienteActivoId = t.id;
-                primerPaciente = `${t.pacienteNombre} (DNI: ${t.pacienteDni})`;
-            }
-            if (t.estado !== "Atendido" && t.estado !== "Ausente") contador++;
+        if(turnosMedicoHoy.length === 0) { 
+            html = '<p class="text-sm text-slate-500 p-2">No tiene pacientes para hoy.</p>'; 
+        } else {
+            let contador = 0;
+            turnosMedicoHoy.forEach((t) => {
+                if (t.estado === "En consultorio" || (contador === 0 && t.estado !== "Atendido" && t.estado !== "Ausente")) {
+                    if (!pacienteActivoId && t.estado === "En consultorio") pacienteActivoId = t.id;
+                    primerPaciente = `${t.pacienteNombre} (DNI: ${t.pacienteDni})`;
+                }
+                if (t.estado !== "Atendido" && t.estado !== "Ausente") contador++;
 
-            let color = "bg-amber-200 text-amber-800";
-            if(t.estado === "En consultorio") color = "bg-emerald-200 text-emerald-800";
-            if(t.estado === "Atendido") color = "bg-slate-200 text-slate-800";
-            if(t.estado === "Ausente") color = "bg-red-200 text-red-800";
+                let color = "bg-amber-200 text-amber-800";
+                if(t.estado === "En consultorio") color = "bg-emerald-200 text-emerald-800";
+                if(t.estado === "Atendido") color = "bg-slate-200 text-slate-800";
+                if(t.estado === "Ausente") color = "bg-red-200 text-red-800";
 
-            let btnHtml = '';
-            if (t.estado !== "Atendido" && t.estado !== "Ausente") {
-                btnHtml = `<div class="mt-3 flex gap-2"><button onclick="llamarPaciente('${escaparHTML(t.id)}')" class="flex-1 bg-blue-600 text-white text-xs font-bold py-2 rounded shadow hover:bg-blue-700 transition">Llamar</button><button onclick="marcarAusente('${escaparHTML(t.id)}')" class="flex-1 bg-white border border-red-100 text-red-600 text-xs font-bold py-2 rounded shadow hover:bg-red-50 transition">Ausente</button>;
-            }
+                let btnHtml = '';
+                if (t.estado !== "Atendido" && t.estado !== "Ausente") {
+                    btnHtml = `<div class="mt-3 flex gap-2"><button onclick="llamarPaciente('${t.id}')" class="flex-1 bg-blue-600 text-white text-xs font-bold py-2 rounded shadow hover:bg-blue-700 transition">Llamar</button><button onclick="marcarAusente('${t.id}')" class="flex-1 bg-white border border-red-100 text-red-600 text-xs font-bold py-2 rounded shadow hover:bg-red-50 transition">Ausente</button></div>`;
+                }
 
-            const opacidad = (t.estado === 'Atendido' || t.estado === 'Ausente') ? 'opacity-60' : 'opacity-100';
-            const borde = t.estado === 'En consultorio' ? 'border-emerald-500 bg-emerald-50' : 'border-blue-500 bg-blue-50';
+                const opacidad = (t.estado === 'Atendido' || t.estado === 'Ausente') ? 'opacity-60' : 'opacity-100';
+                const borde = t.estado === 'En consultorio' ? 'border-emerald-500 bg-emerald-50' : 'border-blue-500 bg-blue-50';
 
-            html += `<div class="border-l-4 ${borde} p-4 rounded-lg shadow-sm border border-slate-200 ${opacidad}"><div class="flex justify-between items-center text-sm mb-2"><span class="font-bold text-blue-900">${escaparHTML(t.horario)} hs</span><span class="text-xs ${color} px-2 py-0.5 rounded font-bold">${escaparHTML(t.estado)}</span></div><p class="font-bold text-lg text-slate-800 leading-tight">${escaparHTML(t.pacienteNombre)}</p><p class="text-xs text-slate-500 mt-1">DNI: ${escaparHTML(t.pacienteDni)} | Tel: ${escaparHTML(t.pacienteCelular)}</p>${btnHtml}</div>`;
-        });
-        if(contador === 0) html += '<p class="text-sm text-slate-500 p-2 mt-4 border-t border-slate-200 pt-4">No hay más pacientes en espera.</p>';
-    }
-    container.innerHTML = html; 
-    if(lblPacienteActivo) lblPacienteActivo.innerText = primerPaciente;
+                html += `<div class="border-l-4 ${borde} p-4 rounded-lg shadow-sm border border-slate-200 ${opacidad}"><div class="flex justify-between items-center text-sm mb-2"><span class="font-bold text-blue-900">${escaparHTML(t.horario)} hs</span><span class="text-xs ${color} px-2 py-0.5 rounded font-bold">${escaparHTML(t.estado)}</span></div><p class="font-bold text-lg text-slate-800 leading-tight">${escaparHTML(t.pacienteNombre)}</p><p class="text-xs text-slate-500 mt-1">DNI: ${escaparHTML(t.pacienteDni)} | Tel: ${escaparHTML(t.pacienteCelular)}</p>${btnHtml}</div>`;
+            });
+            if(contador === 0) html += '<p class="text-sm text-slate-500 p-2 mt-4 border-t border-slate-200 pt-4">No hay más pacientes en espera.</p>';
+        }
+        container.innerHTML = html; 
+        if(lblPacienteActivo) lblPacienteActivo.innerText = primerPaciente;
+    } catch (error) { console.error(error); }
 }
 
 async function llamarPaciente(id) {
     const paciente = turnosMedicoHoy.find(t => t.id === id); 
     if(!paciente) return;
-    
-    let turnos = getDB('turnos');
-    let index = turnos.findIndex(t => t.id === id);
-    if(index !== -1) {
-        turnos[index].estado = "En consultorio";
-        saveDB('turnos', turnos);
-    }
-
+    try {
+        await updateDoc(doc(window.db, "turnos", id), { estado: "En consultorio" });
+    } catch(e) { console.error(e); }
     pacienteActivoId = id;
     document.getElementById('medico-paciente-activo').innerText = `${paciente.pacienteNombre} (DNI: ${paciente.pacienteDni})`;
     document.getElementById('input-motivo-consulta').value = ''; 
@@ -904,17 +886,14 @@ async function llamarPaciente(id) {
 }
 
 async function marcarAusente(id) {
-    let turnos = getDB('turnos');
-    let index = turnos.findIndex(t => t.id === id);
-    if(index !== -1) {
-        turnos[index].estado = "Ausente";
-        saveDB('turnos', turnos);
-    }
-    if (pacienteActivoId === id) { 
-        pacienteActivoId = null; 
-        document.getElementById('medico-paciente-activo').innerText = "Ningún paciente seleccionado"; 
-    }
-    cargarAgendaMedico(); 
+    try {
+        await updateDoc(doc(window.db, "turnos", id), { estado: "Ausente" });
+        if (pacienteActivoId === id) { 
+            pacienteActivoId = null; 
+            document.getElementById('medico-paciente-activo').innerText = "Ningún paciente seleccionado"; 
+        }
+        cargarAgendaMedico(); 
+    } catch (error) { console.error(error); }
 }
 
 async function guardarEvolucionMedico() {
@@ -922,23 +901,15 @@ async function guardarEvolucionMedico() {
     const motivo = document.getElementById('input-motivo-consulta').value.trim();
     const evolucion = document.getElementById('texto-evolucion').value.trim();
 
-    let turnos = getDB('turnos');
-    let index = turnos.findIndex(t => t.id === pacienteActivoId);
-    if(index !== -1) {
-        turnos[index].estado = "Atendido";
-        turnos[index].motivoConsulta = motivo;
-        turnos[index].evolucionMedica = evolucion;
-        saveDB('turnos', turnos);
-        
+    try {
+        await updateDoc(doc(window.db, "turnos", pacienteActivoId), { estado: "Atendido", motivoConsulta: motivo, evolucionMedica: evolucion });
         mostrarExito("Guardado", "Evolución registrada correctamente.");
         pacienteActivoId = null; 
         document.getElementById('medico-paciente-activo').innerText = "Ningún paciente seleccionado";
         document.getElementById('input-motivo-consulta').value = ''; 
         document.getElementById('texto-evolucion').value = '';
         cargarAgendaMedico();
-    } else {
-        mostrarAlerta("Error", "No se pudo guardar la evolución.");
-    }
+    } catch (error) { console.error(error); mostrarAlerta("Error", "No se pudo guardar la evolución."); }
 }
 
 // ==========================================
@@ -979,52 +950,78 @@ async function cargarUsuariosAdmin(direccion = 'init') {
     const tbody = document.getElementById('admin-users-tbody');
     if(!tbody) return;
 
-    let allUsers = getDB('usuarios');
-    allUsers.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-bold animate-pulse">Cargando base de datos...</td></tr>';
+
+    let q;
+    const refCol = collection(window.db, "usuarios");
 
     if (direccion === 'init') {
+        usuariosPageSnapshots = [];
         currentUsuariosPage = 0;
-    } else if (direccion === 'next') {
-        if ((currentUsuariosPage + 1) * USUARIOS_PER_PAGE < allUsers.length) currentUsuariosPage++;
-    } else if (direccion === 'prev') {
-        if (currentUsuariosPage > 0) currentUsuariosPage--;
+        q = query(refCol, orderBy("nombre"), limit(USUARIOS_PER_PAGE)); 
+    } 
+    else if (direccion === 'next') {
+        const ultimoDoc = usuariosPageSnapshots[currentUsuariosPage].lastVisible;
+        q = query(refCol, orderBy("nombre"), startAfter(ultimoDoc), limit(USUARIOS_PER_PAGE));
+        currentUsuariosPage++;
+    } 
+    else if (direccion === 'prev') {
+        currentUsuariosPage--;
+        if (currentUsuariosPage === 0) {
+            q = query(refCol, orderBy("nombre"), limit(USUARIOS_PER_PAGE));
+        } else {
+            const docPrevio = usuariosPageSnapshots[currentUsuariosPage - 1].lastVisible;
+            q = query(refCol, orderBy("nombre"), startAfter(docPrevio), limit(USUARIOS_PER_PAGE));
+        }
     }
 
-    const start = currentUsuariosPage * USUARIOS_PER_PAGE;
-    const pageData = allUsers.slice(start, start + USUARIOS_PER_PAGE);
-
-    if (pageData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">No hay usuarios registrados.</td></tr>';
-        actualizarBotonesPaginacion(false);
-        return;
-    }
-
-    let html = '';
-    pageData.forEach(u => {
-        let color = u.rol === 'Médico' ? 'text-emerald-700' : (u.rol === 'Administración' ? 'text-slate-800' : 'text-blue-700');
-        const j = encodeURIComponent(JSON.stringify(u));
+    try {
+        const snap = await getDocs(q);
         
-        html += `
-        <tr class="border-b hover:bg-slate-50 bg-white transition">
-            <td class="p-3">
-                <p class="font-bold text-slate-800">${escaparHTML(u.nombre) || 'Sin Nombre'}</p>
-                <p class="text-xs text-slate-500">${escaparHTML(u.tel) || 'Sin teléfono'}</p>
-            </td>
-            <td class="p-3 font-bold ${color}">${escaparHTML(u.rol)} ${u.matricula ? `<span class="text-xs text-slate-400 block font-normal mt-0.5">MP: ${escaparHTML(u.matricula)} (${escaparHTML(u.especialidad)})</span>` : ''}</td>
-            <td class="p-3 font-mono text-sm text-slate-600">
-                <div><b>${escaparHTML(u.correo)}</b></div>
-                <div class="text-xs text-slate-500 mt-0.5">UID: <span class="text-blue-600">${escaparHTML(u.id) || 'No vinculado'}</span></div>
-                <div class="text-xs text-slate-500 mt-0.5">Usr: <b>${escaparHTML(u.username) || 'N/A'}</b></div>
-            </td>
-            <td class="p-3 text-center whitespace-nowrap">
-                <button onclick="editarUsuarioAdmin('${j}')" class="bg-slate-100 text-slate-700 border border-slate-300 px-3 py-1 rounded hover:bg-slate-200 font-bold text-xs transition shadow-sm">Editar</button> 
-                <button onclick="eliminarUsuarioAdmin('${escaparHTML(u.id)}')" class="text-red-600 hover:text-red-800 font-bold text-xs ml-2 transition">Borrar</button>
-            </td>
-        </tr>`;
-    });
-    
-    tbody.innerHTML = html;
-    actualizarBotonesPaginacion(start + USUARIOS_PER_PAGE < allUsers.length);
+        if (snap.empty) {
+            if (direccion === 'next') currentUsuariosPage--; 
+            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">No hay más usuarios registrados.</td></tr>';
+            actualizarBotonesPaginacion(false);
+            return;
+        }
+
+        usuariosPageSnapshots[currentUsuariosPage] = {
+            firstVisible: snap.docs[0],
+            lastVisible: snap.docs[snap.docs.length - 1]
+        };
+
+        let html = '';
+        snap.forEach(documento => {
+            const u = { id: documento.id, ...documento.data() };
+            let color = u.rol === 'Médico' ? 'text-emerald-700' : (u.rol === 'Administración' ? 'text-slate-800' : 'text-blue-700');
+            const j = encodeURIComponent(JSON.stringify(u));
+            
+            html += `
+            <tr class="border-b hover:bg-slate-50 bg-white transition">
+                <td class="p-3">
+                    <p class="font-bold text-slate-800">${escaparHTML(u.nombre) || 'Sin Nombre'}</p>
+                    <p class="text-xs text-slate-500">${escaparHTML(u.tel) || 'Sin teléfono'}</p>
+                </td>
+                <td class="p-3 font-bold ${color}">${escaparHTML(u.rol)} ${u.matricula ? `<span class="text-xs text-slate-400 block font-normal mt-0.5">MP: ${escaparHTML(u.matricula)} (${escaparHTML(u.especialidad)})</span>` : ''}</td>
+                <td class="p-3 font-mono text-sm text-slate-600">
+                    <div><b>${escaparHTML(u.correo)}</b></div>
+                    <div class="text-xs text-slate-500 mt-0.5">UID: <span class="text-blue-600">${escaparHTML(u.id) || 'No vinculado'}</span></div>
+                    <div class="text-xs text-slate-500 mt-0.5">Usr: <b>${escaparHTML(u.username) || 'N/A'}</b></div>
+                </td>
+                <td class="p-3 text-center whitespace-nowrap">
+                    <button onclick="editarUsuarioAdmin('${j}')" class="bg-slate-100 text-slate-700 border border-slate-300 px-3 py-1 rounded hover:bg-slate-200 font-bold text-xs transition shadow-sm">Editar</button> 
+                    <button onclick="eliminarUsuarioAdmin('${u.id}')" class="text-red-600 hover:text-red-800 font-bold text-xs ml-2 transition">Borrar</button>
+                </td>
+            </tr>`;
+        });
+        
+        tbody.innerHTML = html;
+        actualizarBotonesPaginacion(snap.docs.length === USUARIOS_PER_PAGE);
+
+    } catch (error) {
+        console.error(error);
+        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500 font-bold">Error de conexión. Es posible que falte un índice en Firestore.</td></tr>';
+    }
 }
 
 function actualizarBotonesPaginacion(hayMas) {
@@ -1040,12 +1037,12 @@ function actualizarBotonesPaginacion(hayMas) {
 function editarUsuarioAdmin(userJSONEncoded) {
     const u = JSON.parse(decodeURIComponent(userJSONEncoded));
     document.getElementById('titulo-modal-usuario').innerText = "Actualizar Datos de Usuario";
-    document.getElementById('input-usuario-id').value = u.id; 
+    document.getElementById('input-usuario-id').value = u.id; // En esta versión el ID de Firestore = UID de Auth
     document.getElementById('input-usuario-nombre').value = u.nombre || '';
     document.getElementById('input-usuario-rol').value = u.rol || 'Administrativo';
     document.getElementById('input-usuario-username').value = u.username || '';
     document.getElementById('input-usuario-correo').value = u.correo || '';
-    document.getElementById('input-usuario-pass').value = ''; 
+    document.getElementById('input-usuario-pass').value = ''; // Se deja vacío = "no cambiar contraseña"
     document.getElementById('input-usuario-tel').value = u.tel || '';
     document.getElementById('input-usuario-matricula').value = u.matricula || '';
     document.getElementById('input-usuario-especialidad').value = u.especialidad || 'Clínica Médica';
@@ -1053,14 +1050,13 @@ function editarUsuarioAdmin(userJSONEncoded) {
     abrirModal('modal-usuario');
 }
 
-// [MEJORA DE SEGURIDAD]: Carga de usuarios desde el backend mediante CF (Admin SDK)
 async function guardarUsuarioAdminFirebase() {
     const id = document.getElementById('input-usuario-id').value; 
     const nom = document.getElementById('input-usuario-nombre').value.trim();
     const rol = document.getElementById('input-usuario-rol').value;
     const user = document.getElementById('input-usuario-username').value.trim();
     const pass = document.getElementById('input-usuario-pass').value.trim();
-    const tel = sanitizarSoloNumeros(document.getElementById('input-usuario-tel').value);
+    const tel = document.getElementById('input-usuario-tel').value.trim();
     const cor = document.getElementById('input-usuario-correo').value.trim();
     const mat = document.getElementById('input-usuario-matricula').value.trim();
     const esp = document.getElementById('input-usuario-especialidad').value;
@@ -1069,55 +1065,64 @@ async function guardarUsuarioAdminFirebase() {
         mostrarAlerta("Datos Faltantes", "Nombre, Usuario y Correo son obligatorios.");
         return;
     }
+    if (!id && !pass) {
+        mostrarAlerta("Datos Faltantes", "La contraseña es obligatoria para crear un usuario nuevo.");
+        return;
+    }
+    if (pass && pass.length < 12) {
+        mostrarAlerta("Contraseña Insegura", "Por seguridad institucional, la contraseña debe tener al menos 12 caracteres.");
+        return;
+    }
+
+    const payload = {
+        id: id || null,
+        nombre: nom,
+        rol: rol,
+        username: user,
+        password: pass || null, // null = "no cambiar" al editar
+        correo: cor,
+        tel: tel,
+        matricula: rol === 'Médico' ? mat : '',
+        especialidad: rol === 'Médico' ? esp : '',
+    };
 
     try {
-        abrirModal('modal-progreso');
-        const guardarUsuarioFn = httpsCallable(functions, 'guardarUsuarioAdmin');
-        await guardarUsuarioFn({
-            id: id, nombre: nom, rol: rol, username: user, 
-            correo: cor, password: pass, tel: tel, 
-            matricula: rol === 'Médico' ? mat : null, 
-            especialidad: rol === 'Médico' ? esp : null
-        });
+        const llamarGuardarUsuario = httpsCallable(functionsInstancia, 'guardarUsuarioAdmin');
+        await llamarGuardarUsuario(payload);
 
-        mostrarExito("Proceso Exitoso", id ? "Usuario actualizado correctamente." : "Usuario creado correctamente.");
+        mostrarExito(
+            id ? "Actualizado" : "Sincronizado",
+            id ? "Los datos se guardaron correctamente en el perfil." : "Usuario creado en Auth y Firestore correctamente."
+        );
+
         cerrarModal('modal-usuario');
         cargarUsuariosAdmin();
         cargarEspecialistasFirebase();
-    } catch(error) {
-        console.error("Error guardando usuario:", error);
-        mostrarAlerta("Error", "No se pudo guardar el usuario. Permisos insuficientes o datos inválidos.");
-    } finally {
-        cerrarModal('modal-progreso');
+
+    } catch (error) {
+        console.error(error);
+        mostrarAlerta("Error", error.message || "Fallo al comunicar con la base de datos.");
     }
 }
 
-// [MEJORA DE SEGURIDAD]: Envío de reset de contraseña usando auth de Firebase
-window.enviarResetPasswordUsuario = async function(correo) {
-    if (!firebaseConfigurada) {
-        mostrarAlerta("Atención", "[Modo Local] Se simula el envío del correo de recuperación a " + correo);
-        return;
-    }
-    
+async function enviarResetPasswordUsuario(correo) {
     try {
-        await enviarRecuperacionPass(correo);
-        mostrarExito("Email Enviado", `Se ha enviado un enlace de recuperación a ${correo} a través de Firebase Auth.`);
+        await sendPasswordResetEmail(window.auth, correo);
+        mostrarExito("Email Enviado", `Se envió un correo a ${correo} para que defina su nueva contraseña.`);
     } catch (error) {
-        console.error("Error al enviar reset:", error);
-        mostrarAlerta("Error", "No se pudo enviar el correo de recuperación. Verifique que el usuario exista.");
+        console.error(error);
+        mostrarAlerta("Error", "No se pudo enviar el correo de restablecimiento.");
     }
-};
+}
 
 async function eliminarUsuarioAdmin(id) {
     const confirmado = await pedirConfirmacion("¿Eliminar Usuario?", "Esta acción quitará el perfil de la tabla administrativa.", "Sí, eliminar");
     if (!confirmado) return;
 
-    let usuarios = getDB('usuarios'); // TODO: Migrar a Cloud Function
-    usuarios = usuarios.filter(u => u.id !== id);
-    saveDB('usuarios', usuarios);
-
-    cargarUsuariosAdmin(); 
-    cargarEspecialistasFirebase();
+    try {
+        await deleteDoc(doc(window.db, "usuarios", id));
+        cargarUsuariosAdmin(); cargarEspecialistasFirebase();
+    } catch (error) { console.error(error); mostrarAlerta("Error", "Error al intentar eliminar."); }
 }
 
 function cambiarTabAdmin(tabId) {
@@ -1125,9 +1130,7 @@ function cambiarTabAdmin(tabId) {
         t.classList.remove('active', 'text-blue-800');
         t.classList.add('text-slate-500');
     });
-    document.querySelectorAll('.admin-section').forEach(s => {
-        s.classList.add('hidden');
-    });
+    document.querySelectorAll('.admin-section').forEach(s => s.classList.add('hidden'));
     
     const tabActiva = document.getElementById('tab-' + tabId);
     if(tabActiva) {
@@ -1150,23 +1153,18 @@ async function ejecutarGuardadoModulacion() {
     const alcance = document.getElementById('admin-select-alcance').value;
     const nuevaDuracion = document.getElementById('admin-select-duracion').value;
     
-    let config = getDB('configuracion');
-
-    if (alcance === 'global') {
-        let index = config.findIndex(c => c.id === 'general');
-        if (index !== -1) config[index].duracionBase = parseInt(nuevaDuracion);
-        else config.push({id: 'general', duracionBase: parseInt(nuevaDuracion)});
-        duracionTurnoGlobal = parseInt(nuevaDuracion); 
-        mostrarExito("Modulación Global", `Agenda ajustada a ${nuevaDuracion} minutos.`);
-    } else {
-        let index = config.findIndex(c => c.id === alcance);
-        if (index !== -1) config[index].duracionBase = parseInt(nuevaDuracion);
-        else config.push({id: alcance, duracionBase: parseInt(nuevaDuracion)});
-        modulacionPorMedico[alcance] = parseInt(nuevaDuracion); 
-        mostrarExito("Modulación Individual", `Agenda ajustada a ${nuevaDuracion} minutos.`);
-    }
-    saveDB('configuracion', config);
-    cerrarModal('modal-seguridad-modulacion');
+    try {
+        if (alcance === 'global') {
+            await setDoc(doc(window.db, "configuracion", "general"), { duracionBase: parseInt(nuevaDuracion) });
+            duracionTurnoGlobal = parseInt(nuevaDuracion); 
+            mostrarExito("Modulación Global", `Agenda ajustada a ${nuevaDuracion} minutos.`);
+        } else {
+            await setDoc(doc(window.db, "modulacion_medicos", alcance), { duracionBase: parseInt(nuevaDuracion) });
+            modulacionPorMedico[alcance] = parseInt(nuevaDuracion); 
+            mostrarExito("Modulación Individual", `Agenda ajustada a ${nuevaDuracion} minutos.`);
+        }
+        cerrarModal('modal-seguridad-modulacion');
+    } catch(e) { mostrarAlerta("Error", "No se pudo guardar la configuración."); }
 }
 
 async function cargarMetricas() {
@@ -1175,8 +1173,8 @@ async function cargarMetricas() {
     tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500 font-bold animate-pulse">Procesando inteligencia de datos...</td></tr>';
     
     try {
-        const turnosSnap = getDB('turnos');
-        const usuariosSnap = getDB('usuarios');
+        const turnosSnap = await getDocs(collection(window.db, "turnos"));
+        const usuariosSnap = await getDocs(collection(window.db, "usuarios"));
         
         let turnosTotales = 0;
         let atendidosTotales = 0;
@@ -1187,13 +1185,15 @@ async function cargarMetricas() {
 
         let datosMedicos = {};
         
-        usuariosSnap.forEach(u => {
+        usuariosSnap.forEach(doc => {
+            const u = doc.data();
             if (u.rol === "Médico") {
                 datosMedicos[u.nombre] = { nombre: u.nombre, especialidad: u.especialidad, total: 0, atendidos: 0, ausentes: 0, cancelados: 0 };
             }
         });
         
-        turnosSnap.forEach(t => {
+        turnosSnap.forEach(doc => {
+            const t = doc.data();
             turnosTotales++;
             
             if (t.estado === "Atendido") atendidosTotales++;
@@ -1247,8 +1247,8 @@ async function cargarMetricas() {
                 let ausentismo = Math.round((d.ausentes / d.total) * 100);
                 htmlTabla += `
                 <tr class="border-b hover:bg-slate-50 transition bg-white">
-                    <td class="p-3 font-bold text-slate-800">${escaparHTML(d.nombre)}</td>
-                    <td class="p-3 text-xs text-slate-500 font-bold uppercase">${escaparHTML(d.especialidad)}</td>
+                    <td class="p-3 font-bold text-slate-800">${d.nombre}</td>
+                    <td class="p-3 text-xs text-slate-500 font-bold uppercase">${d.especialidad}</td>
                     <td class="p-3 font-mono font-bold text-center text-slate-600">${d.total}</td>
                     <td class="p-3 text-sm text-emerald-600 font-bold text-center">${d.atendidos} <span class="text-xs text-emerald-400">(${efectividad}%)</span></td>
                     <td class="p-3 text-sm text-red-600 font-bold text-center">${d.ausentes} <span class="text-xs text-red-400">(${ausentismo}%)</span></td>
@@ -1322,11 +1322,13 @@ async function verificarLimpiezaAnual() {
     hoy.setFullYear(hoy.getFullYear() - 1); 
     const fechaLimite = hoy.toISOString().split('T')[0];
 
-    const turnos = getDB('turnos').filter(t => t.fecha < fechaLimite);
-    if (turnos.length > 0) {
-        document.getElementById('limpieza-mensaje').innerText = `Se encontraron ${turnos.length} registros anteriores al ${fechaLimite}.`;
-        abrirModal('modal-limpieza-anual');
-    }
+    try {
+        const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "<", fechaLimite)));
+        if (!snap.empty) {
+            document.getElementById('limpieza-mensaje').innerText = `Se encontraron ${snap.docs.length} registros anteriores al ${fechaLimite}.`;
+            abrirModal('modal-limpieza-anual');
+        }
+    } catch (error) { console.error("Fallo al verificar datos antiguos:", error); }
 }
 
 async function ejecutarLimpiezaYDescarga() {
@@ -1336,91 +1338,151 @@ async function ejecutarLimpiezaYDescarga() {
     hoy.setFullYear(hoy.getFullYear() - 1);
     const fechaLimite = hoy.toISOString().split('T')[0];
 
-    let todosTurnos = getDB('turnos');
-    const turnosViejos = todosTurnos.filter(t => t.fecha < fechaLimite);
-    
-    if (turnosViejos.length === 0) return;
+    try {
+        const snap = await getDocs(query(collection(window.db, "turnos"), where("fecha", "<", fechaLimite)));
+        if (snap.empty) return;
 
-    let datosExcel = turnosViejos.map(t => ({
-        "Fecha": t.fecha, "Hora": t.horario, "Especialidad": t.especialidad, "Profesional": t.medico, "Paciente": t.pacienteNombre, "DNI": t.pacienteDni, "Celular": t.pacienteCelular, "Correo": t.pacienteEmail || "N/A", "Estado Final": t.estado, "Evolución / Motivo": t.evolucionMedica || t.motivoConsulta || "Sin observaciones"
-    }));
+        let datosExcel = [];
+        snap.forEach(doc => {
+            const t = doc.data();
+            datosExcel.push({
+                "Fecha": t.fecha, "Hora": t.horario, "Especialidad": t.especialidad, "Profesional": t.medico, "Paciente": t.pacienteNombre, "DNI": t.pacienteDni, "Celular": t.pacienteCelular, "Correo": t.pacienteEmail || "N/A", "Estado Final": t.estado, "Evolución / Motivo": t.evolucionMedica || t.motivoConsulta || "Sin observaciones"
+            });
+        });
 
-    let ws = XLSX.utils.json_to_sheet(datosExcel);
-    let wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Archivo Histórico");
-    XLSX.writeFile(wb, `Resguardo_Turnos_Hasta_${fechaLimite}.xlsx`);
+        let ws = XLSX.utils.json_to_sheet(datosExcel);
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Archivo Histórico");
+        XLSX.writeFile(wb, `Resguardo_Turnos_Hasta_${fechaLimite}.xlsx`);
 
-    todosTurnos = todosTurnos.filter(t => t.fecha >= fechaLimite);
-    saveDB('turnos', todosTurnos);
+        const promesasBorrado = snap.docs.map(documento => deleteDoc(doc(window.db, "turnos", documento.id)));
+        await Promise.all(promesasBorrado);
 
-    cerrarModal('modal-limpieza-anual');
-    mostrarExito("Depuración Exitosa", `Se descargó el archivo y se eliminaron ${turnosViejos.length} registros históricos de la base de datos operativa.`);
-    cargarMetricas();
+        cerrarModal('modal-limpieza-anual');
+        mostrarExito("Depuración Exitosa", `Se descargó el archivo y se eliminaron ${snap.docs.length} registros históricos de la base de datos operativa.`);
+        cargarMetricas();
+        
+    } catch (error) { console.error(error); mostrarAlerta("Error Crítico", "Fallo al realizar la exportación."); }
 }
 
 // ==========================================
 // HERRAMIENTAS DE DESARROLLO (SUPER ADMIN)
 // ==========================================
-// [MEJORA DE SEGURIDAD]: Delegado a Cloud Functions con validación de Custom Claims en Backend
+
 async function limpiarBaseDeDatos() {
-    const input = prompt("⚠️ ADVERTENCIA DE SEGURIDAD ⚠️\nEsta acción borrará TODOS los turnos y TODOS los usuarios del sistema (excepto su cuenta maestra).\n\nEl sistema quedará en blanco.\n\nPara confirmar, escriba exactamente la palabra: BORRAR");
+    const input = prompt("⚠️ ADVERTENCIA DE SEGURIDAD ⚠️\nEsta acción borrará TODOS los turnos y TODOS los usuarios del sistema (excepto su cuenta maestra).\n\nEl sistema quedará en blanco, como recién instalado.\n\nPara confirmar, escriba exactamente la palabra: BORRAR");
     
     if (input !== "BORRAR") {
         mostrarAlerta("Cancelado", "Palabra de seguridad incorrecta. No se ha borrado ningún dato.");
         return;
     }
 
-    try {
-        abrirModal('modal-progreso');
-        const barra = document.getElementById('progreso-barra');
-        const texto = document.getElementById('progreso-texto');
-        if(texto) texto.innerText = "Ejecutando limpieza en el servidor...";
-        if(barra) barra.style.width = '50%';
+    abrirModal('modal-progreso');
+    const barra = document.getElementById('progreso-barra');
+    const texto = document.getElementById('progreso-texto');
+    
+    if(texto) texto.innerText = "Vaciando base de datos...";
+    if(barra) barra.style.width = '30%';
 
-        const limpiarBaseFn = httpsCallable(functions, 'limpiarBaseDeDatos');
-        await limpiarBaseFn();
-        
+    try {
+        const turnosSnap = await getDocs(collection(window.db, "turnos"));
+        const promesasTurnos = turnosSnap.docs.map(d => deleteDoc(doc(window.db, "turnos", d.id)));
+        await Promise.all(promesasTurnos);
+        if(barra) barra.style.width = '60%';
+
+        const usuariosSnap = await getDocs(collection(window.db, "usuarios"));
+        const promesasUsuarios = [];
+        usuariosSnap.forEach(d => {
+            const u = d.data();
+            if (u.correo !== "nachohelbas@gmail.com") {
+                promesasUsuarios.push(deleteDoc(doc(window.db, "usuarios", d.id)));
+            }
+        });
+        await Promise.all(promesasUsuarios);
+
         if(barra) barra.style.width = '100%';
         cerrarModal('modal-progreso');
-        mostrarExito("Reinicio Exitoso", "El sistema ha sido restaurado a su estado de fábrica en la base de datos.");
+        mostrarExito("Reinicio Exitoso", "El sistema ha sido restaurado a su estado de fábrica. Turnos y usuarios de prueba eliminados.");
         
         cargarUsuariosAdmin('init');
         cargarEspecialistasFirebase();
         cargarMetricas();
-    } catch(error) {
-        console.error("Error al limpiar BD:", error);
+    } catch (e) {
+        console.error(e);
         cerrarModal('modal-progreso');
-        mostrarAlerta("Error de Seguridad", "No tienes permisos suficientes o la operación falló.");
+        mostrarAlerta("Error", "Ocurrió un problema al intentar vaciar la base de datos.");
     }
 }
 
-// [MEJORA DE SEGURIDAD]: Delegado a Cloud Functions con validación de Custom Claims
 async function inyectarMedicosDePrueba() {
-    const confirm = await pedirConfirmacion("¿Inyectar Base de Datos?", "Se cargarán 28 profesionales ficticios categorizados en la base de datos.", "Sí, Inyectar");
+    const confirm = await pedirConfirmacion("¿Inyectar Base de Datos?", "Se cargarán 28 profesionales ficticios categorizados en la base de datos para la presentación. Este proceso tomará unos 15 segundos para no saturar el servidor.", "Sí, Inyectar");
     if (!confirm) return;
 
-    try {
-        abrirModal('modal-progreso');
-        const barra = document.getElementById('progreso-barra');
-        const texto = document.getElementById('progreso-texto');
-        if(texto) texto.innerText = "Inyectando doctores de prueba vía Cloud Function...";
-        if(barra) barra.style.width = '70%';
+    const medicosDemo = [
+        { nom: "Dr. Esteban Quiroga", esp: "Clínica Médica", mat: "44019" },
+        { nom: "Dra. Valeria Román", esp: "Clínica Médica", mat: "45021" },
+        { nom: "Dr. Carlos San Martín", esp: "Cardiología", mat: "10293" },
+        { nom: "Dra. María Antonieta", esp: "Pediatría", mat: "22019" },
+        { nom: "Dra. Sofía Castro", esp: "Neurología", mat: "80291" },
+        { nom: "Dra. Analía Montes", esp: "Endocrinología", mat: "70331" },
+        { nom: "Dr. Martín Ríos", esp: "Gastroenterología", mat: "90182" },
+        { nom: "Dr. Roberto Sánchez", esp: "Neumonología", mat: "60442" },
+        { nom: "Dr. Hugo Silva", esp: "Nefrología", mat: "11223" },
+        { nom: "Dra. Laura Méndez", esp: "Infectología", mat: "33445" },
+        { nom: "Dr. Pablo Gómez", esp: "Dermatología", mat: "55667" },
+        { nom: "Dra. Silvia Paz", esp: "Geriatría", mat: "77889" },
+        { nom: "Dr. Andrés Luna", esp: "Hematología", mat: "99001" },
+        { nom: "Dra. Clara Vega", esp: "Alergia e Inmunología", mat: "22334" },
+        { nom: "Dr. Fernando Ruiz", esp: "Cirugía General", mat: "50553" },
+        { nom: "Dr. Jorge Medina", esp: "Cirugía Cardiovascular", mat: "20192" },
+        { nom: "Dra. Luciana Herrera", esp: "Cirugía Plástica y Reparadora", mat: "44556" },
+        { nom: "Dr. Ricardo Silva", esp: "Traumatología y Ortopedia", mat: "33918" },
+        { nom: "Dr. Marcos Torres", esp: "Neurocirugía", mat: "66778" },
+        { nom: "Dr. Javier López", esp: "Urología", mat: "88990" },
+        { nom: "Dra. Elena Castro", esp: "Otorrinolaringología", mat: "11224" },
+        { nom: "Dr. Matías Rojas", esp: "Oftalmología", mat: "33446" },
+        { nom: "Dra. Carmen López", esp: "Ginecología y Obstetricia", mat: "60293" },
+        { nom: "Dr. Javier Blanco", esp: "Diagnóstico por Imágenes", mat: "30775" },
+        { nom: "Dra. Silvia Torres", esp: "Anatomía Patológica", mat: "20886" },
+        { nom: "Dr. Mario Domínguez", esp: "Anestesiología", mat: "55668" },
+        { nom: "Dr. Hugo Varela", esp: "Terapia Intensiva", mat: "10997" },
+        { nom: "Dra. Natalia Cruz", esp: "Medicina Física y Rehabilitación", mat: "77880" },
+        { nom: "Dr. Diego Ponce", esp: "Medicina de Emergencias", mat: "99002" }
+    ];
 
-        const inyectarMedicosFn = httpsCallable(functions, 'inyectarMedicosDePrueba');
-        await inyectarMedicosFn();
+    abrirModal('modal-progreso');
+    const barra = document.getElementById('progreso-barra');
+    const texto = document.getElementById('progreso-texto');
+    
+    let completados = 0;
+    const total = medicosDemo.length;
 
-        if(barra) barra.style.width = '100%';
-        cerrarModal('modal-progreso');
-        mostrarExito("Inyección Exitosa", "Los 29 médicos de prueba fueron agregados al sistema remoto.");
-        
-        cargarUsuariosAdmin('init'); 
-        cargarEspecialistasFirebase();
-        cargarMetricas();
-    } catch(error) {
-        console.error("Error inyectando médicos:", error);
-        cerrarModal('modal-progreso');
-        mostrarAlerta("Error de Seguridad", "No tienes permisos suficientes o la operación falló.");
+    for (const med of medicosDemo) {
+        const payload = {
+            nombre: med.nom, rol: "Médico",
+            username: med.nom.split(' ')[1].toLowerCase() + Math.floor(Math.random() * 1000),
+            correo: med.nom.split(' ')[1].toLowerCase() + "@hospital.demo",
+            tel: "2604000000", matricula: med.mat, especialidad: med.esp,
+            uid: "dummy_" + Date.now(), timestamp: new Date().toISOString()
+        };
+
+        try { await addDoc(collection(window.db, "usuarios"), payload); } 
+        catch(e) { console.error("Fallo inyectando a:", med.nom); }
+
+        completados++;
+        let porcentaje = Math.round((completados / total) * 100);
+        if(barra) barra.style.width = porcentaje + '%';
+        if(texto) texto.innerText = `Procesando: ${med.nom} (${completados}/${total})`;
+
+        await new Promise(resolve => setTimeout(resolve, 500));
     }
+
+    cerrarModal('modal-progreso');
+    mostrarExito("Inyección Exitosa", "Los 29 médicos de prueba fueron agregados al sistema con sus respectivas especialidades.");
+    
+    cargarUsuariosAdmin('init'); 
+    cargarEspecialistasFirebase();
+    cargarMetricas();
 }
 
 // ==========================================
@@ -1428,24 +1490,11 @@ async function inyectarMedicosDePrueba() {
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
     iniciarCargaDeDatos();
-
-    // Restaura la sesión si el usuario ya estaba autenticado en Firebase
-    if (firebaseConfigurada) {
-        observarSesion((sesion) => {
-            if (sesion) {
-                localStorage.setItem("sesionHospitalActiva", JSON.stringify(sesion));
-                aplicarPermisosVisuales();
-            } else {
-                localStorage.removeItem("sesionHospitalActiva");
-                aplicarPermisosVisuales();
-            }
-        });
-    }
-
+    
     const inputUser = document.getElementById('login-user');
     const inputPass = document.getElementById('login-pass');
     if(inputUser) inputUser.addEventListener('keypress', e => { if(e.key === 'Enter') iniciarSesionReal(); });
     if(inputPass) inputPass.addEventListener('keypress', e => { if(e.key === 'Enter') iniciarSesionReal(); });
 
-    console.log("Sistema cargado. Autenticación real con Firebase activada.");
+    console.log("Sistema cargado. Vistas inicializadas.");
 });
