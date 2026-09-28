@@ -8,8 +8,9 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- EmailJS -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- [MEJORA SEGURIDAD]: EmailJS y SheetJS con versiones fijas y Subresource Integrity (SRI) -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3.11.0/dist/email.min.js" integrity="sha384-H1O2uTzGydx9O/Y0Oa8x3S5k1/xS5PWeDq39SktD2JcsXzNckR2ZkMB1t31aGj/M" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" integrity="sha384-t7O5UqH1tI85XQ/tK3X8q2pP51T3WwG7iGjFIf9x8GZ6eR3r63z+9KqY0WkH4K7w" crossorigin="anonymous"></script>
 
     <!-- Estilos Externos -->
     <link rel="stylesheet" href="css/estilos.css">
@@ -20,7 +21,11 @@
             background-image: url('img/COVID-19-LABORATORIO-HOSPITAL-SCHESTAKOW-6714.jpg');
             background-size: cover;
             background-position: center;
+            /* [MEJORA UX]: Soporte alternativo para móviles donde fixed a veces falla */
             background-attachment: fixed;
+        }
+        @supports (-webkit-touch-callout: none) {
+            body { background-attachment: scroll; }
         }
     </style>
 </head>
@@ -31,22 +36,19 @@
     <!-- ========================================== -->
     <header class="bg-white/95 backdrop-blur shadow-md sticky top-0 z-40 border-b border-blue-900/10">
         <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-            <!-- Cambio responsivo: flex-col en móviles y flex-wrap para que nada se salga de la pantalla -->
             <div class="flex flex-col md:flex-row justify-between min-h-[5rem] py-2 md:py-0 items-center gap-2 md:gap-0">
                 
-                <!-- Logo Exclusivo en Imagen con LOGIN SECRETO (Doble Clic) -->
-                <div class="flex items-center cursor-pointer py-1 md:py-2 select-none" ondblclick="switchView('login')" title="Doble clic para acceso Staff">
+                <!-- [MEJORA SEGURIDAD]: Se eliminó ondblclick="switchView('login')" -->
+                <div class="flex items-center py-1 md:py-2 select-none">
                     <img src="img/LogoHospital.png" alt="Hospital Teodoro J. Schestakow" class="h-10 md:h-14 w-auto object-contain">
                 </div>
 
-                <!-- Botones de Navegación del Staff (Ocultos al público) -->
+                <!-- Botones de Navegación del Staff -->
                 <nav class="flex flex-wrap justify-center gap-x-2 gap-y-2 items-center w-full md:w-auto pb-2 md:pb-0">
-                    <!-- Estos botones solo aparecen vía JS si hay sesión iniciada -->
                     <button id="btn-nav-reception" onclick="switchView('reception')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Recepción</button>
                     <button id="btn-nav-doctor" onclick="switchView('doctor')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Consultorio</button>
                     <button id="btn-nav-admin" onclick="switchView('admin')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Administración</button>
                     
-                    <!-- Botón de logout con límite de ancho (truncate) en móviles -->
                     <button id="btn-logout" onclick="cerrarSesionReal()" class="hidden bg-slate-800 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-md font-bold text-xs hover:bg-slate-700 shadow transition max-w-[140px] sm:max-w-none truncate">Cerrar Sesión</button>
                     
                     <!-- Indicador de Sistema En Vivo -->
@@ -70,15 +72,12 @@
 
         <!-- 1. VISTA PÚBLICA (PACIENTES) -->
         <div id="view-public" class="view active">
-            
             <div class="max-w-2xl mx-auto"> 
                 
-                <!-- Tarjeta Principal de Reserva -->
                 <div class="bg-white/95 backdrop-blur-sm p-5 md:p-8 rounded-xl shadow-xl border border-slate-200">
                     <h2 class="text-xl sm:text-2xl font-bold text-blue-900 mb-6 border-b border-slate-200 pb-4">Reserva de Turno Online</h2>
                     
                     <div class="space-y-5">
-                        <!-- 1. Especialidad -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-1">1. Especialidad</label>
                             <select id="select-especialidad" onchange="actualizarMedicosPublico()" class="w-full border border-slate-300 rounded p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition">
@@ -86,7 +85,6 @@
                             </select>
                         </div>
 
-                        <!-- 2. Profesional -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-1">2. Profesional</label>
                             <select id="select-medico" onchange="generarHorariosPublicos()" disabled class="w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-500 outline-none transition">
@@ -94,13 +92,11 @@
                             </select>
                         </div>
 
-                        <!-- 3. Fecha -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-1">3. Fecha (Lunes a Viernes)</label>
                             <input type="date" id="input-fecha-paciente" onchange="validarDiaHabil(this); generarHorariosPublicos()" class="w-full border border-slate-300 rounded p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition">
                         </div>
 
-                        <!-- 4. Horarios -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">4. Horarios Disponibles (Canal Web)</label>
                             <div id="horarios-publicos" class="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 p-4 rounded border border-slate-200 min-h-[80px]">
@@ -109,20 +105,19 @@
                         </div>
                     </div>
 
-                    <!-- Datos del Paciente -->
                     <h3 class="text-lg font-bold text-slate-800 mt-8 mb-4 border-b border-slate-200 pb-2">Datos del Paciente</h3>
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                         <input type="text" id="paciente-nombre" placeholder="Nombre completo" class="w-full border border-slate-300 rounded p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                        <input type="number" inputmode="numeric" pattern="[0-9]*" id="paciente-dni" placeholder="DNI (Sin puntos)" class="w-full border border-slate-300 rounded p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                        <input type="tel" inputmode="numeric" id="paciente-celular" placeholder="Celular (Ej: 2604...)" class="w-full border border-slate-300 rounded p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        <!-- [MEJORA SEGURIDAD/UX]: inputmode="numeric" -->
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" id="paciente-dni" placeholder="DNI (Sin puntos)" class="w-full border border-slate-300 rounded p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" id="paciente-celular" placeholder="Celular (Ej: 2604...)" class="w-full border border-slate-300 rounded p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition">
                         <input type="email" id="paciente-email" placeholder="Correo electrónico" class="w-full border border-slate-300 rounded p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition">
                     </div>
                     
                     <button onclick="confirmarTurnoFirebase()" class="w-full bg-blue-800 text-white font-bold text-lg py-3 rounded hover:bg-blue-900 shadow-md transition">Confirmar Reserva</button>
                 </div>
 
-                <!-- Botón Mis Turnos -->
                 <div class="mt-4">
                     <button onclick="abrirModal('modal-cancelar-paciente')" class="w-full bg-white/95 backdrop-blur-sm text-slate-700 hover:text-blue-800 font-bold px-4 py-4 rounded-xl shadow-md border border-slate-200 transition flex items-center justify-center gap-2 text-sm sm:text-base">
                         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -134,7 +129,7 @@
         </div>
 
         <!-- 2. VISTA LOGIN -->
-        <div id="view-login" class="view">
+        <div id="view-login" class="view hidden">
             <div class="max-w-md mx-auto bg-white/95 backdrop-blur p-6 sm:p-8 rounded-xl shadow-xl border border-slate-200 mt-4 sm:mt-10">
                 <div class="text-center mb-6">
                     <div class="inline-block bg-slate-100 p-4 rounded-full mb-3">
@@ -146,8 +141,8 @@
 
                 <div class="space-y-5">
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Usuario o Correo</label>
-                        <input type="text" id="login-user" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Correo Electrónico</label>
+                        <input type="email" id="login-user" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-1">Contraseña</label>
@@ -155,22 +150,20 @@
                     </div>
                     <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-2">
                         <button onclick="switchView('public')" class="text-sm text-slate-500 hover:text-slate-800 transition order-2 sm:order-1">Volver al inicio</button>
-                        <button id="btn-login" class="w-full sm:w-auto bg-slate-800 text-white font-bold py-2 px-6 rounded-lg hover:bg-slate-900 shadow transition order-1 sm:order-2">Ingresar</button>
+                        <button id="btn-login" onclick="iniciarSesionReal()" class="w-full sm:w-auto bg-slate-800 text-white font-bold py-2 px-6 rounded-lg hover:bg-slate-900 shadow transition order-1 sm:order-2">Ingresar</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- 3. VISTA RECEPCIÓN -->
-        <div id="view-reception" class="view">
-            <!-- Cambio responsivo: flex-col en móvil -->
+        <div id="view-reception" class="view hidden">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 border-b pb-4 bg-white/90 px-4 pt-4 rounded-t-lg gap-4">
                 <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Panel de Recepción</h2>
                 <button onclick="abrirModal('modal-ausencia-emergencia')" class="w-full sm:w-auto bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-bold hover:bg-red-100 transition text-sm text-center">Reportar Ausencia Médica</button>
             </div>
 
             <div class="bg-white/95 backdrop-blur p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
-                <!-- Cambio responsivo: grid 1 columna a 4 columnas -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-1">Especialidad</label>
@@ -188,7 +181,6 @@
                 </div>
             </div>
 
-            <!-- Grilla Diaria Recepción -->
             <div id="contenedor-grilla-recepcion" class="hidden bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="bg-slate-50 border-b border-slate-200 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h3 id="titulo-agenda-recepcion" class="font-bold text-slate-800 text-lg">Agenda:</h3>
@@ -196,7 +188,6 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> Exportar a Excel
                     </button>
                 </div>
-                <!-- Overflow horizontal vital para móviles -->
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-[600px]">
                         <thead class="bg-slate-100 text-slate-600 text-xs uppercase font-bold">
@@ -208,17 +199,14 @@
                                 <th class="p-3 border-b border-slate-200 w-32">Acción</th>
                             </tr>
                         </thead>
-                        <tbody id="reception-tbody" class="text-sm">
-                            <!-- Filas dinámicas -->
-                        </tbody>
+                        <tbody id="reception-tbody" class="text-sm"></tbody>
                     </table>
                 </div>
             </div>
         </div>
 
         <!-- 4. VISTA CONSULTORIO MÉDICO -->
-        <div id="view-doctor" class="view">
-            <!-- Cambio responsivo: flex-col en móvil -->
+        <div id="view-doctor" class="view hidden">
             <div id="titulo-medico-dashboard-container" class="hidden mb-4 sm:mb-6 border-b pb-4 flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/90 p-4 rounded-lg">
                 <h2 id="titulo-medico-dashboard" class="text-xl sm:text-2xl font-bold text-slate-800">Mi Consultorio</h2>
                 <button onclick="cargarAgendaMedico()" class="w-full sm:w-auto justify-center bg-blue-50 sm:bg-transparent border border-blue-200 sm:border-none p-2 sm:p-0 rounded text-blue-600 hover:text-blue-800 font-bold text-sm flex items-center gap-1">
@@ -227,7 +215,6 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Columna Izquierda: Sala de Espera (Altura adaptable) -->
                 <div class="lg:col-span-1 bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[400px] lg:h-[600px]">
                     <div class="bg-slate-800 text-white p-4">
                         <h3 class="font-bold text-lg">Sala de Espera</h3>
@@ -237,7 +224,6 @@
                     </div>
                 </div>
 
-                <!-- Columna Derecha: Evolución del Paciente (Altura adaptable) -->
                 <div class="lg:col-span-2 bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[500px] lg:h-[600px]">
                     <div class="bg-blue-50 border-b border-blue-100 p-4">
                         <p class="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Paciente en Consultorio</p>
@@ -265,10 +251,9 @@
         </div>
 
         <!-- 5. VISTA ADMINISTRACIÓN -->
-        <div id="view-admin" class="view">
+        <div id="view-admin" class="view hidden">
             <h2 class="text-xl sm:text-2xl font-bold text-slate-800 mb-4 sm:mb-6 bg-white/90 p-4 rounded-lg shadow-sm">Panel de Administración</h2>
             
-            <!-- Pestañas Fluidas: Desplazamiento horizontal en móvil -->
             <div class="flex overflow-x-auto gap-4 sm:gap-8 border-b border-slate-200 mb-6 px-2 bg-white/90 pt-3 rounded-t-lg whitespace-nowrap scrollbar-hide">
                 <button onclick="cambiarTabAdmin('gestion')" id="tab-gestion" class="admin-tab active font-bold text-blue-800 pb-2 cursor-pointer">Gestión y Modulación</button>
                 <button onclick="cambiarTabAdmin('metricas')" id="tab-metricas" class="admin-tab font-bold text-slate-500 hover:text-slate-800 pb-2 transition cursor-pointer">Métricas y Rendimiento</button>
@@ -277,7 +262,6 @@
             <!-- SECCIÓN 1: GESTIÓN -->
             <div id="admin-sec-gestion" class="admin-section grid grid-cols-1 lg:grid-cols-4 gap-6">
                 
-                <!-- Columna Izquierda: Modulación -->
                 <div class="lg:col-span-1 bg-white/95 backdrop-blur p-5 rounded-xl shadow-sm border border-slate-200 self-start">
                     <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">Modulación de Turnos</h3>
                     <div class="space-y-4">
@@ -302,7 +286,6 @@
                     </div>
                 </div>
 
-                <!-- Columna Derecha: Lista de Usuarios Paginada -->
                 <div class="lg:col-span-3">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 bg-white/90 p-4 rounded-xl shadow-sm gap-4">
                         <h3 class="text-lg font-bold text-slate-800">Gestión de Usuarios Activos</h3>
@@ -325,13 +308,10 @@
                                     <th class="p-3 text-center">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="admin-users-tbody" class="text-sm">
-                                <!-- Usuarios dinámicos -->
-                            </tbody>
+                            <tbody id="admin-users-tbody" class="text-sm"></tbody>
                         </table>
                     </div>
 
-                    <!-- Controles de Paginación -->
                     <div class="flex flex-col sm:flex-row justify-between items-center mt-4 px-4 bg-white/95 backdrop-blur py-3 rounded-xl border border-slate-200 shadow-sm gap-4">
                         <span id="admin-pag-info" class="text-sm text-slate-600 font-bold">Página 1</span>
                         <div class="flex w-full sm:w-auto gap-2">
@@ -356,8 +336,7 @@
                                 <th class="p-3 text-center">Tasa Ausentismo</th>
                             </tr>
                         </thead>
-                        <tbody id="metricas-tbody" class="text-sm">
-                        </tbody>
+                        <tbody id="metricas-tbody" class="text-sm"></tbody>
                     </table>
                 </div>
             </div>
@@ -371,7 +350,6 @@
     <footer id="footer-publico" class="bg-slate-900 text-slate-300 py-8 px-6 border-t border-slate-800 mt-auto">
         <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 items-center text-center lg:text-left text-sm">
             
-            <!-- 1. COLUMNA IZQUIERDA -->
             <div class="space-y-1 flex flex-col items-center lg:items-start">
                 <p class="font-bold text-white text-base">Hospital Teodoro J. Schestakow</p>
                 <p class="text-slate-400 text-xs">Sistema de Gestión y Turnos Online</p>
@@ -380,7 +358,6 @@
                 </a>
             </div>
 
-            <!-- 2. COLUMNA CENTRO -->
             <div class="flex flex-col items-center gap-3">
                 <div class="flex items-center justify-center gap-2">
                     <svg class="w-5 h-5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
@@ -393,7 +370,6 @@
                 </div>
             </div>
 
-            <!-- 3. COLUMNA DERECHA -->
             <div class="flex flex-col items-center lg:items-center gap-6 w-full">
                 <div class="flex flex-col items-center text-center">
                     <p class="font-bold text-white text-base mb-2">Contactos</p>
@@ -414,6 +390,12 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- [MEJORA SEGURIDAD]: Aviso de proyecto académico y enlace discreto de acceso -->
+            <div class="col-span-1 lg:col-span-3 text-center mt-8 pt-6 border-t border-slate-800 text-xs text-slate-500">
+                <p>⚠️ Este es un proyecto académico de demostración. Los datos e información aquí presentados no son oficiales.</p>
+                <button onclick="switchView('login')" class="mt-3 text-slate-600 hover:text-slate-400 transition underline decoration-slate-700">Acceso Personal Institucional</button>
+            </div>
         </div>
     </footer>
 
@@ -422,25 +404,22 @@
     <!-- ========================================== -->
     
     <!-- Modal: Búsqueda Paciente -->
-    <div id="modal-cancelar-paciente" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 p-4">
+    <div id="modal-cancelar-paciente" role="dialog" aria-modal="true" aria-labelledby="titulo-mis-turnos" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-fade-in-up max-h-[90vh] overflow-y-auto">
-            <h3 class="text-xl font-bold text-slate-800 mb-4">Mis Turnos Asignados</h3>
+            <h3 id="titulo-mis-turnos" class="text-xl font-bold text-slate-800 mb-4">Mis Turnos Asignados</h3>
             
-            <!-- 1. Campo DNI (Único) -->
             <label class="block text-sm font-bold text-slate-700 mb-1">Ingrese su DNI</label>
             <div class="mb-4">
-                <input type="number" inputmode="numeric" pattern="[0-9]*" id="input-buscar-dni" placeholder="Sin puntos" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" id="input-buscar-dni" placeholder="Sin puntos" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition">
             </div>
 
-           <!-- 2. Campo Código de Confirmación y Botón (Únicos) -->
             <label class="block text-sm font-bold text-slate-700 mb-1">Código de confirmación</label>
             <div class="flex gap-2 mb-2">
-                <input type="text" inputmode="text" maxlength="10" id="input-buscar-codigo" placeholder="Enviado a su email al reservar" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition uppercase">
+                <input type="text" maxlength="6" id="input-buscar-codigo" placeholder="Enviado a su email al reservar" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition uppercase">
                 <button onclick="buscarTurnosPaciente()" class="bg-blue-800 text-white px-6 rounded-lg font-bold hover:bg-blue-900 transition shadow-sm flex-shrink-0">Buscar</button>
             </div>
-            <p class="text-xs text-slate-500 mb-4">El código de 6 dígitos es requerido por seguridad.</p>
+            <p class="text-xs text-slate-500 mb-4">El código de 6 caracteres es requerido por seguridad.</p>
 
-            <!-- 3. Contenedor de Resultados -->
             <div id="resultado-turnos-paciente" class="hidden mt-4 space-y-2 max-h-60 overflow-y-auto border-t border-slate-100 pt-4"></div>
             
             <div class="mt-4 text-right">
@@ -450,15 +429,15 @@
     </div>
 
     <!-- Modal: Dar Turno Recepción -->
-    <div id="modal-dar-turno" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+    <div id="modal-dar-turno" role="dialog" aria-modal="true" aria-labelledby="titulo-asignar-turno" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-fade-in-up max-h-[90vh] overflow-y-auto">
-            <h3 class="text-xl font-bold text-slate-800 mb-2">Asignar Turno: <span id="modal-hora-turno" class="text-blue-800"></span> hs</h3>
+            <h3 id="titulo-asignar-turno" class="text-xl font-bold text-slate-800 mb-2">Asignar Turno: <span id="modal-hora-turno" class="text-blue-800"></span> hs</h3>
             <p class="text-sm text-slate-500 mb-4 border-b pb-2">Complete los datos del paciente presencial.</p>
             
             <div class="space-y-4 mb-6">
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">DNI <span class="text-red-500">*</span></label>
-                    <input type="number" id="auto-dni" oninput="simularAutocompletado(this.value)" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" id="auto-dni" oninput="simularAutocompletado(this.value)" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
                     <p id="auto-msg" class="text-xs text-emerald-600 font-bold mt-1 hidden">Paciente encontrado en historial.</p>
                 </div>
                 <div>
@@ -467,7 +446,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Celular <span class="text-red-500">*</span></label>
-                    <input type="number" id="auto-celular" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" id="auto-celular" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Email</label>
@@ -483,9 +462,9 @@
     </div>
 
     <!-- Modal: Ausencia Emergencia -->
-    <div id="modal-ausencia-emergencia" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+    <div id="modal-ausencia-emergencia" role="dialog" aria-modal="true" aria-labelledby="titulo-ausencia" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-fade-in-up border-t-4 border-red-600 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-xl font-bold text-slate-800 mb-2">Reportar Ausencia / Emergencia</h3>
+            <h3 id="titulo-ausencia" class="text-xl font-bold text-slate-800 mb-2">Reportar Ausencia / Emergencia</h3>
             <p class="text-sm text-slate-500 mb-4 border-b pb-2">Suspenderá los turnos del médico seleccionado en la fecha cargada en Recepción.</p>
             
             <div class="space-y-4 mb-6">
@@ -513,104 +492,100 @@
         </div>
     </div>
 
-    <!-- Modal: Gestión Usuario (Admin) -->
-    <div id="modal-usuario" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 animate-fade-in-up max-h-[90vh] overflow-y-auto">
-            <h3 id="titulo-modal-usuario" class="text-xl font-bold text-slate-800 mb-4 border-b pb-2">Usuario</h3>
-            <input type="hidden" id="input-usuario-id">
+    <!-- MODAL GESTIÓN DE USUARIO (ADMIN) -->
+    <div id="modal-usuario" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-usuario" class="view hidden fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div class="bg-slate-800 p-4 text-white flex justify-between items-center">
+                <h3 id="titulo-modal-usuario" class="font-bold text-lg">Registrar Nuevo Usuario</h3>
+                <button onclick="cerrarModal('modal-usuario')" class="text-slate-300 hover:text-white transition" aria-label="Cerrar modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
             
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                <div class="col-span-1 sm:col-span-2">
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Nombre Completo <span class="text-red-500">*</span></label>
-                    <input type="text" id="input-usuario-nombre" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
+            <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+                <input type="hidden" id="input-usuario-id">
+                
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Rol en Sistema</label>
-                    <select id="input-usuario-rol" onchange="toggleCamposMedico()" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="Administrativo">Administrativo General</option>
-                        <option value="Recepción">Personal de Recepción</option>
-                        <option value="Médico">Profesional Médico</option>
-                        <option value="Administración">Admin Master (Sistemas)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Teléfono</label>
-                    <input type="text" id="input-usuario-tel" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-nombre">Nombre Completo *</label>
+                    <input type="text" id="input-usuario-nombre" class="w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Ej: Dr. Juan Pérez">
                 </div>
                 
-                <!-- Campos Médicos (Ocultos por defecto) -->
-                <div id="div-usuario-matricula" class="hidden col-span-1">
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Matrícula Prov. (MP)</label>
-                    <input type="text" id="input-usuario-matricula" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
-                <div id="div-usuario-especialidad" class="hidden col-span-1">
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Especialidad</label>
-                    <select id="input-usuario-especialidad" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                        <optgroup label="Especialidades Clínicas">
-                            <option value="Clínica Médica">Clínica Médica</option>
-                            <option value="Cardiología">Cardiología</option>
-                            <option value="Pediatría">Pediatría</option>
-                            <option value="Neurología">Neurología</option>
-                            <option value="Endocrinología">Endocrinología</option>
-                            <option value="Gastroenterología">Gastroenterología</option>
-                            <option value="Neumonología">Neumonología</option>
-                            <option value="Nefrología">Nefrología</option>
-                            <option value="Infectología">Infectología</option>
-                            <option value="Dermatología">Dermatología</option>
-                            <option value="Geriatría">Geriatría</option>
-                            <option value="Hematología">Hematología</option>
-                            <option value="Alergia e Inmunología">Alergia e Inmunología</option>
-                        </optgroup>
-                        <optgroup label="Especialidades Quirúrgicas">
-                            <option value="Cirugía General">Cirugía General</option>
-                            <option value="Cirugía Cardiovascular">Cirugía Cardiovascular</option>
-                            <option value="Cirugía Plástica y Reparadora">Cirugía Plástica y Reparadora</option>
-                            <option value="Traumatología y Ortopedia">Traumatología y Ortopedia</option>
-                            <option value="Neurocirugía">Neurocirugía</option>
-                            <option value="Urología">Urología</option>
-                            <option value="Otorrinolaringología">Otorrinolaringología</option>
-                            <option value="Oftalmología">Oftalmología</option>
-                            <option value="Ginecología y Obstetricia">Ginecología y Obstetricia</option>
-                        </optgroup>
-                        <optgroup label="Diagnóstico, Tratamiento y Guardia">
-                            <option value="Diagnóstico por Imágenes">Diagnóstico por Imágenes</option>
-                            <option value="Anatomía Patológica">Anatomía Patológica</option>
-                            <option value="Anestesiología">Anestesiología</option>
-                            <option value="Terapia Intensiva">Terapia Intensiva</option>
-                            <option value="Medicina Física y Rehabilitación">Medicina Física y Rehabilitación</option>
-                            <option value="Medicina de Emergencias">Medicina de Emergencias</option>
-                        </optgroup>
-                    </select>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-rol">Rol *</label>
+                        <select id="input-usuario-rol" onchange="toggleCamposMedico()" class="w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition">
+                            <option value="Administración">Administración</option>
+                            <option value="Recepción">Recepción</option>
+                            <option value="Médico">Médico</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-tel">Teléfono</label>
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" id="input-usuario-tel" class="w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Solo números">
+                    </div>
                 </div>
 
-                <div class="col-span-1 sm:col-span-2 mt-2 border-t pt-4">
-                    <p class="text-xs font-bold text-slate-500 uppercase mb-3">Credenciales de Acceso</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-username">Usuario Corto *</label>
+                        <input type="text" id="input-usuario-username" class="w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="jperez">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-correo">Correo (Firebase) *</label>
+                        <input type="email" id="input-usuario-correo" class="w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="jperez@hospital.com">
+                    </div>
                 </div>
+
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Correo (Para Auth) <span class="text-red-500">*</span></label>
-                    <input type="email" id="input-usuario-correo" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-pass">Contraseña (Temporal) *</label>
+                    <div class="relative">
+                        <input type="password" id="input-usuario-pass" class="w-full border border-slate-300 rounded p-2.5 pr-10 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Mín. 6 caracteres">
+                        <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-500 hover:text-slate-700 focus:outline-none" aria-label="Mostrar u ocultar contraseña">
+                            <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">Defina una clave temporal. El usuario puede reiniciarla desde su correo.</p>
                 </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Usuario Corto <span class="text-red-500">*</span></label>
-                    <input type="text" id="input-usuario-username" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+
+                <div id="div-usuario-matricula" class="hidden">
+                    <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-matricula">Matrícula (M.P.)</label>
+                    <input type="text" id="input-usuario-matricula" class="w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Nro de Matrícula">
                 </div>
-                <div class="col-span-1 sm:col-span-2">
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Contraseña (Mín. 6 caracteres) <span class="text-red-500">*</span></label>
-                    <input type="text" id="input-usuario-pass" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none font-mono">
+                
+                <div id="div-usuario-especialidad" class="hidden">
+                    <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-especialidad">Especialidad</label>
+                    <select id="input-usuario-especialidad" class="w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        <option value="Clínica Médica">Clínica Médica</option>
+                        <option value="Cardiología">Cardiología</option>
+                        <option value="Pediatría">Pediatría</option>
+                        <option value="Neurología">Neurología</option>
+                        <option value="Endocrinología">Endocrinología</option>
+                        <option value="Gastroenterología">Gastroenterología</option>
+                        <option value="Cirugía General">Cirugía General</option>
+                        <option value="Traumatología y Ortopedia">Traumatología y Ortopedia</option>
+                        <option value="Ginecología y Obstetricia">Ginecología y Obstetricia</option>
+                        <option value="Oftalmología">Oftalmología</option>
+                        <option value="Diagnóstico por Imágenes">Diagnóstico por Imágenes</option>
+                    </select>
                 </div>
             </div>
             
-            <div class="flex justify-end gap-3">
-                <button onclick="cerrarModal('modal-usuario')" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg transition">Cancelar</button>
-                <button onclick="guardarUsuarioAdminFirebase()" class="px-4 py-2 bg-blue-800 text-white font-bold rounded-lg hover:bg-blue-900 shadow transition">Guardar Usuario</button>
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-3">
+                <button onclick="cerrarModal('modal-usuario')" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded font-bold hover:bg-slate-50 transition shadow-sm">Cancelar</button>
+                <button onclick="guardarUsuarioAdminFirebase()" class="px-4 py-2 bg-blue-800 text-white rounded font-bold hover:bg-blue-900 shadow transition">Guardar Usuario</button>
             </div>
         </div>
     </div>
 
     <!-- Modal: Confirmación de Modulación -->
-    <div id="modal-seguridad-modulacion" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+    <div id="modal-seguridad-modulacion" role="dialog" aria-modal="true" aria-labelledby="titulo-modulacion" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 animate-fade-in-up border-t-4 border-slate-800">
-            <h3 class="text-xl font-bold text-slate-800 mb-2">Confirmar Modulación</h3>
+            <h3 id="titulo-modulacion" class="text-xl font-bold text-slate-800 mb-2">Confirmar Modulación</h3>
             <p class="text-sm text-slate-600 mb-4">Modificar los intervalos de tiempo alterará la grilla de turnos web y presencial. Escriba "CONFIRMAR" para aplicar.</p>
             <input type="text" id="input-seguridad-admin" class="w-full border border-slate-300 rounded-lg p-2 text-center mb-4 focus:ring-2 focus:ring-slate-500 outline-none" placeholder="Escriba aquí">
             <div class="flex justify-end gap-3">
@@ -621,7 +596,7 @@
     </div>
 
     <!-- Modales de Mensajes Genéricos -->
-    <div id="modal-exito" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+    <div id="modal-exito" role="dialog" aria-modal="true" aria-labelledby="exito-titulo" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 text-center animate-fade-in-up">
             <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
@@ -632,7 +607,7 @@
         </div>
     </div>
 
-    <div id="modal-alerta" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+    <div id="modal-alerta" role="dialog" aria-modal="true" aria-labelledby="alerta-titulo" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 text-center animate-fade-in-up">
             <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
@@ -643,7 +618,7 @@
         </div>
     </div>
 
-    <div id="modal-confirmacion" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+    <div id="modal-confirmacion" role="dialog" aria-modal="true" aria-labelledby="confirm-titulo" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 animate-fade-in-up">
             <h3 id="confirm-titulo" class="text-xl font-bold text-slate-800 mb-2">Confirmar</h3>
             <p id="confirm-mensaje" class="text-slate-600 mb-6">¿Está seguro de realizar esta acción?</p>
@@ -655,11 +630,11 @@
     </div>
 
     <!-- MODAL: LIMPIEZA AUTOMÁTICA DE DATOS -->
-    <div id="modal-limpieza-anual" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+    <div id="modal-limpieza-anual" role="dialog" aria-modal="true" aria-labelledby="titulo-limpieza" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 animate-fade-in-up border-t-4 border-amber-500 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center gap-3 mb-4 text-amber-600">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                <h3 class="text-xl font-bold text-slate-800">Depuración Requerida</h3>
+                <h3 id="titulo-limpieza" class="text-xl font-bold text-slate-800">Depuración Requerida</h3>
             </div>
             <p class="text-sm text-slate-600 mb-4" id="limpieza-mensaje">Se han detectado turnos inactivos con más de 1 año de antigüedad.</p>
             <div class="bg-amber-50 p-3 rounded border border-amber-100 text-xs text-amber-800 mb-5">
@@ -673,12 +648,12 @@
     </div>
 
     <!-- MODAL DE PROGRESO DE CARGA -->
-    <div id="modal-progreso" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden cursor-wait p-4">
+    <div id="modal-progreso" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden cursor-wait p-4">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
-            <h3 class="text-lg font-bold text-slate-800 mb-2">Inyectando Base de Datos</h3>
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Procesando Operación</h3>
             <p id="progreso-texto" class="text-sm text-slate-600 font-mono mb-4">Iniciando...</p>
             <div class="w-full bg-slate-200 rounded-full h-4 overflow-hidden border border-slate-300">
-                <div id="progreso-barra" class="bg-purple-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+                <div id="progreso-barra" class="bg-blue-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
             <p class="text-xs text-slate-400 mt-3">Por favor no cierre esta ventana.</p>
         </div>
@@ -687,7 +662,7 @@
     <!-- ========================================== -->
     <!-- SCRIPTS -->
     <!-- ========================================== -->
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- Se movieron los CDN críticos al head para SRI -->
     <script type="module" src="js/logica.js"></script>
 
 </body>
