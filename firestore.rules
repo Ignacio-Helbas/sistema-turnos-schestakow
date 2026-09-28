@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------- Funciones Auxiliares -------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Filtramos para que los pacientes anónimos no cuenten como Staff
+    function isStaff() {
+      return isSignedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function hasRole(rol) {
+      return isStaff()
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+        && userDoc().rol == rol
+        && userDoc().activo == true;
+    }
+
+    function isAdmin() {
+      return hasRole('Administración');
+    }
+    
+    function isMedico() {
+      return hasRole('Médico');
+    }
+    
+    function isRecepcion() {
+      return hasRole('Recepción') || hasRole('Recepcionista') || hasRole('Administrativo');
+    }
+
+    // ------- Perfiles de usuario -------
+    match /usuarios/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // ------- Turnos -------
+    match /turnos/{turnoId} {
+      allow read: if isStaff();
+      allow create: if isRecepcion() || isAdmin();
+      allow update: if isAdmin() 
+        || isRecepcion() 
+        || (isMedico() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'evolucionMedica', 'motivoConsulta']));
+      allow delete: if isAdmin() || isRecepcion();
+    }
+
+    // ------- Configuración / Modulación -------
+    match /configuracion/{docId} {
+      allow read: if true; 
+      allow write: if isAdmin();
+    }
+
+    // ------- Cierre por defecto -------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
