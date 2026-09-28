@@ -871,7 +871,7 @@ async function cargarAgendaMedico() {
 
             let btnHtml = '';
             if (t.estado !== "Atendido" && t.estado !== "Ausente") {
-                btnHtml = `<div class="mt-3 flex gap-2"><button onclick="llamarPaciente('${escaparHTML(t.id)}')" class="flex-1 bg-blue-600 text-white text-xs font-bold py-2 rounded shadow hover:bg-blue-700 transition">Llamar</button><button onclick="marcarAusente('${escaparHTML(t.id}')" class="flex-1 bg-white border border-red-100 text-red-600 text-xs font-bold py-2 rounded shadow hover:bg-red-50 transition">Ausente</button></div>`;
+                btnHtml = `<div class="mt-3 flex gap-2"><button onclick="llamarPaciente('${escaparHTML(t.id)}')" class="flex-1 bg-blue-600 text-white text-xs font-bold py-2 rounded shadow hover:bg-blue-700 transition">Llamar</button><button onclick="marcarAusente('${escaparHTML(t.id)}')" class="flex-1 bg-white border border-red-100 text-red-600 text-xs font-bold py-2 rounded shadow hover:bg-red-50 transition">Ausente</button></div>`;
             }
 
             const opacidad = (t.estado === 'Atendido' || t.estado === 'Ausente') ? 'opacity-60' : 'opacity-100';
