@@ -1,14 +1,19 @@
 // ==========================================
 // CONFIGURACIÓN DE FIREBASE (MODO REAL)
 // ==========================================
-// La apiKey web de Firebase es pública por diseño: la seguridad real
-// la aplican las Reglas de Firestore en el servidor, no esta clave.
+// IMPORTANTE: La apiKey web de Firebase es pública por diseño en aplicaciones de cliente.
+// La seguridad REAL del sistema se aplica mediante:
+// 1. Reglas de seguridad de Firestore (firestore.rules) en el servidor.
+// 2. Restricciones de HTTP Referer en Google Cloud Console para esta API Key (¡Acción manual requerida!).
+// 3. Validación de Custom Claims (Roles) dentro de las Cloud Functions.
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
     getAuth,
     signInWithEmailAndPassword,
     signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    sendPasswordResetEmail // Agregado para flujo seguro de recuperación/creación de claves
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
     getFirestore,
@@ -17,7 +22,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-    apiKey: "PEGAR_API_KEY_ACA",
+    apiKey: "AIzaSyAghXQKrYy6EJGD5IqEdO4c_E-ntozUmz8", // Recordá restringir esta key a tu dominio
     authDomain: "sistema-turnos-utn.firebaseapp.com",
     projectId: "sistema-turnos-utn",
     storageBucket: "sistema-turnos-utn.firebasestorage.app",
@@ -25,7 +30,7 @@ const firebaseConfig = {
     appId: "1:588893912264:web:c5d56455f06cf178d979fd"
 };
 
-export const firebaseConfigurada = firebaseConfig.apiKey !== "PEGAR_API_KEY_ACA";
+export const firebaseConfigurada = firebaseConfig.apiKey !== "PEGAR_API_KEY_ACA" && firebaseConfig.apiKey !== "";
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
@@ -34,9 +39,8 @@ export const db = getFirestore(app);
 // ==========================================
 // LOGIN REAL CON FIREBASE AUTH
 // ==========================================
-// Las contraseñas viven hasheadas en los servidores de Google.
-// El rol se lee del documento /usuarios/{uid} en Firestore,
-// que solo un administrador puede modificar (lo garantizan las reglas).
+// Las contraseñas viven hasheadas en los servidores de Google, nunca pasan por la BD de Firestore.
+// El rol se lee del documento /usuarios/{uid} en Firestore (o idealmente de los Custom Claims).
 export async function iniciarSesionFirebase(correo, password) {
     const credencial = await signInWithEmailAndPassword(auth, correo, password);
     const uid = credencial.user.uid;
@@ -88,4 +92,12 @@ export function observarSesion(callback) {
             callback(null);
         }
     });
+}
+
+// ==========================================
+// RECUPERACIÓN / RESET DE CONTRASEÑA
+// ==========================================
+// Permite que el usuario defina su clave de forma segura, evitando que el admin la maneje en texto plano.
+export async function enviarRecuperacionPass(correo) {
+    await sendPasswordResetEmail(auth, correo);
 }
