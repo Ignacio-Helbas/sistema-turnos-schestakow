@@ -70,7 +70,7 @@
 
 ### Prioridad 3: ARQUITECTURA
 
-- [ ] **11. Monolito HTML: index.html contiene todas las vistas en un solo archivo**
+- [x] **11. Monolito HTML: index.html contiene todas las vistas en un solo archivo**
   - **Archivo y Línea**: `index.html` (L73-L343)
   - **Riesgo**: Medio. Expone la estructura del panel de administración y recepción a cualquier paciente en internet.
   - **Solución**: Desacoplar en 3 páginas HTML con idéntico diseño Tailwind:
@@ -78,7 +78,7 @@
     2. `login.html`: Pantalla de inicio de sesión para el personal de salud.
     3. `panel.html`: Panel interno de gestión (Recepción, Consultorio, Administración) protegido por guard de sesión.
 
-- [ ] **12. Monolito JavaScript: `logica.js` monolítico de 1500 líneas**
+- [x] **12. Monolito JavaScript: `logica.js` monolítico de 1500 líneas**
   - **Archivo y Línea**: `js/logica.js`
   - **Riesgo**: Medio. Dificultad para mantener, auditar y testear. Contaminación del scope global `window`.
   - **Solución**: Reorganizar en módulos ES limpios:

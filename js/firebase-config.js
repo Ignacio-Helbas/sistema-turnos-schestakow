@@ -1,28 +1,38 @@
 // ==========================================
 // CONFIGURACIÓN DE FIREBASE (MODO REAL)
 // ==========================================
-// IMPORTANTE: La apiKey web de Firebase es pública por diseño en aplicaciones de cliente.
-// La seguridad REAL del sistema se aplica mediante:
-// 1. Reglas de seguridad de Firestore (firestore.rules) en el servidor.
-// 2. Restricciones de HTTP Referer en Google Cloud Console para esta API Key (¡Acción manual requerida!).
-// 3. Validación de Custom Claims (Roles) dentro de las Cloud Functions.
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
     getAuth,
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
-    sendPasswordResetEmail // Agregado para flujo seguro de recuperación/creación de claves
+    sendPasswordResetEmail,
+    signInAnonymously
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
     getFirestore,
+    collection,
+    query,
+    where,
+    getDocs,
     doc,
-    getDoc
+    setDoc,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    getDoc,
+    orderBy,
+    limit,
+    startAfter
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+    getFunctions,
+    httpsCallable
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyAghXQKrYy6EJGD5IqEdO4c_E-ntozUmz8", // Recordá restringir esta key a tu dominio
+    apiKey: "AIzaSyAghXQKrYy6EJGD5IqEdO4c_E-ntozUmz8", // Restringir a tus dominios en GCP Console
     authDomain: "sistema-turnos-utn.firebaseapp.com",
     projectId: "sistema-turnos-utn",
     storageBucket: "sistema-turnos-utn.firebasestorage.app",
@@ -30,37 +40,85 @@ const firebaseConfig = {
     appId: "1:588893912264:web:c5d56455f06cf178d979fd"
 };
 
-export const firebaseConfigurada = firebaseConfig.apiKey !== "PEGAR_API_KEY_ACA" && firebaseConfig.apiKey !== "";
-
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const functionsInstancia = getFunctions(app);
+
+// Exportar helpers de Firestore para evitar reimportaciones dispersas
+export {
+    collection,
+    query,
+    where,
+    getDocs,
+    doc,
+    setDoc,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    getDoc,
+    orderBy,
+    limit,
+    startAfter,
+    httpsCallable,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+    sendPasswordResetEmail,
+    signInAnonymously
+};
 
 // ==========================================
-// LOGIN REAL CON FIREBASE AUTH
+// GESTIÓN DE SESIÓN CON CUSTOM CLAIMS
 // ==========================================
-// Las contraseñas viven hasheadas en los servidores de Google, nunca pasan por la BD de Firestore.
-// El rol se lee del documento /usuarios/{uid} en Firestore (o idealmente de los Custom Claims).
-export async function iniciarSesionFirebase(correo, password) {
-    const credencial = await signInWithEmailAndPassword(auth, correo, password);
-    const uid = credencial.user.uid;
-
-    const perfilSnap = await getDoc(doc(db, "usuarios", uid));
-    if (!perfilSnap.exists()) {
-        await signOut(auth);
-        throw new Error("SIN_PERFIL");
+export async function iniciarSesionFirebase(correoOUsername, password) {
+    let correoFinal = correoOUsername.trim();
+    if (!correoFinal.includes("@")) {
+        const snap = await getDocs(query(collection(db, "usuarios"), where("username", "==", correoFinal)));
+        if (!snap.empty) {
+            correoFinal = snap.docs[0].data().correo;
+        } else {
+            throw new Error("USUARIO_NO_EXISTE");
+        }
     }
-    const perfil = perfilSnap.data();
-    if (perfil.activo === false) {
-        await signOut(auth);
-        throw new Error("USUARIO_INACTIVO");
+
+    const credencial = await signInWithEmailAndPassword(auth, correoFinal, password);
+    const user = credencial.user;
+
+    // Obtener claims del token
+    const tokenResult = await user.getIdTokenResult(true);
+    let rol = tokenResult.claims.rol;
+
+    // Fallback de rol desde Firestore y sincronización inicial si aplica
+    let perfil = {};
+    const perfilSnap = await getDoc(doc(db, "usuarios", user.uid));
+    if (perfilSnap.exists()) {
+        perfil = perfilSnap.data();
+        if (perfil.activo === false) {
+            await signOut(auth);
+            throw new Error("USUARIO_INACTIVO");
+        }
+        if (!rol) {
+            rol = perfil.rol;
+            // Si el perfil en Firestore es admin y aún no tiene claim, asignarlo
+            if (rol === "Administración") {
+                try {
+                    const fnAsignar = httpsCallable(functionsInstancia, "asignarRolAdminInicial");
+                    await fnAsignar();
+                    const refreshed = await user.getIdTokenResult(true);
+                    rol = refreshed.claims.rol || rol;
+                } catch (e) {
+                    console.warn("No se pudo autoasignar claim inicial:", e);
+                }
+            }
+        }
     }
 
     return {
-        uid,
-        correo: credencial.user.email,
-        nombre: perfil.nombre || credencial.user.email,
-        rol: perfil.rol || "Recepción"
+        uid: user.uid,
+        correo: user.email,
+        nombre: perfil.nombre || user.displayName || user.email,
+        rol: rol || perfil.rol || "Recepción"
     };
 }
 
@@ -68,36 +126,47 @@ export async function cerrarSesionFirebase() {
     await signOut(auth);
 }
 
-// Restaura la sesión al recargar la página.
-// callback(sesion) recibe null si no hay usuario autenticado.
 export function observarSesion(callback) {
     return onAuthStateChanged(auth, async (user) => {
-        if (!user) { callback(null); return; }
+        if (!user || user.isAnonymous) {
+            callback(null);
+            return;
+        }
         try {
+            const tokenResult = await user.getIdTokenResult(false);
+            let rol = tokenResult.claims.rol;
+
             const perfilSnap = await getDoc(doc(db, "usuarios", user.uid));
-            if (!perfilSnap.exists() || perfilSnap.data().activo === false) {
-                await signOut(auth);
-                callback(null);
-                return;
+            let perfil = {};
+            if (perfilSnap.exists()) {
+                perfil = perfilSnap.data();
+                if (perfil.activo === false) {
+                    await signOut(auth);
+                    callback(null);
+                    return;
+                }
+                if (!rol) rol = perfil.rol;
             }
-            const perfil = perfilSnap.data();
+
             callback({
                 uid: user.uid,
                 correo: user.email,
-                nombre: perfil.nombre || user.email,
-                rol: perfil.rol || "Recepción"
+                nombre: perfil.nombre || user.displayName || user.email,
+                rol: rol || "Recepción"
             });
         } catch (e) {
-            console.error("Error restaurando sesión:", e);
+            console.error("Error al validar sesión:", e);
             callback(null);
         }
     });
 }
 
-// ==========================================
-// RECUPERACIÓN / RESET DE CONTRASEÑA
-// ==========================================
-// Permite que el usuario defina su clave de forma segura, evitando que el admin la maneje en texto plano.
-export async function enviarRecuperacionPass(correo) {
-    await sendPasswordResetEmail(auth, correo);
+export async function asegurarSesionAnonima() {
+    if (!auth.currentUser) {
+        try {
+            await signInAnonymously(auth);
+        } catch (e) {
+            console.warn("Sesión anónima opcional no activada:", e);
+        }
+    }
 }
