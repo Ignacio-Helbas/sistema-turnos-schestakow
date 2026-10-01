@@ -12,7 +12,7 @@
 
 ### Prioridad 1: SEGURIDAD
 
-- [ ] **1. Funciones destructivas y de prueba expuestas en el cliente con correo superadmin hardcodeado**
+- [x] **1. Funciones destructivas y de prueba expuestas en el cliente con correo superadmin hardcodeado**
   - **Archivo y Línea**: `js/logica.js` (L153, L1372-L1415, L1417-L1486)
   - **Riesgo**: Crítico. `limpiarBaseDeDatos()` e `inyectarMedicosDePrueba()` están expuestas globalmente en `window`. Cualquier usuario puede invocar desde la consola y borrar colecciones completas en Firestore. Hay validación de superadmin por correo hardcodeado (`nachohelbas@gmail.com`).
   - **Solución**: Mover la lógica de limpieza e inyección a Cloud Functions callable protegidas por rol administrativo (`request.auth.token.rol == 'Administración'`). Eliminar las funciones y el correo hardcodeado del frontend.

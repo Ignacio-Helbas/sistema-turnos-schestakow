@@ -150,24 +150,18 @@ function aplicarPermisosVisuales() {
 
     const sesion = JSON.parse(sesionStr);
     
-    if (sesion.correo === "nachohelbas@gmail.com") {
+    if (sesion.rol === "Administración") {
         if(btnAdmin) btnAdmin.classList.remove('hidden');
         if(btnRec) btnRec.classList.remove('hidden');
         if(btnDoc) btnDoc.classList.remove('hidden');
         if(btnDummies) btnDummies.classList.remove('hidden');
         if(btnReset) btnReset.classList.remove('hidden');
     } 
-    else {
-        if (sesion.rol === "Administración") {
-            if(btnAdmin) btnAdmin.classList.remove('hidden');
-            if(btnRec) btnRec.classList.remove('hidden');
-        } 
-        else if (sesion.rol === "Recepcionista" || sesion.rol === "Administrativo" || sesion.rol === "Recepción") {
-            if(btnRec) btnRec.classList.remove('hidden');
-        } 
-        else if (sesion.rol === "Médico") {
-            if(btnDoc) btnDoc.classList.remove('hidden');
-        }
+    else if (sesion.rol === "Recepcionista" || sesion.rol === "Administrativo" || sesion.rol === "Recepción") {
+        if(btnRec) btnRec.classList.remove('hidden');
+    } 
+    else if (sesion.rol === "Médico") {
+        if(btnDoc) btnDoc.classList.remove('hidden');
     }
 }
 
@@ -1370,10 +1364,10 @@ async function ejecutarLimpiezaYDescarga() {
 // ==========================================
 
 async function limpiarBaseDeDatos() {
-    const input = prompt("⚠️ ADVERTENCIA DE SEGURIDAD ⚠️\nEsta acción borrará TODOS los turnos y TODOS los usuarios del sistema (excepto su cuenta maestra).\n\nEl sistema quedará en blanco, como recién instalado.\n\nPara confirmar, escriba exactamente la palabra: BORRAR");
+    const input = prompt("⚠️ ADVERTENCIA DE SEGURIDAD ⚠️\nEsta acción borrará TODOS los turnos y usuarios de prueba mediante Cloud Function.\n\nPara confirmar, escriba exactamente la palabra: BORRAR");
     
     if (input !== "BORRAR") {
-        mostrarAlerta("Cancelado", "Palabra de seguridad incorrecta. No se ha borrado ningún dato.");
+        mostrarAlerta("Cancelado", "Palabra de seguridad incorrecta. No se ha modificado ningún dato.");
         return;
     }
 
@@ -1381,28 +1375,16 @@ async function limpiarBaseDeDatos() {
     const barra = document.getElementById('progreso-barra');
     const texto = document.getElementById('progreso-texto');
     
-    if(texto) texto.innerText = "Vaciando base de datos...";
-    if(barra) barra.style.width = '30%';
+    if(texto) texto.innerText = "Procesando en servidor seguro...";
+    if(barra) barra.style.width = '40%';
 
     try {
-        const turnosSnap = await getDocs(collection(window.db, "turnos"));
-        const promesasTurnos = turnosSnap.docs.map(d => deleteDoc(doc(window.db, "turnos", d.id)));
-        await Promise.all(promesasTurnos);
-        if(barra) barra.style.width = '60%';
-
-        const usuariosSnap = await getDocs(collection(window.db, "usuarios"));
-        const promesasUsuarios = [];
-        usuariosSnap.forEach(d => {
-            const u = d.data();
-            if (u.correo !== "nachohelbas@gmail.com") {
-                promesasUsuarios.push(deleteDoc(doc(window.db, "usuarios", d.id)));
-            }
-        });
-        await Promise.all(promesasUsuarios);
-
+        const llamarLimpiar = httpsCallable(functionsInstancia, 'limpiarBaseDeDatos');
+        const res = await llamarLimpiar({ confirmacion: input });
+        
         if(barra) barra.style.width = '100%';
         cerrarModal('modal-progreso');
-        mostrarExito("Reinicio Exitoso", "El sistema ha sido restaurado a su estado de fábrica. Turnos y usuarios de prueba eliminados.");
+        mostrarExito("Reinicio Exitoso", res.data?.mensaje || "El sistema ha sido restaurado a su estado de fábrica.");
         
         cargarUsuariosAdmin('init');
         cargarEspecialistasFirebase();
@@ -1410,79 +1392,37 @@ async function limpiarBaseDeDatos() {
     } catch (e) {
         console.error(e);
         cerrarModal('modal-progreso');
-        mostrarAlerta("Error", "Ocurrió un problema al intentar vaciar la base de datos.");
+        mostrarAlerta("Error", e.message || "Ocurrió un problema al intentar vaciar la base de datos.");
     }
 }
 
 async function inyectarMedicosDePrueba() {
-    const confirm = await pedirConfirmacion("¿Inyectar Base de Datos?", "Se cargarán 28 profesionales ficticios categorizados en la base de datos para la presentación. Este proceso tomará unos 15 segundos para no saturar el servidor.", "Sí, Inyectar");
+    const confirm = await pedirConfirmacion("¿Inyectar Base de Datos?", "Se cargarán profesionales demostrativos mediante Cloud Function autorizada.", "Sí, Inyectar");
     if (!confirm) return;
-
-    const medicosDemo = [
-        { nom: "Dr. Esteban Quiroga", esp: "Clínica Médica", mat: "44019" },
-        { nom: "Dra. Valeria Román", esp: "Clínica Médica", mat: "45021" },
-        { nom: "Dr. Carlos San Martín", esp: "Cardiología", mat: "10293" },
-        { nom: "Dra. María Antonieta", esp: "Pediatría", mat: "22019" },
-        { nom: "Dra. Sofía Castro", esp: "Neurología", mat: "80291" },
-        { nom: "Dra. Analía Montes", esp: "Endocrinología", mat: "70331" },
-        { nom: "Dr. Martín Ríos", esp: "Gastroenterología", mat: "90182" },
-        { nom: "Dr. Roberto Sánchez", esp: "Neumonología", mat: "60442" },
-        { nom: "Dr. Hugo Silva", esp: "Nefrología", mat: "11223" },
-        { nom: "Dra. Laura Méndez", esp: "Infectología", mat: "33445" },
-        { nom: "Dr. Pablo Gómez", esp: "Dermatología", mat: "55667" },
-        { nom: "Dra. Silvia Paz", esp: "Geriatría", mat: "77889" },
-        { nom: "Dr. Andrés Luna", esp: "Hematología", mat: "99001" },
-        { nom: "Dra. Clara Vega", esp: "Alergia e Inmunología", mat: "22334" },
-        { nom: "Dr. Fernando Ruiz", esp: "Cirugía General", mat: "50553" },
-        { nom: "Dr. Jorge Medina", esp: "Cirugía Cardiovascular", mat: "20192" },
-        { nom: "Dra. Luciana Herrera", esp: "Cirugía Plástica y Reparadora", mat: "44556" },
-        { nom: "Dr. Ricardo Silva", esp: "Traumatología y Ortopedia", mat: "33918" },
-        { nom: "Dr. Marcos Torres", esp: "Neurocirugía", mat: "66778" },
-        { nom: "Dr. Javier López", esp: "Urología", mat: "88990" },
-        { nom: "Dra. Elena Castro", esp: "Otorrinolaringología", mat: "11224" },
-        { nom: "Dr. Matías Rojas", esp: "Oftalmología", mat: "33446" },
-        { nom: "Dra. Carmen López", esp: "Ginecología y Obstetricia", mat: "60293" },
-        { nom: "Dr. Javier Blanco", esp: "Diagnóstico por Imágenes", mat: "30775" },
-        { nom: "Dra. Silvia Torres", esp: "Anatomía Patológica", mat: "20886" },
-        { nom: "Dr. Mario Domínguez", esp: "Anestesiología", mat: "55668" },
-        { nom: "Dr. Hugo Varela", esp: "Terapia Intensiva", mat: "10997" },
-        { nom: "Dra. Natalia Cruz", esp: "Medicina Física y Rehabilitación", mat: "77880" },
-        { nom: "Dr. Diego Ponce", esp: "Medicina de Emergencias", mat: "99002" }
-    ];
 
     abrirModal('modal-progreso');
     const barra = document.getElementById('progreso-barra');
     const texto = document.getElementById('progreso-texto');
     
-    let completados = 0;
-    const total = medicosDemo.length;
+    if(barra) barra.style.width = '40%';
+    if(texto) texto.innerText = "Inyectando médicos en backend seguro...";
 
-    for (const med of medicosDemo) {
-        const payload = {
-            nombre: med.nom, rol: "Médico",
-            username: med.nom.split(' ')[1].toLowerCase() + Math.floor(Math.random() * 1000),
-            correo: med.nom.split(' ')[1].toLowerCase() + "@hospital.demo",
-            tel: "2604000000", matricula: med.mat, especialidad: med.esp,
-            uid: "dummy_" + Date.now(), timestamp: new Date().toISOString()
-        };
+    try {
+        const llamarInyectar = httpsCallable(functionsInstancia, 'inyectarMedicosDePrueba');
+        const res = await llamarInyectar();
 
-        try { await addDoc(collection(window.db, "usuarios"), payload); } 
-        catch(e) { console.error("Fallo inyectando a:", med.nom); }
-
-        completados++;
-        let porcentaje = Math.round((completados / total) * 100);
-        if(barra) barra.style.width = porcentaje + '%';
-        if(texto) texto.innerText = `Procesando: ${med.nom} (${completados}/${total})`;
-
-        await new Promise(resolve => setTimeout(resolve, 500));
+        if(barra) barra.style.width = '100%';
+        cerrarModal('modal-progreso');
+        mostrarExito("Inyección Exitosa", res.data?.mensaje || "Los médicos de prueba fueron agregados al sistema.");
+        
+        cargarUsuariosAdmin('init'); 
+        cargarEspecialistasFirebase();
+        cargarMetricas();
+    } catch(e) {
+        console.error(e);
+        cerrarModal('modal-progreso');
+        mostrarAlerta("Error", e.message || "Fallo al inyectar médicos.");
     }
-
-    cerrarModal('modal-progreso');
-    mostrarExito("Inyección Exitosa", "Los 29 médicos de prueba fueron agregados al sistema con sus respectivas especialidades.");
-    
-    cargarUsuariosAdmin('init'); 
-    cargarEspecialistasFirebase();
-    cargarMetricas();
 }
 
 // ==========================================
