@@ -42,7 +42,7 @@
   - **Riesgo**: Alto. El formulario de administración manipula contraseñas temporales en el cliente y las envía en payloads.
   - **Solución**: Centralizar la creación y actualización de usuarios del staff en la Cloud Function `guardarUsuarioAdmin` con `admin.auth().createUser` / `updateUser` y `setCustomUserClaims`, promoviendo el reseteo por email institucional seguro (`sendPasswordResetEmail`).
 
-- [ ] **7. Claves de Firebase y EmailJS expuestas sin restricción de dominio**
+- [x] **7. Claves de Firebase y EmailJS expuestas sin restricción de dominio**
   - **Archivo y Línea**: `js/firebase-config.js` (L25), `js/logica.js` (L13, L78-81)
   - **Riesgo**: Medio. La clave web de Firebase y las credenciales de EmailJS son accesibles en el código del navegador y podrían usarse desde orígenes no autorizados si no están restringidas en consola.
   - **Solución**: Documentar en "Pendientes del usuario" las instrucciones exactas para restringir la API Key en Google Cloud Console y EmailJS por dominio HTTP Referer.
