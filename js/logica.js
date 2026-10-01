@@ -31,7 +31,6 @@ window.auth = auth;
 window.switchView = switchView;
 window.iniciarSesionReal = iniciarSesionReal;
 window.cerrarSesionReal = cerrarSesionReal;
-window.loginAs = loginAs;
 window.abrirModal = abrirModal;
 window.cerrarModal = cerrarModal;
 window.actualizarMedicosPublico = actualizarMedicosPublico;
@@ -338,17 +337,21 @@ async function iniciarSesionReal() {
         const userCredential = await signInWithEmailAndPassword(window.auth, correoAuth, pass);
         const user = userCredential.user;
         
-        let rolUsuario = "Administración"; 
-        let nombreUsuario = user.email;
+        const tokenResult = await user.getIdTokenResult(true);
+        let rolUsuario = tokenResult.claims.rol; 
+        let nombreUsuario = user.displayName || user.email;
 
-        try {
-            const snapRol = await getDocs(query(collection(window.db, "usuarios"), where("correo", "==", user.email)));
-            if (!snapRol.empty) {
-                const data = snapRol.docs[0].data();
-                rolUsuario = data.rol;
-                if(data.nombre) nombreUsuario = data.nombre;
-            }
-        } catch (e) { console.warn("Rol no leído."); }
+        if (!rolUsuario) {
+            try {
+                const snapRol = await getDocs(query(collection(window.db, "usuarios"), where("correo", "==", user.email)));
+                if (!snapRol.empty) {
+                    const data = snapRol.docs[0].data();
+                    rolUsuario = data.rol;
+                    if(data.nombre) nombreUsuario = data.nombre;
+                }
+            } catch (e) { console.warn("Rol no leído de Firestore.", e); }
+        }
+        if (!rolUsuario) rolUsuario = "Recepción";
 
         localStorage.setItem("sesionHospitalActiva", JSON.stringify({
             correo: user.email,
@@ -372,13 +375,16 @@ async function iniciarSesionReal() {
     }
 }
 
-function cerrarSesionReal() { 
-    localStorage.removeItem("sesionHospitalActiva"); 
+async function cerrarSesionReal() { 
+    localStorage.removeItem("sesionHospitalActiva");
+    try {
+        await signOut(window.auth);
+    } catch(e) {
+        console.warn("Error cerrando sesión en Auth:", e);
+    }
     aplicarPermisosVisuales();
     switchView("public"); 
 }
-
-function loginAs(role) { switchView(role); }
 
 function abrirModal(id) { 
     const modal = document.getElementById(id);

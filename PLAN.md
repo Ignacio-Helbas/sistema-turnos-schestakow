@@ -32,12 +32,12 @@
   - **Riesgo**: Alto. `hasRole(rol)` valida con `get(/databases/$(database)/documents/usuarios/$(request.auth.uid))` en cada consulta en vez de validar `request.auth.token.rol`.
   - **Solución**: Reescribir `firestore.rules` utilizando `request.auth.token.rol` directamente para validar roles de administración, médico y recepción, manteniendo la regla de cierre por defecto `allow read, write: if false;`.
 
-- [ ] **5. Puerta trasera `loginAs(role)` y persistencia insegura de sesión en `localStorage`**
+- [x] **5. Puerta trasera `loginAs(role)` y persistencia insegura de sesión en `localStorage`**
   - **Archivo y Línea**: `js/logica.js` (L347-L352, L370, L375)
   - **Riesgo**: Alto. `loginAs(role)` permite a cualquier usuario cambiar a la vista administrativa o médica desde consola. `sesionHospitalActiva` en `localStorage` se utiliza como única verdad para la interfaz.
   - **Solución**: Eliminar `loginAs(role)`. Gestionar la autenticación exclusivamente a través del SDK de Firebase Auth (`onAuthStateChanged` y `getIdTokenResult()`) para obtener los claims reales antes de permitir acceso a paneles protegidos.
 
-- [ ] **6. Gestión insegura de contraseñas de usuarios en el cliente**
+- [x] **6. Gestión insegura de contraseñas de usuarios en el cliente**
   - **Archivo y Línea**: `js/logica.js` (L1053-L1106), `index.html` (L541-L552)
   - **Riesgo**: Alto. El formulario de administración manipula contraseñas temporales en el cliente y las envía en payloads.
   - **Solución**: Centralizar la creación y actualización de usuarios del staff en la Cloud Function `guardarUsuarioAdmin` con `admin.auth().createUser` / `updateUser` y `setCustomUserClaims`, promoviendo el reseteo por email institucional seguro (`sendPasswordResetEmail`).
