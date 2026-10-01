@@ -27,7 +27,7 @@
   - **Riesgo**: Alto. Las reservas públicas se realizan sin contexto de autenticación Firebase Auth, lo que impide vincular y controlar turnos por UID de paciente y facilita ataques automatizados / spam.
   - **Solución**: Integrar `signInAnonymously(auth)` en la inicialización pública para que cada paciente opere con un `uid` anónimo seguro que pueda ser verificado en las Cloud Functions y reglas.
 
-- [ ] **4. Reglas de Firestore (`firestore.rules`) no usan Custom Claims y realizan lecturas adicionales**
+- [x] **4. Reglas de Firestore (`firestore.rules`) no usan Custom Claims y realizan lecturas adicionales**
   - **Archivo y Línea**: `firestore.rules` (L11-L37)
   - **Riesgo**: Alto. `hasRole(rol)` valida con `get(/databases/$(database)/documents/usuarios/$(request.auth.uid))` en cada consulta en vez de validar `request.auth.token.rol`.
   - **Solución**: Reescribir `firestore.rules` utilizando `request.auth.token.rol` directamente para validar roles de administración, médico y recepción, manteniendo la regla de cierre por defecto `allow read, write: if false;`.

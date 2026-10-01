@@ -2,25 +2,21 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ------- Funciones Auxiliares -------
+    // ==========================================
+    // FUNCIONES AUXILIARES CON CUSTOM CLAIMS
+    // ==========================================
     function isSignedIn() {
       return request.auth != null;
     }
     
-    // Filtramos para que los pacientes anónimos no cuenten como Staff
+    // El staff debe estar autenticado con credenciales reales (no anónimo)
     function isStaff() {
       return isSignedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
 
-    function userDoc() {
-      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
-    }
-
+    // Validación basada en Custom Claims (request.auth.token.rol)
     function hasRole(rol) {
-      return isStaff()
-        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
-        && userDoc().rol == rol
-        && userDoc().activo == true;
+      return isStaff() && request.auth.token.rol == rol;
     }
 
     function isAdmin() {
@@ -35,9 +31,13 @@ service cloud.firestore {
       return hasRole('Recepción') || hasRole('Recepcionista') || hasRole('Administrativo');
     }
 
+    // ==========================================
+    // REGLAS POR COLECCIÓN
+    // ==========================================
+
     // ------- Perfiles de usuario -------
     match /usuarios/{uid} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin() || isRecepcion() || isMedico());
       allow write: if isAdmin();
     }
 
@@ -51,13 +51,21 @@ service cloud.firestore {
       allow delete: if isAdmin() || isRecepcion();
     }
 
-    // ------- Configuración / Modulación -------
+    // ------- Modulación individual por médico -------
+    match /modulacion_medicos/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ------- Configuración / Modulación General -------
     match /configuracion/{docId} {
       allow read: if true; 
       allow write: if isAdmin();
     }
 
-    // ------- Cierre por defecto -------
+    // ==========================================
+    // CIERRE POR DEFECTO (DENEGAR TODO LO DEMÁS)
+    // ==========================================
     match /{document=**} {
       allow read, write: if false;
     }
