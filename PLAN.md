@@ -51,17 +51,17 @@
 
 ### Prioridad 2: INTEGRIDAD DE DATOS
 
-- [ ] **8. Concurrencia y riesgo de turnos duplicados (Race conditions)**
+- [x] **8. Concurrencia y riesgo de turnos duplicados (Race conditions)**
   - **Archivo y Línea**: `js/logica.js` (L517-L560), `functions/index.js`
   - **Riesgo**: Alto. Si dos pacientes intentan reservar el mismo profesional, fecha y horario simultáneamente, pueden generarse turnos duplicados.
   - **Solución**: Ejecutar la creación de turnos dentro de transacciones de Firestore (`transaction.get` y `transaction.set`) en `crearTurnoPublico` para asegurar unicidad absoluta de médico + fecha + horario.
 
-- [ ] **9. Validación insuficiente de entradas y formatos**
+- [x] **9. Validación insuficiente de entradas y formatos**
   - **Archivo y Línea**: `js/logica.js` (L523-L530), `functions/index.js`
   - **Riesgo**: Medio. Posibilidad de ingresar datos con formatos inválidos (DNI no numérico, fechas en fines de semana o pasadas, nombres vacíos o excesivamente largos).
   - **Solución**: Validar estrictamente en cliente y en las Cloud Functions: formato numérico y longitud de DNI y teléfono, formato de email, y que la fecha corresponda a días hábiles futuros.
 
-- [ ] **10. Manejo de errores de red y estados asíncronos**
+- [x] **10. Manejo de errores de red y estados asíncronos**
   - **Archivo y Línea**: `js/logica.js` (diversas llamadas async)
   - **Riesgo**: Bajo/Medio. Falta de feedback al usuario si la red se corta durante una llamada a Firebase.
   - **Solución**: Implementar feedback visual de carga y manejo robusto de excepciones de red con alertas amigables en todos los flujos.

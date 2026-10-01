@@ -539,6 +539,9 @@ async function confirmarTurnoFirebase() {
 
     if (!esp || !med || !fec || !hor) { mostrarAlerta("Datos Incompletos", "Seleccione Especialidad, Profesional, Fecha y Horario."); return; }
     if (!nom || !dni || !cel) { mostrarAlerta("Faltan Datos del Paciente", "Nombre, DNI y Celular son campos obligatorios."); return; }
+    if (!/^[0-9]{6,10}$/.test(dni)) { mostrarAlerta("DNI Inválido", "El DNI debe tener entre 6 y 10 dígitos numéricos sin puntos."); return; }
+    if (!/^[0-9+ -]{6,20}$/.test(cel)) { mostrarAlerta("Celular Inválido", "El celular ingresado no tiene un formato válido."); return; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { mostrarAlerta("Correo Inválido", "El formato del correo electrónico es incorrecto."); return; }
 
     try {
         await asegurarAutenticacionAnonima();
@@ -741,12 +744,34 @@ async function confirmarTurnoRecepcionFirebase() {
     const email = document.getElementById('auto-email').value.trim();
 
     if (!nombre || !celular) { mostrarAlerta("Datos Obligatorios", "Nombre y celular son obligatorios."); return; }
+    if (dni && !/^[0-9]{6,10}$/.test(dni)) { mostrarAlerta("DNI Inválido", "El DNI debe contener solo números (6 a 10 dígitos)."); return; }
+    if (!/^[0-9+ -]{6,20}$/.test(celular)) { mostrarAlerta("Celular Inválido", "Ingrese un número de teléfono válido."); return; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { mostrarAlerta("Correo Inválido", "El formato del correo es incorrecto."); return; }
 
     try {
+        const qExistente = query(
+            collection(window.db, "turnos"),
+            where("medico", "==", medicoSeleccionadoRecepcion),
+            where("fecha", "==", fechaRecepcionSeleccionada),
+            where("horario", "==", horaSeleccionadaRecepcion)
+        );
+        const snap = await getDocs(qExistente);
+        const ocupado = snap.docs.some(d => {
+            const est = d.data().estado;
+            return !est || !est.toLowerCase().includes("cancelado");
+        });
+
+        if (ocupado) {
+            mostrarAlerta("Horario No Disponible", "Este horario ya fue asignado previamente.");
+            generarAgendaRecepcion();
+            return;
+        }
+
         await addDoc(collection(window.db, "turnos"), {
             especialidad: especialidadSeleccionadaRecepcion, medico: medicoSeleccionadoRecepcion,
             fecha: fechaRecepcionSeleccionada, horario: horaSeleccionadaRecepcion,
             pacienteNombre: nombre, pacienteDni: dni, pacienteCelular: celular, pacienteEmail: email,
+            canal: "Presencial",
             estado: "Confirmado Presencial", timestamp: new Date()
         });
 
