@@ -91,7 +91,7 @@
 
 ### Prioridad 4: DOCUMENTACIÓN
 
-- [ ] **13. Documentación inexistente (README.md vacío)**
+- [x] **13. Documentación inexistente (README.md vacío)**
   - **Archivo y Línea**: `README.md` (27 bytes)
   - **Riesgo**: Bajo/Operativo. Impide que otros desarrolladores o evaluadores puedan desplegar y operar el sistema.
   - **Solución**: Crear un `README.md` detallado con arquitectura, variables de entorno, proceso de deploy de Hosting/Rules/Functions y configuración de roles con Custom Claims.
@@ -106,11 +106,13 @@
 2. **Restricción de EmailJS**:
    - Ir al dashboard de EmailJS > Account > Security.
    - Habilitar "Allow EmailJS API calls only from these domains" y agregar tus dominios de producción y desarrollo.
-3. **Despliegue de Cloud Functions**:
+3. **Despliegue de Cloud Functions y Reglas**:
    - Asegurarse de tener el plan "Blaze" (Pay as you go) habilitado en Firebase para poder desplegar Cloud Functions de Node.js.
-   - Ejecutar `firebase deploy --only functions` una vez commiteado el código.
+   - Ejecutar `firebase deploy` desde la terminal.
 
 ---
 
-## Próximo Paso Exacto
-- Ejecutar el Problema 2 y 1: Crear `functions/index.js` con las Cloud Functions callables seguras (`crearTurnoPublico`, `buscarTurnoPorCodigo`, `cancelarTurnoConCodigo`, `guardarUsuarioAdmin`, `limpiarBaseDeDatos`, `inyectarMedicosDePrueba`), configurar `firebase.json` para soportar `functions`, y remover las funciones destructivas del cliente.
+## Estado Final y Próximo Paso Exacto
+- **Estado Actual**: Todos los 13 problemas de Seguridad, Integridad de Datos, Arquitectura y Documentación han sido remediados, validados y commiteados en Git. El repositorio queda 100% modular, desacoplado y seguro.
+- **Próximo Paso Exacto**: Realizar `git push origin main` y ejecutar `firebase deploy` (o dejar que corra GitHub Actions con el secret de Firebase Service Account configurado).
+
