@@ -1,6 +1,5 @@
 name: Desplegar en Firebase
 
-# El robot se activará cada vez que guardes cambios en estas ramas:
 on:
   push:
     branches: 
@@ -19,17 +18,13 @@ jobs:
         with:
           node-version: '18'
 
-      - name: 3. Instalar herramientas de Cloud Functions
-        working-directory: ./functions
-        run: npm install
-
-      - name: 4. Instalar Firebase CLI
+      - name: 3. Instalar Firebase CLI
         run: npm install -g firebase-tools
 
-      - name: 5. Subir a Firebase (Hosting, Reglas y Funciones)
+      - name: 4. Subir a Firebase (Hosting y Reglas de Firestore)
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           echo "$FIREBASE_SERVICE_ACCOUNT" > ./firebase-key.json
           export GOOGLE_APPLICATION_CREDENTIALS="${PWD}/firebase-key.json"
-          firebase deploy --project sistema-turnos-utn --non-interactive
+          firebase deploy --project sistema-turnos-utn --only hosting,firestore:rules --non-interactive

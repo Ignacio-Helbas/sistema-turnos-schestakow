@@ -1,5 +1,6 @@
 // ==========================================
 // MÓDULO PÚBLICO: RESERVA Y GESTIÓN DE PACIENTES
+// Operación directa en Firestore (Plan Gratuito Spark)
 // ==========================================
 
 import {
@@ -10,9 +11,8 @@ import {
     getDocs,
     doc,
     getDoc,
-    functionsInstancia,
-    httpsCallable,
-    asegurarSesionAnonima
+    addDoc,
+    updateDoc
 } from "./firebase-config.js";
 
 import {
@@ -33,9 +33,8 @@ let bdMedicosDinamica = {};
 let duracionTurnoGlobal = 15;
 let modulacionPorMedico = {};
 let turnoEncontradoActivo = null;
-let codigoBusquedaActivo = '';
 
-// Exponer a window para interacción directa desde los atributos HTML
+// Exponer funciones necesarias a window
 window.abrirModal = abrirModal;
 window.cerrarModal = cerrarModal;
 window.validarDiaHabil = validarDiaHabil;
@@ -45,6 +44,15 @@ window.seleccionarHorario = seleccionarHorario;
 window.confirmarTurnoFirebase = confirmarTurnoFirebase;
 window.buscarTurnosPaciente = buscarTurnosPaciente;
 window.cancelarTurnoFirebase = cancelarTurnoFirebase;
+
+function generarCodigoConfirmacion() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+    for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
 
 export async function cargarEspecialistasPublico() {
     try {
@@ -242,13 +250,41 @@ export async function confirmarTurnoFirebase() {
     }
 
     try {
-        await asegurarSesionAnonima();
-        const llamarCrearTurno = httpsCallable(functionsInstancia, 'crearTurnoPublico');
-        const respuesta = await llamarCrearTurno({
-            especialidad: esp, medico: med, fecha: fec, horario: hor,
-            pacienteNombre: nom, pacienteDni: dni, pacienteCelular: cel, pacienteEmail: email
+        // Chequeo de duplicados en tiempo real antes de guardar
+        const qExistente = query(
+            collection(db, "turnos"),
+            where("medico", "==", med),
+            where("fecha", "==", fec),
+            where("horario", "==", hor)
+        );
+        const snapExistente = await getDocs(qExistente);
+        const yaOcupado = snapExistente.docs.some(d => {
+            const st = d.data().estado;
+            return !st || !st.toLowerCase().includes("cancelado");
         });
-        const codigo = respuesta.data.codigo;
+
+        if (yaOcupado) {
+            mostrarAlerta("Horario No Disponible", "El horario seleccionado ya fue reservado. Por favor elija otro.");
+            generarHorariosPublicos();
+            return;
+        }
+
+        const codigo = generarCodigoConfirmacion();
+
+        await addDoc(collection(db, "turnos"), {
+            especialidad: esp,
+            medico: med,
+            fecha: fec,
+            horario: hor,
+            pacienteNombre: nom,
+            pacienteDni: dni,
+            pacienteCelular: cel,
+            pacienteEmail: email || "",
+            codigoConfirmacion: codigo,
+            canal: "Web",
+            estado: "Confirmado",
+            timestamp: new Date()
+        });
 
         enviarCorreoNotificacion(EMAILJS_TEMPLATE_CONFIRMACION, {
             nombre_paciente: nom, medico: med, especialidad: esp, fecha: fec, hora: hor,
@@ -269,7 +305,7 @@ export async function confirmarTurnoFirebase() {
 
     } catch (error) {
         console.error("Error al confirmar turno:", error);
-        mostrarAlerta("Error al Registrar", error.message || "Hubo un error al registrar el turno. Intente nuevamente.");
+        mostrarAlerta("Error al Registrar", "Hubo un error al registrar el turno. Intente nuevamente.");
     }
 }
 
@@ -284,21 +320,31 @@ export async function buscarTurnosPaciente() {
     }
 
     try {
-        const llamarBuscarTurno = httpsCallable(functionsInstancia, 'buscarTurnoPorCodigo');
-        const respuesta = await llamarBuscarTurno({ dni, codigo });
-        const t = respuesta.data.turno;
+        const q = query(
+            collection(db, "turnos"),
+            where("pacienteDni", "==", dni),
+            where("codigoConfirmacion", "==", codigo)
+        );
+        const snap = await getDocs(q);
 
-        turnoEncontradoActivo = t;
-        codigoBusquedaActivo = codigo;
+        if (snap.empty) {
+            res.innerHTML = '<p class="text-sm text-red-600 font-semibold text-center mt-4">No encontramos ningún turno con ese DNI y código.</p>';
+            res.classList.remove('hidden');
+            return;
+        }
+
+        const docTurno = snap.docs[0];
+        const t = docTurno.data();
+        turnoEncontradoActivo = { id: docTurno.id, ...t };
 
         const cancelado = t.estado && t.estado.includes("Cancelado");
         const badge = cancelado ? `<span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${escaparHTML(t.estado)}</span>` : '';
-        const btn = cancelado || t.estado === "Atendido" || t.estado === "Ausente" ? '' : `<button onclick="cancelarTurnoFirebase('${t.id}')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>`;
+        const btn = cancelado || t.estado === "Atendido" || t.estado === "Ausente" ? '' : `<button onclick="cancelarTurnoFirebase('${docTurno.id}')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>`;
         res.innerHTML = `<div class="bg-slate-50 border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2"><div class="w-full"><p class="font-bold text-sm text-blue-900">${escaparHTML(t.especialidad)} - ${escaparHTML(t.medico)}</p><p class="text-xs text-slate-600 mt-1">${escaparHTML(t.fecha)} - ${escaparHTML(t.horario)} hs ${badge}</p></div>${btn}</div>`;
         res.classList.remove('hidden');
     } catch (error) {
         console.error(error);
-        res.innerHTML = `<p class="text-sm text-red-600 font-semibold text-center mt-4">${error.message || 'No encontramos ningún turno con esos datos.'}</p>`;
+        res.innerHTML = '<p class="text-sm text-red-600 font-semibold text-center mt-4">Error al buscar el turno.</p>';
         res.classList.remove('hidden');
     }
 }
@@ -308,27 +354,33 @@ export async function cancelarTurnoFirebase(id) {
     if (!confirmado) return;
 
     try {
-        const llamarCancelarTurno = httpsCallable(functionsInstancia, 'cancelarTurnoConCodigo');
-        const respuesta = await llamarCancelarTurno({ id, codigo: codigoBusquedaActivo });
-        const t = respuesta.data.turno;
-
-        enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
-            nombre_paciente: t.pacienteNombre, medico: t.medico, especialidad: t.especialidad, fecha: t.fecha, hora: t.horario, email_destino: t.pacienteEmail
+        await updateDoc(doc(db, "turnos", id), {
+            estado: "Cancelado por Paciente"
         });
+
+        if (turnoEncontradoActivo) {
+            enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
+                nombre_paciente: turnoEncontradoActivo.pacienteNombre,
+                medico: turnoEncontradoActivo.medico,
+                especialidad: turnoEncontradoActivo.especialidad,
+                fecha: turnoEncontradoActivo.fecha,
+                hora: turnoEncontradoActivo.horario,
+                email_destino: turnoEncontradoActivo.pacienteEmail
+            });
+        }
 
         mostrarExito("Turno Cancelado", "Tu turno ha sido cancelado exitosamente.");
         cerrarModal('modal-cancelar-paciente');
         generarHorariosPublicos();
     } catch (error) {
         console.error(error);
-        mostrarAlerta("Error", error.message || "No se pudo cancelar el turno.");
+        mostrarAlerta("Error", "No se pudo cancelar el turno.");
     }
 }
 
-// Inicialización automática al cargar el DOM
+// Inicialización automática
 document.addEventListener("DOMContentLoaded", async () => {
     establecerLimitesFecha(['input-fecha-paciente']);
-    await asegurarSesionAnonima();
     await cargarEspecialistasPublico();
     await cargarConfiguracionModulacionPublico();
 });

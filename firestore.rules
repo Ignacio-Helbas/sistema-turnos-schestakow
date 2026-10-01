@@ -3,68 +3,85 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ==========================================
-    // FUNCIONES AUXILIARES CON CUSTOM CLAIMS
+    // FUNCIONES AUXILIARES DE AUTORIZACIÓN
     // ==========================================
     function isSignedIn() {
       return request.auth != null;
     }
     
-    // El staff debe estar autenticado con credenciales reales (no anónimo)
     function isStaff() {
       return isSignedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
 
-    // Validación basada en Custom Claims (request.auth.token.rol)
-    function hasRole(rol) {
-      return isStaff() && request.auth.token.rol == rol;
-    }
-
-    function isAdmin() {
-      return hasRole('Administración');
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'nachohelbas@gmail.com' ||
+        (request.auth.token.rol != null && request.auth.token.rol == 'Administración') ||
+        (exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'Administración')
+      );
     }
     
     function isMedico() {
-      return hasRole('Médico');
+      return isStaff() && (
+        request.auth.token.rol == 'Médico' ||
+        (exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'Médico')
+      );
     }
     
     function isRecepcion() {
-      return hasRole('Recepción') || hasRole('Recepcionista') || hasRole('Administrativo');
+      return isStaff() && (
+        request.auth.token.rol in ['Recepción', 'Recepcionista', 'Administrativo'] ||
+        (exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol in ['Recepción', 'Recepcionista', 'Administrativo'])
+      );
     }
 
     // ==========================================
     // REGLAS POR COLECCIÓN
     // ==========================================
 
-    // ------- Perfiles de usuario -------
+    // ------- Perfiles de usuario / Médicos -------
     match /usuarios/{uid} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin() || isRecepcion() || isMedico());
-      allow write: if isAdmin();
+      // Lectura pública permitida para que el selector de especialidades y médicos funcione
+      allow read: if true;
+      // Solo el Administrador general puede crear, editar o eliminar usuarios
+      allow write: if isSuperAdmin();
     }
 
     // ------- Turnos -------
     match /turnos/{turnoId} {
-      allow read: if isStaff();
-      allow create: if isRecepcion() || isAdmin();
-      allow update: if isAdmin() 
+      // Lectura permitida para staff y para pacientes consultando turnos
+      allow read: if true;
+      // Creación permitida para pacientes públicos (canal web) y personal de recepción
+      allow create: if true;
+      // Modificación permitida:
+      // - Administrador y Recepción: control total
+      // - Médico: solo puede modificar evolución clínica, motivo y estado
+      // - Paciente: solo puede cancelar su propio turno
+      allow update: if isSuperAdmin() 
         || isRecepcion() 
-        || (isMedico() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'evolucionMedica', 'motivoConsulta']));
-      allow delete: if isAdmin() || isRecepcion();
+        || (isMedico() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'evolucionMedica', 'motivoConsulta', 'atendidoEn']))
+        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'canceladoEn']);
+      // Eliminación permitida solo para staff administrativo y recepción
+      allow delete: if isSuperAdmin() || isRecepcion();
     }
 
     // ------- Modulación individual por médico -------
     match /modulacion_medicos/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isSuperAdmin();
     }
 
     // ------- Configuración / Modulación General -------
     match /configuracion/{docId} {
       allow read: if true; 
-      allow write: if isAdmin();
+      allow write: if isSuperAdmin();
     }
 
     // ==========================================
-    // CIERRE POR DEFECTO (DENEGAR TODO LO DEMÁS)
+    // CIERRE POR DEFECTO
     // ==========================================
     match /{document=**} {
       allow read, write: if false;

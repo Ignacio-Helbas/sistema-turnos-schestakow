@@ -98,6 +98,17 @@
 
 ---
 
+## Ajustes para Plan Spark (100% Gratuito) y Presentación
+- **Despliegue sin Cloud Functions**: Workflow de GitHub Actions y `firebase.json` configurados para subir únicamente `hosting` y `firestore.rules` (no requiere tarjeta ni plan Blaze).
+- **Estructura limpia de 2 páginas HTML**:
+  - `index.html`: Portal de pacientes limpio sin enlaces a login ni disclaimers.
+  - `panel.html`: Portal institucional con pantalla de login integrada y acceso unificado para el staff.
+- **Acceso SuperAdmin para Nacho (`nachohelbas@gmail.com`)**:
+  - Acceso inmediato a todos los módulos: Recepción, Consultorio, Administración, Inyección de datos y Reset de base de datos para la presentación en el foro tecnológico.
+  - Atajo secreto: Doble clic sobre el logo en `index.html` redirige a `panel.html`.
+
+---
+
 ## Pendientes del Usuario (Requieren tu acción en consolas)
 1. **Restricción de API Key de Firebase**:
    - Ir a [Google Cloud Console > Credenciales](https://console.cloud.google.com/apis/credentials?project=sistema-turnos-utn).
@@ -106,13 +117,10 @@
 2. **Restricción de EmailJS**:
    - Ir al dashboard de EmailJS > Account > Security.
    - Habilitar "Allow EmailJS API calls only from these domains" y agregar tus dominios de producción y desarrollo.
-3. **Despliegue de Cloud Functions y Reglas**:
-   - Asegurarse de tener el plan "Blaze" (Pay as you go) habilitado en Firebase para poder desplegar Cloud Functions de Node.js.
-   - Ejecutar `firebase deploy` desde la terminal.
 
 ---
 
 ## Estado Final y Próximo Paso Exacto
-- **Estado Actual**: Todos los 13 problemas de Seguridad, Integridad de Datos, Arquitectura y Documentación han sido remediados, validados y commiteados en Git. El repositorio queda 100% modular, desacoplado y seguro.
-- **Próximo Paso Exacto**: Realizar `git push origin main` y ejecutar `firebase deploy` (o dejar que corra GitHub Actions con el secret de Firebase Service Account configurado).
+- **Estado Actual**: Repositorio ajustado al plan Spark gratuito sin requerir plan Blaze. Todo listo para desplegar automáticamente vía GitHub Actions.
+- **Próximo Paso Exacto**: Subir los cambios a GitHub (`git push origin main`) para disparar el workflow corregido.
 

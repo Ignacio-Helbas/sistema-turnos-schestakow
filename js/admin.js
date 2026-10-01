@@ -1,5 +1,6 @@
 // ==========================================
 // MÓDULO INTERNO / ADMIN (RECEPCIÓN, CONSULTORIO, ADMINISTRACIÓN)
+// Operación directa en Firestore (Plan Gratuito Spark)
 // ==========================================
 
 import {
@@ -18,10 +19,9 @@ import {
     orderBy,
     limit,
     startAfter,
-    functionsInstancia,
-    httpsCallable,
-    observarSesion,
-    cerrarSesionFirebase,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
     sendPasswordResetEmail
 } from "./firebase-config.js";
 
@@ -50,11 +50,12 @@ let usuariosPageSnapshots = [];
 let currentUsuariosPage = 0;
 const USUARIOS_PER_PAGE = 5;
 
-// Exposición al scope global para listeners de Tailwind / HTML
+// Exposición global
 window.abrirModal = abrirModal;
 window.cerrarModal = cerrarModal;
 window.validarDiaHabil = validarDiaHabil;
 window.switchView = switchView;
+window.iniciarSesionReal = iniciarSesionReal;
 window.cerrarSesionReal = cerrarSesionReal;
 window.actualizarMedicosRecepcion = actualizarMedicosRecepcion;
 window.buscarAgendaRecepcion = buscarAgendaRecepcion;
@@ -89,17 +90,85 @@ window.limpiarBaseDeDatos = limpiarBaseDeDatos;
 window.inyectarMedicosDePrueba = inyectarMedicosDePrueba;
 
 // ==========================================
-// AUTH GUARD & ROLES
+// SESIÓN Y AUTENTICACIÓN
 // ==========================================
-observarSesion((sesion) => {
-    if (!sesion) {
-        window.location.href = "login.html";
+onAuthStateChanged(auth, async (user) => {
+    if (!user || user.isAnonymous) {
+        sesionActual = null;
+        mostrarPantallaLogin();
         return;
     }
-    sesionActual = sesion;
-    aplicarPermisosVisuales(sesion);
+
+    let rol = "Recepción";
+    let nombre = user.displayName || user.email;
+
+    try {
+        const docSnap = await getDoc(doc(db, "usuarios", user.uid));
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.rol) rol = data.rol;
+            if (data.nombre) nombre = data.nombre;
+        }
+    } catch (e) {
+        console.warn("No se pudo leer perfil desde Firestore:", e);
+    }
+
+    sesionActual = {
+        uid: user.uid,
+        correo: user.email,
+        nombre: nombre,
+        rol: rol
+    };
+
+    aplicarPermisosVisuales(sesionActual);
     iniciarModuloStaff();
 });
+
+function mostrarPantallaLogin() {
+    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+    const vLogin = document.getElementById('view-login');
+    if (vLogin) vLogin.classList.add('active');
+
+    const btnAdmin = document.getElementById('btn-nav-admin');
+    const btnRec = document.getElementById('btn-nav-reception');
+    const btnDoc = document.getElementById('btn-nav-doctor');
+    const btnLogout = document.getElementById('btn-logout');
+
+    if (btnAdmin) btnAdmin.classList.add('hidden');
+    if (btnRec) btnRec.classList.add('hidden');
+    if (btnDoc) btnDoc.classList.add('hidden');
+    if (btnLogout) btnLogout.classList.add('hidden');
+}
+
+export async function iniciarSesionReal() {
+    const userInput = document.getElementById('login-user')?.value.trim();
+    const passInput = document.getElementById('login-pass')?.value.trim();
+
+    if (!userInput || !passInput) {
+        mostrarAlerta("Datos Faltantes", "Ingrese correo o usuario y contraseña.");
+        return;
+    }
+
+    try {
+        let correoFinal = userInput;
+        if (!correoFinal.includes("@")) {
+            const snap = await getDocs(query(collection(db, "usuarios"), where("username", "==", correoFinal)));
+            if (!snap.empty) {
+                correoFinal = snap.docs[0].data().correo;
+            } else {
+                mostrarAlerta("Acceso Denegado", "El nombre de usuario especificado no existe.");
+                return;
+            }
+        }
+
+        await signInWithEmailAndPassword(auth, correoFinal, passInput);
+        document.getElementById('login-user').value = '';
+        document.getElementById('login-pass').value = '';
+    } catch (error) {
+        console.error("Error Auth:", error);
+        mostrarAlerta("Acceso Denegado", "Las credenciales ingresadas son incorrectas.");
+    }
+}
 
 function aplicarPermisosVisuales(sesion) {
     const btnAdmin = document.getElementById('btn-nav-admin');
@@ -120,15 +189,17 @@ function aplicarPermisosVisuales(sesion) {
         btnLogout.innerText = `Cerrar Sesión (${sesion.nombre || sesion.correo})`;
     }
 
-    const rol = sesion.rol;
-    if (rol === "Administración") {
+    // nachohelbas@gmail.com o rol Administración tienen acceso completo a todos los paneles
+    const esSuperAdmin = (sesion.correo === "nachohelbas@gmail.com" || sesion.rol === "Administración");
+
+    if (esSuperAdmin) {
         if (btnAdmin) btnAdmin.classList.remove('hidden');
         if (btnRec) btnRec.classList.remove('hidden');
         if (btnDoc) btnDoc.classList.remove('hidden');
         if (btnDummies) btnDummies.classList.remove('hidden');
         if (btnReset) btnReset.classList.remove('hidden');
         switchView('admin');
-    } else if (rol === "Médico") {
+    } else if (sesion.rol === "Médico") {
         if (btnDoc) btnDoc.classList.remove('hidden');
         switchView('doctor');
     } else {
@@ -156,8 +227,8 @@ export function switchView(viewName) {
 }
 
 export async function cerrarSesionReal() {
-    await cerrarSesionFirebase();
-    window.location.href = "login.html";
+    await signOut(auth);
+    mostrarPantallaLogin();
 }
 
 // ==========================================
@@ -402,7 +473,7 @@ export async function confirmarTurnoRecepcionFirebase() {
             pacienteEmail: email,
             canal: "Presencial",
             estado: "Confirmado Presencial",
-            creadoEn: new Date()
+            timestamp: new Date()
         });
 
         cerrarModal('modal-dar-turno');
@@ -499,7 +570,7 @@ export async function simularAutocompletado(dni) {
             if (msgEl) msgEl.classList.remove('hidden');
         }
     } catch (e) {
-        // Autocompletado silencioso
+        // Silencioso
     }
 }
 
@@ -781,7 +852,6 @@ export async function guardarUsuarioAdminFirebase() {
     const nom = document.getElementById('input-usuario-nombre').value.trim();
     const rol = document.getElementById('input-usuario-rol').value;
     const user = document.getElementById('input-usuario-username').value.trim();
-    const pass = document.getElementById('input-usuario-pass').value.trim();
     const tel = document.getElementById('input-usuario-tel').value.trim();
     const cor = document.getElementById('input-usuario-correo').value.trim();
     const mat = document.getElementById('input-usuario-matricula').value.trim();
@@ -791,34 +861,31 @@ export async function guardarUsuarioAdminFirebase() {
         mostrarAlerta("Datos Faltantes", "Nombre, Usuario y Correo son obligatorios.");
         return;
     }
-    if (!id && !pass) {
-        mostrarAlerta("Datos Faltantes", "La contraseña es obligatoria para crear un usuario nuevo.");
-        return;
-    }
-    if (pass && pass.length < 12) {
-        mostrarAlerta("Contraseña Insegura", "Por seguridad institucional, la contraseña debe tener al menos 12 caracteres.");
-        return;
-    }
 
     const payload = {
-        id: id || null,
         nombre: nom,
         rol: rol,
         username: user,
-        password: pass || null,
         correo: cor,
         tel: tel,
         matricula: rol === 'Médico' ? mat : '',
-        especialidad: rol === 'Médico' ? esp : ''
+        especialidad: rol === 'Médico' ? esp : '',
+        activo: true
     };
 
     try {
-        const fnGuardar = httpsCallable(functionsInstancia, 'guardarUsuarioAdmin');
-        await fnGuardar(payload);
+        if (id) {
+            await updateDoc(doc(db, "usuarios", id), payload);
+        } else {
+            await addDoc(collection(db, "usuarios"), {
+                ...payload,
+                creadoEn: new Date()
+            });
+        }
 
         mostrarExito(
-            id ? "Actualizado" : "Sincronizado",
-            id ? "Los datos se guardaron correctamente." : "Usuario creado en Auth y Firestore correctamente."
+            id ? "Actualizado" : "Guardado",
+            id ? "Los datos se guardaron correctamente." : "Usuario registrado en Firestore correctamente."
         );
 
         cerrarModal('modal-usuario');
@@ -826,7 +893,7 @@ export async function guardarUsuarioAdminFirebase() {
         cargarEspecialistasFirebase();
     } catch (error) {
         console.error(error);
-        mostrarAlerta("Error", error.message || "Fallo al comunicar con la base de datos.");
+        mostrarAlerta("Error", "Fallo al comunicar con la base de datos.");
     }
 }
 
@@ -994,13 +1061,12 @@ export async function cargarMetricas() {
 }
 
 export function toggleHistorial() {
-    // Helper visual para historial
+    // Helper visual
 }
 
 export async function verificarLimpiezaAnual() {
     try {
         const snap = await getDocs(query(collection(db, "turnos"), limit(1)));
-        // Si hay registros, verificar fecha
     } catch (e) {
         // Silencioso
     }
@@ -1012,56 +1078,122 @@ export function ejecutarLimpiezaYDescarga() {
 }
 
 export async function limpiarBaseDeDatos() {
-    const input = prompt("⚠️ ADVERTENCIA DE SEGURIDAD ⚠️\nEsta acción borrará TODOS los turnos y usuarios de prueba mediante Cloud Function.\n\nPara confirmar, escriba exactamente la palabra: BORRAR");
+    const input = prompt("⚠️ ADVERTENCIA DE SEGURIDAD ⚠️\nEsta acción borrará TODOS los turnos y usuarios de prueba.\n\nPara confirmar, escriba exactamente la palabra: BORRAR");
     if (input !== "BORRAR") {
-        mostrarAlerta("Cancelado", "Palabra de confirmación incorrecta.");
+        mostrarAlerta("Cancelado", "Palabra de confirmación incorrecta. No se ha borrado ningún dato.");
         return;
     }
 
     abrirModal('modal-progreso');
     const barra = document.getElementById('progreso-barra');
     const texto = document.getElementById('progreso-texto');
-    if (texto) texto.innerText = "Restableciendo base de datos en servidor...";
-    if (barra) barra.style.width = '50%';
+    if (texto) texto.innerText = "Borrando turnos de prueba...";
+    if (barra) barra.style.width = '30%';
 
     try {
-        const fnLimpiar = httpsCallable(functionsInstancia, 'limpiarBaseDeDatos');
-        const res = await fnLimpiar({ confirmacion: input });
+        const turnosSnap = await getDocs(collection(db, "turnos"));
+        const promesasTurnos = turnosSnap.docs.map(d => deleteDoc(doc(db, "turnos", d.id)));
+        await Promise.all(promesasTurnos);
+        if (barra) barra.style.width = '60%';
+
+        if (texto) texto.innerText = "Borrando usuarios demostrativos...";
+        const usuariosSnap = await getDocs(collection(db, "usuarios"));
+        const promesasUsuarios = [];
+        usuariosSnap.forEach(d => {
+            const u = d.data();
+            // Preservar la cuenta maestra del administrador
+            if (u.correo !== "nachohelbas@gmail.com" && d.id !== sesionActual?.uid) {
+                promesasUsuarios.push(deleteDoc(doc(db, "usuarios", d.id)));
+            }
+        });
+        await Promise.all(promesasUsuarios);
+
         if (barra) barra.style.width = '100%';
         cerrarModal('modal-progreso');
-        mostrarExito("Reinicio Exitoso", res.data?.mensaje || "Sistema restaurado al estado de fábrica.");
+        mostrarExito("Reinicio Exitoso", "El sistema ha sido restaurado a su estado de fábrica. Turnos y usuarios de prueba eliminados.");
+
         cargarUsuariosAdmin('init');
         cargarEspecialistasFirebase();
         cargarMetricas();
     } catch (e) {
         console.error(e);
         cerrarModal('modal-progreso');
-        mostrarAlerta("Error", e.message || "Error al reiniciar base de datos.");
+        mostrarAlerta("Error", "Error al vaciar la base de datos.");
     }
 }
 
 export async function inyectarMedicosDePrueba() {
-    const confirm = await pedirConfirmacion("¿Inyectar Médicos?", "Se cargarán profesionales demostrativos mediante Cloud Function autorizada.", "Sí, Inyectar");
+    const confirm = await pedirConfirmacion("¿Inyectar Médicos?", "Se cargarán 28 profesionales categorizados para la demostración tecnológica.", "Sí, Inyectar");
     if (!confirm) return;
+
+    const medicosDemo = [
+        { nom: "Dr. Esteban Quiroga", esp: "Clínica Médica", mat: "44019" },
+        { nom: "Dra. Valeria Román", esp: "Clínica Médica", mat: "45021" },
+        { nom: "Dr. Carlos San Martín", esp: "Cardiología", mat: "10293" },
+        { nom: "Dra. María Antonieta", esp: "Pediatría", mat: "22019" },
+        { nom: "Dra. Sofía Castro", esp: "Neurología", mat: "80291" },
+        { nom: "Dra. Analía Montes", esp: "Endocrinología", mat: "70331" },
+        { nom: "Dr. Martín Ríos", esp: "Gastroenterología", mat: "90182" },
+        { nom: "Dr. Roberto Sánchez", esp: "Neumonología", mat: "60442" },
+        { nom: "Dr. Hugo Silva", esp: "Nefrología", mat: "11223" },
+        { nom: "Dra. Laura Méndez", esp: "Infectología", mat: "33445" },
+        { nom: "Dr. Pablo Gómez", esp: "Dermatología", mat: "55667" },
+        { nom: "Dra. Silvia Paz", esp: "Geriatría", mat: "77889" },
+        { nom: "Dr. Andrés Luna", esp: "Hematología", mat: "99001" },
+        { nom: "Dra. Clara Vega", esp: "Alergia e Inmunología", mat: "22334" },
+        { nom: "Dr. Fernando Ruiz", esp: "Cirugía General", mat: "50553" },
+        { nom: "Dr. Jorge Medina", esp: "Cirugía Cardiovascular", mat: "20192" },
+        { nom: "Dra. Luciana Herrera", esp: "Cirugía Plástica y Reparadora", mat: "44556" },
+        { nom: "Dr. Ricardo Silva", esp: "Traumatología y Ortopedia", mat: "33918" },
+        { nom: "Dr. Marcos Torres", esp: "Neurocirugía", mat: "66778" },
+        { nom: "Dr. Javier López", esp: "Urología", mat: "88990" },
+        { nom: "Dra. Elena Castro", esp: "Otorrinolaringología", mat: "11224" },
+        { nom: "Dr. Matías Rojas", esp: "Oftalmología", mat: "33446" },
+        { nom: "Dra. Carmen López", esp: "Ginecología y Obstetricia", mat: "60293" },
+        { nom: "Dr. Javier Blanco", esp: "Diagnóstico por Imágenes", mat: "30775" },
+        { nom: "Dra. Silvia Torres", esp: "Anatomía Patológica", mat: "20886" },
+        { nom: "Dr. Mario Domínguez", esp: "Anestesiología", mat: "55668" },
+        { nom: "Dr. Hugo Varela", esp: "Terapia Intensiva", mat: "10997" },
+        { nom: "Dra. Natalia Cruz", esp: "Medicina Física y Rehabilitación", mat: "77880" },
+        { nom: "Dr. Diego Ponce", esp: "Medicina de Emergencias", mat: "99002" }
+    ];
 
     abrirModal('modal-progreso');
     const barra = document.getElementById('progreso-barra');
     const texto = document.getElementById('progreso-texto');
-    if (texto) texto.innerText = "Inyectando médicos desde servidor...";
-    if (barra) barra.style.width = '50%';
 
-    try {
-        const fnInyectar = httpsCallable(functionsInstancia, 'inyectarMedicosDePrueba');
-        const res = await fnInyectar();
-        if (barra) barra.style.width = '100%';
-        cerrarModal('modal-progreso');
-        mostrarExito("Inyección Exitosa", res.data?.mensaje || "Médicos inyectados correctamente.");
-        cargarUsuariosAdmin('init');
-        cargarEspecialistasFirebase();
-        cargarMetricas();
-    } catch (e) {
-        console.error(e);
-        cerrarModal('modal-progreso');
-        mostrarAlerta("Error", e.message || "Error al inyectar médicos.");
+    let completados = 0;
+    const total = medicosDemo.length;
+
+    for (const med of medicosDemo) {
+        const payload = {
+            nombre: med.nom,
+            rol: "Médico",
+            username: med.nom.split(' ')[1].toLowerCase() + Math.floor(Math.random() * 1000),
+            correo: med.nom.split(' ')[1].toLowerCase() + "@hospital.demo",
+            tel: "2604000000",
+            matricula: med.mat,
+            especialidad: med.esp,
+            activo: true,
+            timestamp: new Date()
+        };
+
+        try {
+            await addDoc(collection(db, "usuarios"), payload);
+        } catch (e) {
+            console.error("Fallo inyectando a:", med.nom);
+        }
+
+        completados++;
+        let porcentaje = Math.round((completados / total) * 100);
+        if (barra) barra.style.width = porcentaje + '%';
+        if (texto) texto.innerText = `Cargando: ${med.nom} (${completados}/${total})`;
     }
+
+    cerrarModal('modal-progreso');
+    mostrarExito("Inyección Exitosa", "Los 28 profesionales demostrativos fueron cargados al sistema con sus respectivas especialidades.");
+
+    cargarUsuariosAdmin('init');
+    cargarEspecialistasFirebase();
+    cargarMetricas();
 }

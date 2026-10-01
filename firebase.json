@@ -1,13 +1,10 @@
 {
-  "functions": {
-    "source": "functions"
-  },
   "firestore": {
     "rules": "firestore.rules"
   },
   "hosting": {
     "public": ".",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "firestore.rules", "README.md", "README_SEGURIDAD.md", "PLAN.md"],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "firestore.rules", "README.md", "README_SEGURIDAD.md", "PLAN.md", "functions/**"],
     "headers": [
       {
         "source": "**",
