@@ -17,7 +17,7 @@
   - **Riesgo**: Crítico. `limpiarBaseDeDatos()` e `inyectarMedicosDePrueba()` están expuestas globalmente en `window`. Cualquier usuario puede invocar desde la consola y borrar colecciones completas en Firestore. Hay validación de superadmin por correo hardcodeado (`nachohelbas@gmail.com`).
   - **Solución**: Mover la lógica de limpieza e inyección a Cloud Functions callable protegidas por rol administrativo (`request.auth.token.rol == 'Administración'`). Eliminar las funciones y el correo hardcodeado del frontend.
 
-- [ ] **2. Falta de implementación de Cloud Functions (`functions/index.js`) y configuración en `firebase.json`**
+- [x] **2. Falta de implementación de Cloud Functions (`functions/index.js`) y configuración en `firebase.json`**
   - **Archivo y Línea**: `functions/` (solo existe `package.json`, falta `index.js`), `firebase.json` (no declara `"functions"`)
   - **Riesgo**: Crítico. El frontend ya invoca callables (`crearTurnoPublico`, `buscarTurnoPorCodigo`, `cancelarTurnoConCodigo`, `guardarUsuarioAdmin`), pero no existen en el backend, dejando el sistema inoperativo o expuesto a fallos.
   - **Solución**: Desarrollar `functions/index.js` con todas las funciones callables requeridas (`crearTurnoPublico`, `buscarTurnoPorCodigo`, `cancelarTurnoConCodigo`, `guardarUsuarioAdmin`, `limpiarBaseDeDatos`, `inyectarMedicosDePrueba`, y `asignarRolAdminInicial`). Configurar `firebase.json` con la sección `functions`.
