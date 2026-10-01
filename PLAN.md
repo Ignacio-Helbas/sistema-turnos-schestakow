@@ -22,7 +22,7 @@
   - **Riesgo**: Crítico. El frontend ya invoca callables (`crearTurnoPublico`, `buscarTurnoPorCodigo`, `cancelarTurnoConCodigo`, `guardarUsuarioAdmin`), pero no existen en el backend, dejando el sistema inoperativo o expuesto a fallos.
   - **Solución**: Desarrollar `functions/index.js` con todas las funciones callables requeridas (`crearTurnoPublico`, `buscarTurnoPorCodigo`, `cancelarTurnoConCodigo`, `guardarUsuarioAdmin`, `limpiarBaseDeDatos`, `inyectarMedicosDePrueba`, y `asignarRolAdminInicial`). Configurar `firebase.json` con la sección `functions`.
 
-- [ ] **3. Ausencia de Autenticación Anónima para Pacientes en el Portal Público**
+- [x] **3. Ausencia de Autenticación Anónima para Pacientes en el Portal Público**
   - **Archivo y Línea**: `js/logica.js` (L23, L531-560)
   - **Riesgo**: Alto. Las reservas públicas se realizan sin contexto de autenticación Firebase Auth, lo que impide vincular y controlar turnos por UID de paciente y facilita ataques automatizados / spam.
   - **Solución**: Integrar `signInAnonymously(auth)` en la inicialización pública para que cada paciente opere con un `uid` anónimo seguro que pueda ser verificado en las Cloud Functions y reglas.

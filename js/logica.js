@@ -3,7 +3,7 @@
 // ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, query, where, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc, getDoc, orderBy, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-functions.js";
 
 // ==========================================
@@ -252,7 +252,19 @@ async function cargarConfiguracionModulacion() {
     } catch(e) { console.log("Configuración por defecto cargada."); }
 }
 
+async function asegurarAutenticacionAnonima() {
+    if (!window.auth.currentUser) {
+        try {
+            await signInAnonymously(window.auth);
+            console.log("Sesión anónima de paciente inicializada.");
+        } catch(e) {
+            console.warn("Autenticación anónima no disponible o desactivada en Firebase Auth:", e);
+        }
+    }
+}
+
 async function iniciarCargaDeDatos() {
+    await asegurarAutenticacionAnonima();
     aplicarPermisosVisuales();
     establecerLimitesFecha(); 
     await cargarEspecialistasFirebase(); 
@@ -523,6 +535,7 @@ async function confirmarTurnoFirebase() {
     if (!nom || !dni || !cel) { mostrarAlerta("Faltan Datos del Paciente", "Nombre, DNI y Celular son campos obligatorios."); return; }
 
     try {
+        await asegurarAutenticacionAnonima();
         const llamarCrearTurno = httpsCallable(functionsInstancia, 'crearTurnoPublico');
         const respuesta = await llamarCrearTurno({
             especialidad: esp, medico: med, fecha: fec, horario: hor,
