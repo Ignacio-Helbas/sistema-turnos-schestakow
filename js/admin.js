@@ -91,6 +91,16 @@ window.verificarLimpiezaAnual = verificarLimpiezaAnual;
 window.ejecutarLimpiezaYDescarga = ejecutarLimpiezaYDescarga;
 window.limpiarBaseDeDatos = limpiarBaseDeDatos;
 window.inyectarMedicosDePrueba = inyectarMedicosDePrueba;
+window.buscarPacientePorDni = buscarPacientePorDni;
+window.abrirFichaPacienteHC = abrirFichaPacienteHC;
+window.guardarConsultaInmutable = guardarConsultaInmutable;
+window.abrirModalRectificar = abrirModalRectificar;
+window.guardarRectificacionInmutable = guardarRectificacionInmutable;
+window.abrirModalEditarResumen = abrirModalEditarResumen;
+window.guardarResumenClinico = guardarResumenClinico;
+window.ejecutarAccesoEmergencia = ejecutarAccesoEmergencia;
+window.exportarHistoriaClinica = exportarHistoriaClinica;
+window.cerrarFichaPacienteHC = cerrarFichaPacienteHC;
 
 // ==========================================
 // SESIÓN Y AUTENTICACIÓN
@@ -723,24 +733,698 @@ export async function cargarAgendaMedico() {
     }
 }
 
+// ==========================================
+// HISTORIA CLÍNICA INMUTABLE Y CONSULTORIO MÉDICO
+// ==========================================
+let pacienteActivoHC = null;
+let consultasHistoriaClinica = [];
+
+function calcularEdad(fechaNacimientoStr) {
+    if (!fechaNacimientoStr) return 'N/A';
+    const cumple = new Date(fechaNacimientoStr);
+    const hoy = new Date();
+    let edad = hoy.getFullYear() - cumple.getFullYear();
+    const m = hoy.getMonth() - cumple.getMonth();
+    if (m < 0 || (m === 0 && hoy.getDate() < cumple.getDate())) {
+        edad--;
+    }
+    return edad >= 0 ? `${edad} años` : 'N/A';
+}
+
+function generarIdCripto(prefijo = 'DOC', longitud = 20) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    const array = new Uint8Array(longitud);
+    window.crypto.getRandomValues(array);
+    let id = '';
+    for (let i = 0; i < longitud; i++) {
+        id += chars[array[i] % chars.length];
+    }
+    return `${prefijo}_${id}`;
+}
+
+export async function buscarPacientePorDni(dniParam) {
+    const inputDni = document.getElementById('input-buscar-dni-medico');
+    const dni = (dniParam || (inputDni ? inputDni.value : '')).trim();
+
+    if (!/^[0-9]{6,10}$/.test(dni)) {
+        mostrarAlerta("DNI Inválido", "Ingrese un número de documento válido de entre 6 y 10 dígitos numéricos.");
+        return;
+    }
+
+    try {
+        const dniDocSnap = await getDoc(doc(db, "pacientes_por_dni", dni));
+        if (!dniDocSnap.exists()) {
+            const crear = await pedirConfirmacion(
+                "Paciente no encontrado",
+                `No existe historia clínica registrada para el DNI ${dni}. ¿Desea crear la ficha demográfica inicial del paciente?`,
+                "Crear Ficha"
+            );
+            if (!crear) return;
+
+            const nuevoPacienteId = generarIdCripto('PAC', 20);
+            const batch = writeBatch(db);
+
+            batch.set(doc(db, "pacientes_por_dni", dni), {
+                pacienteId: nuevoPacienteId,
+                dni: dni,
+                creadoEn: serverTimestamp()
+            });
+
+            batch.set(doc(db, "pacientes", nuevoPacienteId), {
+                dni: dni,
+                nombre: "Paciente",
+                apellido: `DNI ${dni}`,
+                fechaNacimiento: "1990-01-01",
+                sexo: "No especificado",
+                contacto: { celular: "", email: "" },
+                creadoEn: serverTimestamp(),
+                creadoPor: sesionActual ? sesionActual.uid : "staff",
+                esDemo: true
+            });
+
+            if (sesionActual) {
+                batch.set(doc(db, "pacientes", nuevoPacienteId, "acceso", sesionActual.uid), {
+                    medicoUid: sesionActual.uid,
+                    creadoEn: serverTimestamp(),
+                    motivoEmergencia: "Alta inicial de paciente por consultorio"
+                });
+
+                batch.set(doc(collection(db, "auditoria")), {
+                    actorUid: sesionActual.uid,
+                    actorRol: sesionActual.rol || "Médico",
+                    accion: "ALTA_PACIENTE_HC",
+                    pacienteId: nuevoPacienteId,
+                    fecha: serverTimestamp(),
+                    detalle: `Alta demográfica para DNI ${dni}`
+                });
+            }
+
+            await batch.commit();
+            await abrirFichaPacienteHC(nuevoPacienteId);
+            return;
+        }
+
+        const pacienteId = dniDocSnap.data().pacienteId;
+        await abrirFichaPacienteHC(pacienteId);
+    } catch (e) {
+        console.error("Error al buscar paciente:", e);
+        mostrarAlerta("Error de Consulta", "No se pudo acceder a la historia clínica del paciente. Verifique permisos.");
+    }
+}
+
+export async function abrirFichaPacienteHC(pacienteId, turnoId = null) {
+    try {
+        const pacSnap = await getDoc(doc(db, "pacientes", pacienteId));
+        if (!pacSnap.exists()) {
+            mostrarAlerta("Error", "Ficha de paciente no encontrada.");
+            return;
+        }
+
+        const pacData = pacSnap.data();
+        pacienteActivoHC = { id: pacienteId, ...pacData, turnoId };
+
+        if (sesionActual && sesionActual.uid) {
+            const accesoRef = doc(db, "pacientes", pacienteId, "acceso", sesionActual.uid);
+            const accesoSnap = await getDoc(accesoRef);
+            if (!accesoSnap.exists()) {
+                await setDoc(accesoRef, {
+                    medicoUid: sesionActual.uid,
+                    turnoId: turnoId || "consulta_directa",
+                    creadoEn: serverTimestamp()
+                });
+            }
+
+            await addDoc(collection(db, "auditoria"), {
+                actorUid: sesionActual.uid,
+                actorRol: sesionActual.rol || "Médico",
+                accion: "LECTURA_HISTORIA_CLINICA",
+                pacienteId: pacienteId,
+                fecha: serverTimestamp(),
+                detalle: `Apertura de historia clínica de ${pacData.nombre} ${pacData.apellido}`
+            }).catch(() => {});
+        }
+
+        const cabecera = document.getElementById('cabecera-paciente-hc');
+        if (cabecera) cabecera.classList.remove('hidden');
+
+        const iniciales = (pacData.nombre ? pacData.nombre[0] : '') + (pacData.apellido ? pacData.apellido[0] : '');
+        const elInit = document.getElementById('hc-paciente-iniciales');
+        if (elInit) elInit.innerText = iniciales.toUpperCase() || 'HC';
+
+        const elNom = document.getElementById('hc-paciente-nombre');
+        if (elNom) elNom.innerText = `${pacData.nombre} ${pacData.apellido}`;
+
+        const elDni = document.getElementById('hc-paciente-dni');
+        if (elDni) elDni.innerText = pacData.dni || 'S/D';
+
+        const elEdad = document.getElementById('hc-paciente-edad');
+        if (elEdad) elEdad.innerText = calcularEdad(pacData.fechaNacimiento);
+
+        const elSexo = document.getElementById('hc-paciente-sexo');
+        if (elSexo) elSexo.innerText = pacData.sexo || 'No especificado';
+
+        const elContacto = document.getElementById('hc-paciente-contacto');
+        if (elContacto) elContacto.innerText = pacData.contacto?.celular || pacData.contacto?.email || 'Sin contacto';
+
+        const badgeDemo = document.getElementById('hc-paciente-badge-demo');
+        if (badgeDemo) {
+            badgeDemo.classList.toggle('hidden', !pacData.esDemo);
+        }
+
+        await cargarResumenClinico(pacienteId);
+
+        const labelActivo = document.getElementById('medico-paciente-activo');
+        if (labelActivo) {
+            labelActivo.innerText = `Atendiendo a: ${pacData.nombre} ${pacData.apellido} (DNI ${pacData.dni})`;
+        }
+        const badgeTurno = document.getElementById('badge-turno-en-curso');
+        if (badgeTurno) {
+            badgeTurno.classList.toggle('hidden', !turnoId);
+        }
+
+        await cargarCronologiaConsultas(pacienteId);
+
+    } catch (e) {
+        console.error("Error abriendo ficha clínica:", e);
+        mostrarAlerta("Acceso Restringido", "No posee habilitación de acceso a la historia clínica de este paciente.");
+    }
+}
+
+export async function cargarResumenClinico(pacienteId) {
+    const elAlergias = document.getElementById('hc-alergias-texto');
+    const elAntecedentes = document.getElementById('hc-antecedentes-texto');
+    const elMedicacion = document.getElementById('hc-medicacion-texto');
+
+    try {
+        const snap = await getDoc(doc(db, "pacientes", pacienteId, "clinico", "resumen"));
+        if (snap.exists()) {
+            const data = snap.data();
+            if (elAlergias) elAlergias.innerText = data.alergias || 'Sin alergias registradas';
+            if (elAntecedentes) elAntecedentes.innerText = data.antecedentes || 'Ninguno informado';
+            if (elMedicacion) elMedicacion.innerText = data.medicacion || 'Sin medicación regular';
+        } else {
+            if (elAlergias) elAlergias.innerText = 'Sin alergias registradas';
+            if (elAntecedentes) elAntecedentes.innerText = 'Ninguno informado';
+            if (elMedicacion) elMedicacion.innerText = 'Sin medicación regular';
+        }
+    } catch (e) {
+        console.warn("Fallo lectura de resumen clínico:", e);
+    }
+}
+
+export async function cargarCronologiaConsultas(pacienteId) {
+    const container = document.getElementById('contenedor-cronologia-consultas');
+    const badgeTotal = document.getElementById('badge-total-consultas');
+    if (!container) return;
+
+    container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Cargando cronología médica...</p>';
+
+    try {
+        const q = query(
+            collection(db, "pacientes", pacienteId, "consultas"),
+            orderBy("fecha", "desc")
+        );
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+            container.innerHTML = '<p class="text-sm text-slate-500 text-center py-6">No hay consultas previas registradas para este paciente.</p>';
+            if (badgeTotal) badgeTotal.innerText = '0 consultas';
+            consultasHistoriaClinica = [];
+            return;
+        }
+
+        consultasHistoriaClinica = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (badgeTotal) badgeTotal.innerText = `${consultasHistoriaClinica.length} consulta${consultasHistoriaClinica.length !== 1 ? 's' : ''}`;
+
+        const idsRectificados = new Set();
+        consultasHistoriaClinica.forEach(c => {
+            if (c.corrige) idsRectificados.add(c.corrige);
+        });
+
+        let html = '';
+        consultasHistoriaClinica.forEach(c => {
+            const fechaStr = c.fecha?.toDate ? c.fecha.toDate().toLocaleString('es-AR') : (c.fecha || 'Fecha N/D');
+            const esRectificada = idsRectificados.has(c.id);
+            const esRectificacion = Boolean(c.corrige);
+
+            let signosBadges = '';
+            if (c.signosVitales && typeof c.signosVitales === 'object') {
+                const sv = c.signosVitales;
+                if (sv.ta) signosBadges += `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-mono">TA: ${escaparHTML(sv.ta)}</span>`;
+                if (sv.fc) signosBadges += `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-mono">FC: ${escaparHTML(sv.fc)} lpm</span>`;
+                if (sv.temp) signosBadges += `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-mono">Temp: ${escaparHTML(sv.temp)}°C</span>`;
+                if (sv.sat) signosBadges += `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-mono">Sat: ${escaparHTML(sv.sat)}%</span>`;
+                if (sv.peso) signosBadges += `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-mono">${escaparHTML(sv.peso)} kg</span>`;
+            }
+
+            html += `
+                <div class="border ${esRectificada ? 'border-amber-300 bg-amber-50/30' : 'border-slate-200 bg-white'} rounded-xl p-4 shadow-sm space-y-3">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-2">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs font-mono font-bold text-blue-900 bg-blue-50 px-2.5 py-1 rounded">${escaparHTML(fechaStr)}</span>
+                            <span class="text-xs font-semibold text-slate-700">${escaparHTML(c.medicoNombre || 'Médico')}</span>
+                            ${esRectificacion ? `<span class="text-[11px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">🔄 Rectificación de consulta</span>` : ''}
+                            ${esRectificada ? `<span class="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">⚠️ Rectificada por entrada posterior</span>` : ''}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] bg-slate-100 text-slate-500 font-mono px-2 py-0.5 rounded">Inmutable</span>
+                            <button onclick="abrirModalRectificar('${c.id}')" class="text-xs text-blue-700 hover:text-blue-900 font-bold border border-blue-200 px-2 py-1 rounded bg-blue-50/50 hover:bg-blue-100 transition">
+                                Rectificar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Motivo de Consulta</p>
+                        <p class="text-sm text-slate-900 font-medium">${escaparHTML(c.motivo || 'No especificado')}</p>
+                    </div>
+
+                    ${c.diagnostico ? `
+                        <div>
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Diagnóstico</p>
+                            <p class="text-sm font-bold text-slate-800">${escaparHTML(c.diagnostico)}</p>
+                        </div>
+                    ` : ''}
+
+                    ${signosBadges ? `
+                        <div>
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Signos Vitales</p>
+                            <div class="flex flex-wrap gap-1.5">${signosBadges}</div>
+                        </div>
+                    ` : ''}
+
+                    <div>
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Evolución y Examen Clínico</p>
+                        <p class="text-sm text-slate-700 whitespace-pre-line bg-slate-50 p-3 rounded-lg border border-slate-100 mt-1">${escaparHTML(c.evolucion || '')}</p>
+                    </div>
+
+                    ${c.indicaciones ? `
+                        <div>
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Indicaciones / Tratamiento</p>
+                            <p class="text-sm text-slate-800 italic bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100 mt-1">${escaparHTML(c.indicaciones)}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    } catch (e) {
+        console.error("Error al cargar consultas:", e);
+        container.innerHTML = '<p class="text-sm text-red-500 text-center py-4">Error al cargar la cronología de consultas.</p>';
+    }
+}
+
+export async function guardarConsultaInmutable() {
+    if (!pacienteActivoHC) {
+        mostrarAlerta("Ningún Paciente", "Seleccione o busque a un paciente antes de registrar una consulta.");
+        return;
+    }
+
+    const motivo = document.getElementById('input-motivo-consulta')?.value.trim();
+    const diagnostico = document.getElementById('input-diagnostico-consulta')?.value.trim();
+    const evolucion = document.getElementById('texto-evolucion')?.value.trim();
+    const indicaciones = document.getElementById('texto-indicaciones')?.value.trim();
+
+    if (!motivo || !diagnostico || !evolucion) {
+        mostrarAlerta("Campos Obligatorios", "Motivo de consulta, diagnóstico y evolución son obligatorios.");
+        return;
+    }
+
+    const confirmado = await pedirConfirmacion(
+        "Confirmar Consulta Inmutable",
+        "Conforme a la Ley 26.529, esta consulta quedará asentada de forma permanente y NO podrá ser editada ni eliminada. ¿Desea registrarla definitivamente?",
+        "Sí, Registrar Inmutable"
+    );
+    if (!confirmado) return;
+
+    const signosVitales = {
+        ta: document.getElementById('sv-ta')?.value.trim() || '',
+        fc: document.getElementById('sv-fc')?.value.trim() || '',
+        temp: document.getElementById('sv-temp')?.value.trim() || '',
+        sat: document.getElementById('sv-sat')?.value.trim() || '',
+        peso: document.getElementById('sv-peso')?.value.trim() || '',
+        talla: document.getElementById('sv-talla')?.value.trim() || ''
+    };
+
+    try {
+        const consultaId = generarIdCripto('CONS', 20);
+        const consultaRef = doc(db, "pacientes", pacienteActivoHC.id, "consultas", consultaId);
+        const batch = writeBatch(db);
+
+        batch.set(consultaRef, {
+            turnoId: pacienteActivoHC.turnoId || '',
+            medicoUid: sesionActual ? sesionActual.uid : 'medico_demo',
+            medicoNombre: sesionActual ? sesionActual.nombre : 'Profesional Médico',
+            fecha: serverTimestamp(),
+            motivo: motivo,
+            diagnostico: diagnostico,
+            diagnosticoCodigo: '',
+            evolucion: evolucion,
+            indicaciones: indicaciones,
+            signosVitales: signosVitales,
+            corrige: null
+        });
+
+        if (pacienteActivoHC.turnoId) {
+            const turnoRef = doc(db, "turnos", pacienteActivoHC.turnoId);
+            batch.update(turnoRef, {
+                estado: "Atendido",
+                atendidoEn: serverTimestamp(),
+                pacienteId: pacienteActivoHC.id
+            });
+        }
+
+        const auditRef = doc(collection(db, "auditoria"));
+        batch.set(auditRef, {
+            actorUid: sesionActual ? sesionActual.uid : 'anon',
+            actorRol: sesionActual ? sesionActual.rol : 'Médico',
+            accion: "CONSULTA_MEDICA_REGISTRADA",
+            pacienteId: pacienteActivoHC.id,
+            consultaId: consultaId,
+            fecha: serverTimestamp(),
+            detalle: `Consulta registrada: ${motivo}`
+        });
+
+        await batch.commit();
+
+        mostrarExito("Consulta Asentada", "La consulta fue incorporada a la historia clínica de forma inmutable.");
+
+        document.getElementById('input-motivo-consulta').value = '';
+        document.getElementById('input-diagnostico-consulta').value = '';
+        document.getElementById('texto-evolucion').value = '';
+        document.getElementById('texto-indicaciones').value = '';
+        document.getElementById('sv-ta').value = '';
+        document.getElementById('sv-fc').value = '';
+        document.getElementById('sv-temp').value = '';
+        document.getElementById('sv-sat').value = '';
+        document.getElementById('sv-peso').value = '';
+        document.getElementById('sv-talla').value = '';
+
+        await cargarCronologiaConsultas(pacienteActivoHC.id);
+        cargarAgendaMedico();
+
+    } catch (e) {
+        console.error("Error guardando consulta:", e);
+        mostrarAlerta("Error al Guardar", "No se pudo registrar la consulta médica. Verifique permisos.");
+    }
+}
+
+export function abrirModalRectificar(consultaId) {
+    const consulta = consultasHistoriaClinica.find(c => c.id === consultaId);
+    if (!consulta) return;
+
+    document.getElementById('rectificar-consulta-original-id').value = consultaId;
+    const fechaStr = consulta.fecha?.toDate ? consulta.fecha.toDate().toLocaleString('es-AR') : (consulta.fecha || '');
+    const resumenEl = document.getElementById('rectificar-resumen-original');
+    if (resumenEl) {
+        resumenEl.innerText = `ID: ${consultaId} | Fecha: ${fechaStr} | Motivo: ${consulta.motivo} | Evolución previa: ${consulta.evolucion?.substring(0, 100) || ''}...`;
+    }
+
+    document.getElementById('rectificar-motivo').value = '';
+    document.getElementById('rectificar-evolucion').value = '';
+    document.getElementById('rectificar-indicaciones').value = '';
+
+    abrirModal('modal-rectificar-consulta');
+}
+
+export async function guardarRectificacionInmutable() {
+    const originalId = document.getElementById('rectificar-consulta-original-id')?.value;
+    const motivo = document.getElementById('rectificar-motivo')?.value.trim();
+    const evolucion = document.getElementById('rectificar-evolucion')?.value.trim();
+    const indicaciones = document.getElementById('rectificar-indicaciones')?.value.trim();
+
+    if (!motivo || !evolucion) {
+        mostrarAlerta("Datos Faltantes", "Motivo de la rectificación y nueva evolución son obligatorios.");
+        return;
+    }
+
+    const confirmado = await pedirConfirmacion(
+        "Confirmar Rectificación",
+        "Esta rectificación quedará asentada inmutablemente vinculada a la consulta original. ¿Confirmar?",
+        "Registrar Rectificación"
+    );
+    if (!confirmado) return;
+
+    try {
+        const nuevaConsultaId = generarIdCripto('CONS_RECT', 20);
+        const consultaRef = doc(db, "pacientes", pacienteActivoHC.id, "consultas", nuevaConsultaId);
+        const batch = writeBatch(db);
+
+        batch.set(consultaRef, {
+            turnoId: '',
+            medicoUid: sesionActual ? sesionActual.uid : 'medico_demo',
+            medicoNombre: sesionActual ? sesionActual.nombre : 'Profesional Médico',
+            fecha: serverTimestamp(),
+            motivo: `[Rectificación] ${motivo}`,
+            diagnostico: 'Rectificación de consulta previa',
+            diagnosticoCodigo: '',
+            evolucion: evolucion,
+            indicaciones: indicaciones,
+            signosVitales: {},
+            corrige: originalId
+        });
+
+        const auditRef = doc(collection(db, "auditoria"));
+        batch.set(auditRef, {
+            actorUid: sesionActual ? sesionActual.uid : 'anon',
+            actorRol: sesionActual ? sesionActual.rol : 'Médico',
+            accion: "CONSULTA_RECTIFICADA",
+            pacienteId: pacienteActivoHC.id,
+            consultaId: originalId,
+            fecha: serverTimestamp(),
+            detalle: `Rectificación de consulta ${originalId}: ${motivo}`
+        });
+
+        await batch.commit();
+
+        cerrarModal('modal-rectificar-consulta');
+        mostrarExito("Rectificación Asentada", "La rectificación fue registrada de forma inmutable.");
+        await cargarCronologiaConsultas(pacienteActivoHC.id);
+    } catch (e) {
+        console.error("Error al rectificar:", e);
+        mostrarAlerta("Error", "No se pudo registrar la rectificación.");
+    }
+}
+
+export function abrirModalEditarResumen() {
+    if (!pacienteActivoHC) return;
+    const elAlergias = document.getElementById('hc-alergias-texto')?.innerText || '';
+    const elAntecedentes = document.getElementById('hc-antecedentes-texto')?.innerText || '';
+    const elMedicacion = document.getElementById('hc-medicacion-texto')?.innerText || '';
+
+    document.getElementById('modal-input-alergias').value = elAlergias.includes('Sin alergias') ? '' : elAlergias;
+    document.getElementById('modal-input-antecedentes').value = elAntecedentes.includes('Ninguno informado') ? '' : elAntecedentes;
+    document.getElementById('modal-input-medicacion').value = elMedicacion.includes('Sin medicación') ? '' : elMedicacion;
+    document.getElementById('modal-input-motivo-cambio-resumen').value = '';
+
+    abrirModal('modal-editar-resumen-clinico');
+}
+
+export async function guardarResumenClinico() {
+    if (!pacienteActivoHC) return;
+    const alergias = document.getElementById('modal-input-alergias')?.value.trim();
+    const antecedentes = document.getElementById('modal-input-antecedentes')?.value.trim();
+    const medicacion = document.getElementById('modal-input-medicacion')?.value.trim();
+    const motivo = document.getElementById('modal-input-motivo-cambio-resumen')?.value.trim();
+
+    if (!motivo) {
+        mostrarAlerta("Motivo Requerido", "Por trazabilidad y auditoría clínica, ingrese el motivo del cambio.");
+        return;
+    }
+
+    try {
+        const batch = writeBatch(db);
+        const resumenRef = doc(db, "pacientes", pacienteActivoHC.id, "clinico", "resumen");
+
+        batch.set(resumenRef, {
+            alergias: alergias || 'Sin alergias registradas',
+            antecedentes: antecedentes || 'Ninguno informado',
+            medicacion: medicacion || 'Sin medicación regular',
+            actualizadoEn: serverTimestamp()
+        }, { merge: true });
+
+        const auditRef = doc(collection(db, "auditoria"));
+        batch.set(auditRef, {
+            actorUid: sesionActual ? sesionActual.uid : 'anon',
+            actorRol: sesionActual ? sesionActual.rol : 'Médico',
+            accion: "ACTUALIZAR_RESUMEN_CLINICO",
+            pacienteId: pacienteActivoHC.id,
+            fecha: serverTimestamp(),
+            detalle: `Actualización de resumen clínico: ${motivo}`
+        });
+
+        await batch.commit();
+
+        cerrarModal('modal-editar-resumen-clinico');
+        mostrarExito("Resumen Actualizado", "Los datos clínicos permanentes fueron guardados.");
+        await cargarResumenClinico(pacienteActivoHC.id);
+    } catch (e) {
+        console.error("Error guardando resumen:", e);
+        mostrarAlerta("Error", "No se pudo actualizar el resumen clínico.");
+    }
+}
+
+export async function ejecutarAccesoEmergencia() {
+    const dni = document.getElementById('modal-emergencia-dni')?.value.trim();
+    const motivo = document.getElementById('modal-emergencia-motivo')?.value.trim();
+
+    if (!/^[0-9]{6,10}$/.test(dni)) {
+        mostrarAlerta("DNI Inválido", "Ingrese un DNI numérico válido (6 a 10 dígitos).");
+        return;
+    }
+    if (!motivo || motivo.length < 10) {
+        mostrarAlerta("Motivo Insuficiente", "El motivo justificado de emergencia debe tener al menos 10 caracteres.");
+        return;
+    }
+
+    try {
+        let pacienteId;
+        const dniSnap = await getDoc(doc(db, "pacientes_por_dni", dni));
+        if (dniSnap.exists()) {
+            pacienteId = dniSnap.data().pacienteId;
+        } else {
+            pacienteId = generarIdCripto('PAC_EMERG', 20);
+            const batchCrear = writeBatch(db);
+            batchCrear.set(doc(db, "pacientes_por_dni", dni), { pacienteId, dni, creadoEn: serverTimestamp() });
+            batchCrear.set(doc(db, "pacientes", pacienteId), {
+                dni,
+                nombre: "Paciente",
+                apellido: `Emergencia ${dni}`,
+                fechaNacimiento: "1980-01-01",
+                sexo: "No especificado",
+                contacto: {},
+                creadoEn: serverTimestamp(),
+                creadoPor: sesionActual ? sesionActual.uid : 'emergencia',
+                esDemo: true
+            });
+            await batchCrear.commit();
+        }
+
+        const batch = writeBatch(db);
+        const accesoRef = doc(db, "pacientes", pacienteId, "acceso", sesionActual.uid);
+        batch.set(accesoRef, {
+            medicoUid: sesionActual.uid,
+            creadoEn: serverTimestamp(),
+            motivoEmergencia: motivo
+        });
+
+        const auditRef = doc(collection(db, "auditoria"));
+        batch.set(auditRef, {
+            actorUid: sesionActual.uid,
+            actorRol: sesionActual.rol || "Médico",
+            accion: "ACCESO_EMERGENCIA",
+            pacienteId: pacienteId,
+            fecha: serverTimestamp(),
+            detalle: `Acceso extraordinario de emergencia: ${motivo}`
+        });
+
+        await batch.commit();
+
+        cerrarModal('modal-acceso-emergencia');
+        mostrarExito("Acceso Concedido", "Se habilitó el acceso clínico de emergencia y se registró en la auditoría.");
+        await abrirFichaPacienteHC(pacienteId);
+
+    } catch (e) {
+        console.error("Error en acceso de emergencia:", e);
+        mostrarAlerta("Error", "No se pudo habilitar el acceso de emergencia.");
+    }
+}
+
+export async function exportarHistoriaClinica() {
+    if (!pacienteActivoHC) {
+        mostrarAlerta("Ningún Paciente", "Seleccione un paciente para imprimir su historia clínica.");
+        return;
+    }
+
+    if (sesionActual) {
+        await addDoc(collection(db, "auditoria"), {
+            actorUid: sesionActual.uid,
+            actorRol: sesionActual.rol || "Médico",
+            accion: "EXPORTAR_HISTORIA_CLINICA",
+            pacienteId: pacienteActivoHC.id,
+            fecha: serverTimestamp(),
+            detalle: `Impresión/Exportación de ficha de ${pacienteActivoHC.nombre} ${pacienteActivoHC.apellido}`
+        }).catch(() => {});
+    }
+
+    window.print();
+}
+
+export function cerrarFichaPacienteHC() {
+    pacienteActivoHC = null;
+    const cabecera = document.getElementById('cabecera-paciente-hc');
+    if (cabecera) cabecera.classList.add('hidden');
+    const container = document.getElementById('contenedor-cronologia-consultas');
+    if (container) container.innerHTML = '<p class="text-sm text-slate-400 text-center py-8">Seleccione un paciente para ver su historial clínico.</p>';
+    const labelActivo = document.getElementById('medico-paciente-activo');
+    if (labelActivo) labelActivo.innerText = "Ningún paciente en atención";
+    const badgeTurno = document.getElementById('badge-turno-en-curso');
+    if (badgeTurno) badgeTurno.classList.add('hidden');
+}
+
 export async function llamarPaciente(idDoc) {
     try {
         const snap = await getDoc(doc(db, "turnos", idDoc));
         if (!snap.exists()) return;
-        pacienteSeleccionadoMedico = { idDoc, ...snap.data() };
+        const turnoData = snap.data();
 
-        const nombreEl = document.getElementById('medico-paciente-activo');
-        const motivoEl = document.getElementById('input-motivo-consulta');
-        const evoEl = document.getElementById('texto-evolucion');
+        let pacienteId = turnoData.pacienteId;
 
-        if (nombreEl) nombreEl.innerText = `${pacienteSeleccionadoMedico.pacienteNombre} (DNI: ${pacienteSeleccionadoMedico.pacienteDni || 'N/A'}) - ${pacienteSeleccionadoMedico.horario} hs`;
-        if (motivoEl) motivoEl.value = pacienteSeleccionadoMedico.motivoConsulta || '';
-        if (evoEl) evoEl.value = pacienteSeleccionadoMedico.evolucionMedica || '';
+        if (!pacienteId && turnoData.pacienteDni) {
+            const dni = turnoData.pacienteDni.trim();
+            const dniSnap = await getDoc(doc(db, "pacientes_por_dni", dni));
+            if (dniSnap.exists()) {
+                pacienteId = dniSnap.data().pacienteId;
+            } else {
+                pacienteId = generarIdCripto('PAC', 20);
+                const batchAlta = writeBatch(db);
+                batchAlta.set(doc(db, "pacientes_por_dni", dni), {
+                    pacienteId,
+                    dni,
+                    creadoEn: serverTimestamp()
+                });
+                batchAlta.set(doc(db, "pacientes", pacienteId), {
+                    dni,
+                    nombre: (turnoData.pacienteNombre || 'Paciente').split(' ')[0] || 'Paciente',
+                    apellido: (turnoData.pacienteNombre || '').split(' ').slice(1).join(' ') || 'Schestakow',
+                    fechaNacimiento: '1990-01-01',
+                    sexo: 'No especificado',
+                    contacto: {
+                        celular: turnoData.pacienteCelular || '',
+                        email: turnoData.pacienteEmail || ''
+                    },
+                    creadoEn: serverTimestamp(),
+                    creadoPor: sesionActual ? sesionActual.uid : 'recepcion',
+                    esDemo: true
+                });
+                await batchAlta.commit();
+            }
 
-        await updateDoc(doc(db, "turnos", idDoc), { estado: "En Consultorio" });
+            await updateDoc(doc(db, "turnos", idDoc), {
+                estado: "En Consultorio",
+                pacienteId: pacienteId
+            });
+        } else {
+            await updateDoc(doc(db, "turnos", idDoc), { estado: "En Consultorio" });
+        }
+
+        if (sesionActual && pacienteId) {
+            await setDoc(doc(db, "pacientes", pacienteId, "acceso", sesionActual.uid), {
+                medicoUid: sesionActual.uid,
+                turnoId: idDoc,
+                creadoEn: serverTimestamp()
+            }, { merge: true });
+        }
+
+        if (pacienteId) {
+            await abrirFichaPacienteHC(pacienteId, idDoc);
+        }
+
         cargarAgendaMedico();
     } catch (e) {
-        console.error(e);
+        console.error("Error al llamar paciente:", e);
+        mostrarAlerta("Error", "No se pudo actualizar el estado del turno.");
     }
 }
 
@@ -754,39 +1438,6 @@ export async function marcarAusente(idDoc) {
     } catch (e) {
         console.error(e);
         mostrarAlerta("Error", "No se pudo actualizar el estado.");
-    }
-}
-
-export async function guardarEvolucionMedico() {
-    if (!pacienteSeleccionadoMedico) {
-        mostrarAlerta("Ningún Paciente", "Seleccione o llame a un paciente de la lista antes de guardar.");
-        return;
-    }
-
-    const motivo = document.getElementById('input-motivo-consulta')?.value.trim();
-    const evolucion = document.getElementById('texto-evolucion')?.value.trim();
-
-    try {
-        await updateDoc(doc(db, "turnos", pacienteSeleccionadoMedico.idDoc), {
-            motivoConsulta: motivo || "",
-            evolucionMedica: evolucion || "",
-            estado: "Atendido",
-            atendidoEn: new Date()
-        });
-
-        mostrarExito("Consulta Finalizada", "La evolución médica fue guardada y el turno se marcó como Atendido.");
-        pacienteSeleccionadoMedico = null;
-        const nombreEl = document.getElementById('medico-paciente-activo');
-        const motivoEl = document.getElementById('input-motivo-consulta');
-        const evoEl = document.getElementById('texto-evolucion');
-        if (nombreEl) nombreEl.innerText = "Ningún paciente seleccionado";
-        if (motivoEl) motivoEl.value = "";
-        if (evoEl) evoEl.value = "";
-
-        cargarAgendaMedico();
-    } catch (e) {
-        console.error(e);
-        mostrarAlerta("Error", "Error al guardar la evolución médica.");
     }
 }
 
@@ -1285,3 +1936,93 @@ export async function inyectarMedicosDePrueba() {
     cargarEspecialistasFirebase();
     cargarMetricas();
 }
+
+// ==========================================
+// SEGURIDAD: TIMEOUT DE INACTIVIDAD (15 MIN)
+// ==========================================
+let temporizadorInactividad;
+function resetInactividad() {
+    clearTimeout(temporizadorInactividad);
+    if (sesionActual) {
+        temporizadorInactividad = setTimeout(() => {
+            mostrarAlerta("Sesión Expirada", "Su sesión fue cerrada automáticamente por superar 15 minutos de inactividad, en resguardo de la confidencialidad clínica.");
+            cerrarSesionReal();
+        }, 15 * 60 * 1000);
+    }
+}
+['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
+    window.addEventListener(evt, resetInactividad, { passive: true });
+});
+
+// ==========================================
+// VINCULACIÓN DE EVENTOS DE HISTORIA CLÍNICA
+// ==========================================
+function inicializarEventosHC() {
+    const btnBuscarHC = document.getElementById('btn-buscar-paciente-hc');
+    if (btnBuscarHC) {
+        btnBuscarHC.addEventListener('click', () => buscarPacientePorDni());
+    }
+
+    const inputDniHC = document.getElementById('input-buscar-dni-medico');
+    if (inputDniHC) {
+        inputDniHC.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                buscarPacientePorDni();
+            }
+        });
+    }
+
+    const btnEmergencia = document.getElementById('btn-abrir-emergencia');
+    if (btnEmergencia) {
+        btnEmergencia.addEventListener('click', () => {
+            const elDni = document.getElementById('modal-emergencia-dni');
+            const elMot = document.getElementById('modal-emergencia-motivo');
+            if (elDni) elDni.value = '';
+            if (elMot) elMot.value = '';
+            abrirModal('modal-acceso-emergencia');
+        });
+    }
+
+    const btnConfirmarEmergencia = document.getElementById('btn-confirmar-acceso-emergencia');
+    if (btnConfirmarEmergencia) {
+        btnConfirmarEmergencia.addEventListener('click', () => ejecutarAccesoEmergencia());
+    }
+
+    const btnEditarResumen = document.getElementById('btn-editar-resumen-clinico');
+    if (btnEditarResumen) {
+        btnEditarResumen.addEventListener('click', () => abrirModalEditarResumen());
+    }
+
+    const btnConfirmarResumen = document.getElementById('btn-confirmar-guardar-resumen');
+    if (btnConfirmarResumen) {
+        btnConfirmarResumen.addEventListener('click', () => guardarResumenClinico());
+    }
+
+    const btnExportarHC = document.getElementById('btn-exportar-hc');
+    if (btnExportarHC) {
+        btnExportarHC.addEventListener('click', () => exportarHistoriaClinica());
+    }
+
+    const btnCerrarHC = document.getElementById('btn-cerrar-paciente-hc');
+    if (btnCerrarHC) {
+        btnCerrarHC.addEventListener('click', () => cerrarFichaPacienteHC());
+    }
+
+    const btnGuardarConsulta = document.getElementById('btn-guardar-consulta-hc');
+    if (btnGuardarConsulta) {
+        btnGuardarConsulta.addEventListener('click', () => guardarConsultaInmutable());
+    }
+
+    const btnConfirmarRect = document.getElementById('btn-confirmar-guardar-rectificacion');
+    if (btnConfirmarRect) {
+        btnConfirmarRect.addEventListener('click', () => guardarRectificacionInmutable());
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inicializarEventosHC);
+} else {
+    inicializarEventosHC();
+}
+

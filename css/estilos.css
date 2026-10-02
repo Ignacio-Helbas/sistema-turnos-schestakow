@@ -73,3 +73,34 @@ body {
     transform: scaleX(1); 
     transform-origin: left; 
 }
+
+/* 6. Hoja de Estilos de Impresión para Historia Clínica */
+@media print {
+    body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+    nav, header, footer, #titulo-medico-dashboard-container, #columna-agenda-medico, .btn-no-print, .modal, .modal-overlay {
+        display: none !important;
+    }
+    .view, #view-doctor {
+        display: block !important;
+    }
+    #columna-historia-clinica, #cabecera-paciente-hc {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    .impresion-solo-print {
+        display: block !important;
+    }
+}
+
+.impresion-solo-print {
+    display: none;
+}
+
