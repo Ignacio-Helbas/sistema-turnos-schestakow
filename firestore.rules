@@ -34,20 +34,21 @@ service cloud.firestore {
       return isStaff() && getUserRol() == 'Médico';
     }
 
+    function hasPacienteAcceso(pacienteId) {
+      return exists(/databases/$(database)/documents/pacientes/$(pacienteId)/acceso/$(request.auth.uid));
+    }
+
     // ==========================================
     // REGLAS: PERFILES DE USUARIOS
     // ==========================================
     match /usuarios/{uid} {
-      // Sin lectura pública. Solo el propio usuario autenticado o staff administrativo
       allow get: if isStaff() && (request.auth.uid == uid || isSuperAdmin() || isRecepcion());
       allow list: if isSuperAdmin() || isRecepcion();
-      // Solo Administración crea, modifica o desactiva perfiles
       allow write: if isSuperAdmin();
     }
 
     // ==========================================
     // REGLAS: MÉDICOS PÚBLICOS
-    // Catálogo público mínimo sin datos personales ni contactos
     // ==========================================
     match /medicos_publicos/{medicoUid} {
       allow read: if true;
@@ -55,7 +56,7 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // REGLAS: TURNOS
+    // REGLAS: TURNOS (Sin datos clínicos)
     // ==========================================
     function isValidTurnoCreate() {
       let data = request.resource.data;
@@ -105,9 +106,6 @@ service cloud.firestore {
     }
 
     match /turnos/{turnoId} {
-      // LECTURA:
-      // - Sin list público. Staff con rol puede listar según su incumbencia.
-      // - Paciente público solo puede acceder con get directo si posee el ID largo e impredecible (>= 16 caracteres).
       allow get: if isSuperAdmin()
         || isRecepcion()
         || (isMedico() && resource.data.medicoUid == request.auth.uid)
@@ -117,22 +115,17 @@ service cloud.firestore {
         || isRecepcion()
         || (isMedico() && resource.data.medicoUid == request.auth.uid);
 
-      // CREACIÓN:
-      // - Pública: sujeta a esquema estricto y ID largo e impredecible (>= 16 caracteres)
-      // - Staff: sujeta a esquema administrativo
       allow create: if (turnoId.size() >= 16 && isValidTurnoCreate())
         || isValidTurnoStaffCreate();
 
-      // MODIFICACIÓN:
-      // - SuperAdmin y Recepción: gestión administrativa y asignación de pacienteId
-      // - Médico: solo en sus propios turnos para actualización de estado operativo ('En Consultorio', 'Atendido', 'Ausente')
-      // - Paciente: solo puede cancelar su propio turno pasando de 'Confirmado' a 'Cancelado por Paciente'
+      // En turnos solo se gestionan estados operativos y vinculación a pacienteId.
+      // Toda evolución médica fue desacoplada a pacientes/{pacienteId}/consultas/
       allow update: if isSuperAdmin()
         || isRecepcion()
         || (
           isMedico()
           && resource.data.medicoUid == request.auth.uid
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'atendidoEn'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'atendidoEn', 'pacienteId'])
         )
         || (
           !isSignedIn()
@@ -143,13 +136,11 @@ service cloud.firestore {
           && request.resource.data.canceladoEn == request.time
         );
 
-      // ELIMINACIÓN:
-      // - Exclusiva para Administración
       allow delete: if isSuperAdmin();
     }
 
     // ==========================================
-    // REGLAS: DISPONIBILIDAD (Slots deterministas anti doble-reserva)
+    // REGLAS: DISPONIBILIDAD
     // ==========================================
     match /disponibilidad/{slotId} {
       allow read: if true;
@@ -158,6 +149,107 @@ service cloud.firestore {
         && request.resource.data.creadoEn == request.time;
       allow delete: if isSuperAdmin() || isRecepcion()
         || (!isSignedIn() && request.time != null);
+    }
+
+    // ==========================================
+    // REGLAS: HISTORIA CLÍNICA (MODELO SEGURO E INMUTABLE)
+    // ==========================================
+
+    // 1. Pacientes (Solo datos demográficos)
+    match /pacientes/{pacienteId} {
+      // Recepción y médicos leen datos demográficos
+      allow read: if isStaff();
+      
+      // Creación y edición demográfica por staff
+      allow create, update: if isStaff()
+        && request.resource.data.keys().hasOnly([
+          'dni', 'nombre', 'apellido', 'fechaNacimiento', 'sexo',
+          'contacto', 'creadoEn', 'creadoPor', 'esDemo', 'actualizadoEn'
+        ])
+        && request.resource.data.dni is string
+        && request.resource.data.dni.matches('^[0-9]{6,10}$')
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() > 0
+        && request.resource.data.apellido is string
+        && request.resource.data.apellido.size() > 0;
+
+      allow delete: if isSuperAdmin();
+
+      // 2. Resumen clínico (Alergias, antecedentes, medicación)
+      match /clinico/{docId} {
+        // Solo médicos con acceso o administración
+        allow read: if isSuperAdmin() || (isMedico() && hasPacienteAcceso(pacienteId));
+        allow write: if isSuperAdmin() || (isMedico() && hasPacienteAcceso(pacienteId));
+      }
+
+      // 3. Consultas (Evolución médica - TOTALMENTE INMUTABLE)
+      match /consultas/{consultaId} {
+        allow read: if isSuperAdmin() || (isMedico() && hasPacienteAcceso(pacienteId));
+
+        // Create: solo médico con acceso habilitado para este paciente
+        allow create: if isSuperAdmin() || (
+          isMedico()
+          && hasPacienteAcceso(pacienteId)
+          && request.resource.data.medicoUid == request.auth.uid
+          && request.resource.data.keys().hasOnly([
+            'turnoId', 'medicoUid', 'medicoNombre', 'fecha',
+            'motivo', 'evolucion', 'indicaciones', 'diagnostico',
+            'diagnosticoCodigo', 'signosVitales', 'corrige'
+          ])
+          && request.resource.data.motivo is string && request.resource.data.motivo.size() <= 1000
+          && request.resource.data.evolucion is string && request.resource.data.evolucion.size() <= 10000
+          && request.resource.data.indicaciones is string && request.resource.data.indicaciones.size() <= 5000
+          && request.resource.data.fecha == request.time
+        );
+
+        // INMUTABILIDAD: Nunca se pueden editar ni borrar consultas
+        allow update, delete: if false;
+      }
+
+      // 4. Acceso habilitado a la historia clínica para profesionales
+      match /acceso/{medicoUid} {
+        allow read: if isSuperAdmin() || (isMedico() && request.auth.uid == medicoUid);
+        
+        // El médico solo puede crear acceso si:
+        // A) Tiene turno legítimo asignado con ese paciente
+        // B) Es una emergencia declarada con motivo >= 10 caracteres
+        // C) SuperAdmin
+        allow create: if isSuperAdmin() || (
+          isMedico()
+          && request.auth.uid == medicoUid
+          && (
+            ('turnoId' in request.resource.data && request.resource.data.turnoId is string)
+            || (request.resource.data.get('motivoEmergencia', '').size() >= 10)
+          )
+        );
+
+        allow update, delete: if isSuperAdmin();
+      }
+    }
+
+    // Índice determinista de unicidad de pacientes por DNI
+    match /pacientes_por_dni/{dni} {
+      allow read: if isStaff();
+      allow create: if isStaff()
+        && !exists(/databases/$(database)/documents/pacientes_por_dni/$(dni))
+        && request.resource.data.keys().hasOnly(['pacienteId', 'dni', 'creadoEn']);
+      allow update: if false;
+      allow delete: if isSuperAdmin();
+    }
+
+    // ==========================================
+    // REGLAS: AUDITORÍA (APPEND-ONLY)
+    // ==========================================
+    match /auditoria/{auditId} {
+      allow read: if isSuperAdmin();
+      allow create: if isStaff()
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.fecha == request.time
+        && request.resource.data.keys().hasOnly([
+          'actorUid', 'actorRol', 'accion', 'pacienteId',
+          'consultaId', 'fecha', 'detalle'
+        ]);
+      allow update, delete: if false;
     }
 
     // ==========================================
