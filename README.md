@@ -6,7 +6,7 @@ Desarrollado como prototipo para el **Foro Tecnológico de Ingeniería, Innovaci
 
 ---
 
-## 🛠️ Stack Tecnológico
+##  Stack Tecnológico
 
 - **Frontend**: HTML5 semántico, Tailwind CSS (vía CDN), Vanilla JavaScript modular (ES Modules).
 - **Base de Datos y Seguridad**: **Firebase Cloud Firestore** (Spark Plan).
@@ -60,7 +60,7 @@ Desarrollado como prototipo para el **Foro Tecnológico de Ingeniería, Innovaci
 
 ---
 
-## 🔒 Arquitectura de Seguridad y Confidencialidad Médica
+##  Arquitectura de Seguridad y Confidencialidad Médica
 
 1. **Denegar por Defecto (`firestore.rules`)**:
    - Todo documento o subcolección no autorizada expresamente tiene `allow read, write: if false;`.
@@ -78,7 +78,7 @@ Desarrollado como prototipo para el **Foro Tecnológico de Ingeniería, Innovaci
 
 ---
 
-## 🧪 Pruebas Automatizadas y Simulación
+##  Pruebas Automatizadas y Simulación
 
 ### 1. Ejecutar Pruebas Estáticas de Reglas
 ```bash
@@ -97,7 +97,7 @@ node scripts/migrar-historias.js --dry-run
 
 ---
 
-## 🚀 Despliegue en Firebase Hosting (Spark Plan)
+## Despliegue en Firebase Hosting (Spark Plan)
 
 1. Autenticarse en Firebase CLI:
    ```bash
