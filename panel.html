@@ -55,9 +55,9 @@
                     <button id="btn-nav-reception" onclick="switchView('reception')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Recepción</button>
                     <button id="btn-nav-doctor" onclick="switchView('doctor')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Consultorio</button>
                     <button id="btn-nav-admin" onclick="switchView('admin')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Administración</button>
-                    <button id="btn-nav-demo-foro" onclick="inyectarDemoCompletaForo()" class="hidden bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 rounded-lg transition flex items-center gap-1 shadow-sm" title="Preparar datos 100% funcionales para la presentación"><span>🎯</span> <span>Demo Foro</span></button>
+                    <button id="btn-nav-demo-foro" onclick="inyectarDemoCompletaForo()" class="hidden bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 rounded-lg transition flex items-center gap-1 shadow-sm" title="Preparar datos 100% funcionales para la presentación">Demo Foro</button>
                     
-                    <button id="btn-logout" onclick="cerrarSesionReal()" class="bg-slate-800 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-md font-bold text-xs hover:bg-slate-700 shadow transition max-w-[200px] sm:max-w-none truncate">Cerrar Sesión</button>
+                    <button id="btn-logout" onclick="cerrarSesionReal()" class="hidden bg-slate-800 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-md font-bold text-xs hover:bg-slate-700 shadow transition max-w-[200px] sm:max-w-none truncate">Cerrar Sesión</button>
                     
                     <!-- Indicador de Sistema En Vivo -->
                     <div id="indicador-vivo" class="flex items-center gap-1.5 ml-1 md:ml-4">
@@ -411,7 +411,6 @@
                         <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                             <!-- Botones Protegidos de SuperAdmin -->
                             <button id="btn-demo-foro" onclick="inyectarDemoCompletaForo()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white px-3.5 py-2 rounded-lg font-bold shadow transition hidden text-xs flex items-center justify-center gap-1.5">
-                                <span>🎯</span>
                                 <span>Cargar Demo 100% Funcional</span>
                             </button>
                             <button id="btn-reset-db" onclick="limpiarBaseDeDatos()" class="w-full sm:w-auto bg-red-600 text-white px-3.5 py-2 rounded-lg font-bold hover:bg-red-700 shadow transition hidden text-xs">Reset de Fábrica</button>

@@ -44,6 +44,7 @@ service cloud.firestore {
     match /usuarios/{uid} {
       allow get: if isStaff() && (request.auth.uid == uid || isSuperAdmin());
       allow list: if isSuperAdmin();
+      allow create: if isStaff() && (isSuperAdmin() || request.auth.uid == uid);
       allow write: if isSuperAdmin();
     }
 
@@ -103,7 +104,10 @@ service cloud.firestore {
         && data.pacienteDni is string && data.pacienteDni.matches('^[0-9]{6,10}$')
         && data.pacienteCelular is string && data.pacienteCelular.size() >= 6 && data.pacienteCelular.size() <= 25
         && data.canal in ['Presencial', 'Telefónico', 'Web', 'Consultorio', 'Seguimiento', 'Médico']
-        && data.estado in ['Confirmado', 'Confirmado Presencial', 'Pendiente de Horario'];
+        && (
+          data.estado in ['Confirmado', 'Confirmado Presencial', 'Pendiente de Horario']
+          || (isSuperAdmin() && data.estado in ['En Espera', 'Atendido', 'En Consultorio', 'Ausente'])
+        );
     }
 
     match /turnos/{turnoId} {
@@ -242,7 +246,7 @@ service cloud.firestore {
       allow create: if isStaff()
         && !exists(/databases/$(database)/documents/pacientes_por_dni/$(dni))
         && request.resource.data.keys().hasOnly(['pacienteId', 'dni', 'creadoEn']);
-      allow update: if false;
+      allow update: if isSuperAdmin();
       allow delete: if isSuperAdmin();
     }
 

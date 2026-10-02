@@ -118,8 +118,13 @@ window.inyectarDemoCompletaForo = inyectarDemoCompletaForo;
 // SESIÓN Y AUTENTICACIÓN
 // ==========================================
 onAuthStateChanged(auth, async (user) => {
-    if (!user || user.isAnonymous) {
+    // Protección contra auto-login pasivo / bypass:
+    // Requiere autenticación activa explícita en esta sesión del navegador
+    if (!user || user.isAnonymous || sessionStorage.getItem('hospital_sesion_activa') !== 'true') {
         sesionActual = null;
+        if (user && !user.isAnonymous && sessionStorage.getItem('hospital_sesion_activa') !== 'true') {
+            try { await signOut(auth); } catch (_) {}
+        }
         mostrarPantallaLogin();
         return;
     }
@@ -142,6 +147,21 @@ onAuthStateChanged(auth, async (user) => {
     if (user.email && user.email.toLowerCase() === "nachohelbas@gmail.com") {
         rol = "Administración";
         if (!nombre || nombre === user.email) nombre = "Ignacio Helbas (SuperAdmin)";
+
+        // Sincronizar inmediatamente el perfil en Firestore para habilitar permisos
+        // de reglas de seguridad (isSuperAdmin()) en base de datos en tiempo real
+        try {
+            const userDocRef = doc(db, "usuarios", user.uid);
+            await setDoc(userDocRef, {
+                nombre: "Ignacio Helbas",
+                correo: user.email,
+                rol: "Administración",
+                activo: true,
+                actualizadoEn: serverTimestamp()
+            }, { merge: true });
+        } catch (syncErr) {
+            console.warn("Aviso al sincronizar perfil SuperAdmin en Firestore:", syncErr);
+        }
     }
 
     sesionActual = {
@@ -156,10 +176,17 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 function mostrarPantallaLogin() {
+    sesionActual = null;
     document.body.dataset.view = 'login';
-    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(el => {
+        el.classList.remove('active');
+        el.classList.add('hidden');
+    });
     const vLogin = document.getElementById('view-login');
-    if (vLogin) vLogin.classList.add('active');
+    if (vLogin) {
+        vLogin.classList.remove('hidden');
+        vLogin.classList.add('active');
+    }
 
     const btnAdmin = document.getElementById('btn-nav-admin');
     const btnRec = document.getElementById('btn-nav-reception');
@@ -184,6 +211,7 @@ export async function iniciarSesionReal() {
     }
 
     try {
+        sessionStorage.setItem('hospital_sesion_activa', 'true');
         try {
             await signInWithEmailAndPassword(auth, emailInput, passInput);
         } catch (signInErr) {
@@ -197,6 +225,8 @@ export async function iniciarSesionReal() {
         document.getElementById('login-user').value = '';
         document.getElementById('login-pass').value = '';
     } catch (error) {
+        sessionStorage.removeItem('hospital_sesion_activa');
+        sesionActual = null;
         console.error("Error Auth:", error);
         let mensaje = "Correo o contraseña incorrectos.";
         if (error.code === 'auth/too-many-requests') {
@@ -275,7 +305,7 @@ function aplicarPermisosVisuales(sesion) {
 
 export function switchView(viewName) {
     if (viewName !== 'login') {
-        if (!sesionActual) {
+        if (!sesionActual || sessionStorage.getItem('hospital_sesion_activa') !== 'true') {
             mostrarPantallaLogin();
             return;
         }
@@ -320,6 +350,8 @@ export function switchView(viewName) {
 }
 
 export async function cerrarSesionReal() {
+    sessionStorage.removeItem('hospital_sesion_activa');
+    sesionActual = null;
     await signOut(auth);
     mostrarPantallaLogin();
 }
@@ -1087,8 +1119,8 @@ export async function cargarCronologiaConsultas(pacienteId) {
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="text-xs font-mono font-bold text-emerald-950 bg-emerald-50 px-2.5 py-1 rounded">${escaparHTML(fechaStr)}</span>
                             <span class="text-xs font-semibold text-slate-700">${escaparHTML(c.medicoNombre || 'Médico')}</span>
-                            ${esRectificacion ? `<span class="text-[11px] font-bold bg-teal-100 text-teal-800 px-2 py-0.5 rounded">🔄 Rectificación de consulta</span>` : ''}
-                            ${esRectificada ? `<span class="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">⚠️ Rectificada por entrada posterior</span>` : ''}
+                            ${esRectificacion ? `<span class="text-[11px] font-bold bg-teal-100 text-teal-800 px-2 py-0.5 rounded">Rectificación de consulta</span>` : ''}
+                            ${esRectificada ? `<span class="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Rectificada por entrada posterior</span>` : ''}
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="text-[11px] bg-slate-100 text-slate-500 font-mono px-2 py-0.5 rounded">Inmutable</span>
@@ -1968,7 +2000,7 @@ export async function limpiarBaseDeDatos() {
     }
 
     // 2. Confirmación explícita por palabra clave
-    const input = prompt("⚠️ ADVERTENCIA DE SEGURIDAD ⚠️\nEsta acción borrará TODOS los turnos y usuarios de prueba.\n\nPara confirmar, escriba exactamente la palabra: BORRAR");
+    const input = prompt("ADVERTENCIA DE SEGURIDAD\nEsta acción borrará TODOS los turnos y usuarios de prueba.\n\nPara confirmar, escriba exactamente la palabra: BORRAR");
     if (input !== "BORRAR") {
         mostrarAlerta("Cancelado", "Palabra de confirmación incorrecta. No se ha borrado ningún dato.");
         return;
@@ -2630,6 +2662,11 @@ export function autocompletarNachoDemo() {
 }
 
 export async function inyectarDemoCompletaForo() {
+    if (!sesionActual || (sesionActual.rol !== 'Administración' && sesionActual.correo?.toLowerCase() !== 'nachohelbas@gmail.com')) {
+        mostrarAlerta("Acceso Denegado", "Solo el Administrador General puede ejecutar la inyección del escenario para el Foro.");
+        return;
+    }
+
     const confirm = await pedirConfirmacion(
         "Preparar Demostración para el Foro",
         "Esta acción cargará el escenario completo 100% funcional: médicos especialistas, agenda de pacientes para el día de hoy en Recepción y Sala de Espera médica, con historias clínicas de prueba.",
@@ -2642,8 +2679,19 @@ export async function inyectarDemoCompletaForo() {
     const texto = document.getElementById('progreso-texto');
 
     try {
-        if (texto) texto.innerText = "Preparando catálogo de médicos especialistas...";
+        if (texto) texto.innerText = "Preparando perfil de Administrador y catálogo médico...";
         if (barra) barra.style.width = '20%';
+
+        // 0. Asegurar perfil de SuperAdmin en Firestore para validar reglas de seguridad
+        if (sesionActual?.uid && sesionActual.correo?.toLowerCase() === 'nachohelbas@gmail.com') {
+            await setDoc(doc(db, "usuarios", sesionActual.uid), {
+                nombre: "Ignacio Helbas",
+                correo: sesionActual.correo,
+                rol: "Administración",
+                activo: true,
+                actualizadoEn: serverTimestamp()
+            }, { merge: true });
+        }
 
         // 1. Inyectar médicos especialistas base si no existen
         const medicosBase = [
@@ -2758,12 +2806,21 @@ export async function inyectarDemoCompletaForo() {
             const pacienteId = `PAC_DEMO_${p.dni}`;
             const turnoId = `TURNO_DEMO_${hoyStr}_${i + 1}`;
 
-            // Índice por DNI
-            await setDoc(doc(db, "pacientes_por_dni", p.dni), {
-                pacienteId: pacienteId,
-                dni: p.dni,
-                creadoEn: serverTimestamp()
-            }, { merge: true });
+            // Índice por DNI seguro (create si nuevo, merge si existente)
+            const dniDocRef = doc(db, "pacientes_por_dni", p.dni);
+            const dniSnap = await getDoc(dniDocRef);
+            if (!dniSnap.exists()) {
+                await setDoc(dniDocRef, {
+                    pacienteId: pacienteId,
+                    dni: p.dni,
+                    creadoEn: serverTimestamp()
+                });
+            } else {
+                await setDoc(dniDocRef, {
+                    pacienteId: pacienteId,
+                    dni: p.dni
+                }, { merge: true });
+            }
 
             // Ficha Demográfica del Paciente
             await setDoc(doc(db, "pacientes", pacienteId), {
