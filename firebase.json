@@ -4,7 +4,7 @@
   },
   "hosting": {
     "public": ".",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "firestore.rules", "README.md", "README_SEGURIDAD.md", "PLAN.md", "functions/**"],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "firestore.rules", "README.md", "README_SEGURIDAD.md", "PLAN.md", "functions/**", "scripts/**", "docs/**", "tests/**", "package*.json"],
     "headers": [
       {
         "source": "**",

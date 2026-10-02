@@ -144,45 +144,206 @@
             </div>
         </div>
 
-        <!-- 2. VISTA CONSULTORIO MÉDICO -->
+        <!-- 2. VISTA CONSULTORIO MÉDICO Y GESTIÓN DE HISTORIA CLÍNICA -->
         <div id="view-doctor" class="view hidden">
-            <div id="titulo-medico-dashboard-container" class="hidden mb-4 sm:mb-6 border-b pb-4 flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/90 p-4 rounded-lg">
-                <h2 id="titulo-medico-dashboard" class="text-xl sm:text-2xl font-bold text-slate-800">Mi Consultorio</h2>
-                <button onclick="cargarAgendaMedico()" class="w-full sm:w-auto justify-center bg-blue-50 sm:bg-transparent border border-blue-200 sm:border-none p-2 sm:p-0 rounded text-blue-600 hover:text-blue-800 font-bold text-sm flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Actualizar
-                </button>
+            <!-- Barra superior: Búsqueda por DNI y Acceso de Emergencia -->
+            <div id="titulo-medico-dashboard-container" class="mb-4 bg-white/95 backdrop-blur p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-blue-100 text-blue-900 rounded-lg">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    </div>
+                    <div>
+                        <h2 id="titulo-medico-dashboard" class="text-xl font-bold text-slate-800">Consultorio Médico e Historia Clínica</h2>
+                        <p class="text-xs text-slate-500">Gestión inmutable y trazable de registros de salud</p>
+                    </div>
+                </div>
+
+                <!-- Buscador de paciente por DNI y botón de emergencia -->
+                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <div class="relative flex-grow sm:flex-grow-0 sm:w-64">
+                        <input type="text" id="input-buscar-dni-medico" placeholder="Buscar DNI de paciente..." maxlength="10" inputmode="numeric" class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <button id="btn-buscar-paciente-hc" class="bg-blue-800 hover:bg-blue-900 text-white font-bold text-xs px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1">
+                        Buscar
+                    </button>
+                    <button id="btn-abrir-emergencia" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        Acceso Emergencia
+                    </button>
+                    <button onclick="cargarAgendaMedico()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-3 py-2 rounded-lg transition flex items-center gap-1" title="Refrescar agenda">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </button>
+                </div>
             </div>
 
+            <!-- Cabecera de Paciente Activo (Demografía y Resumen Clínico) -->
+            <div id="cabecera-paciente-hc" class="hidden mb-6 bg-white/95 backdrop-blur rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-slate-100 pb-4 mb-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center font-bold text-lg">
+                            <span id="hc-paciente-iniciales">--</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 id="hc-paciente-nombre" class="text-lg font-bold text-slate-900">Seleccione un paciente</h3>
+                                <span id="hc-paciente-badge-demo" class="hidden text-xs bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded">Ficticio Demo</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">
+                                DNI: <span id="hc-paciente-dni" class="font-bold text-slate-700">--</span> | 
+                                Edad: <span id="hc-paciente-edad" class="font-bold text-slate-700">--</span> | 
+                                Sexo: <span id="hc-paciente-sexo" class="font-bold text-slate-700">--</span> | 
+                                Contacto: <span id="hc-paciente-contacto" class="font-bold text-slate-700">--</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 w-full lg:w-auto justify-end">
+                        <button id="btn-editar-resumen-clinico" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-3 py-2 rounded-lg transition border border-slate-300 flex items-center gap-1">
+                            <svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            Editar Resumen
+                        </button>
+                        <button id="btn-exportar-hc" class="bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-3 py-2 rounded-lg transition border border-slate-300 flex items-center gap-1 shadow-sm">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                            Imprimir / Exportar
+                        </button>
+                        <button id="btn-cerrar-paciente-hc" class="text-slate-400 hover:text-slate-700 text-xs font-bold px-2 py-2" title="Cerrar ficha">
+                            ✕
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resumen Clínico: Alergias, Antecedentes, Medicación -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="bg-red-50/70 border border-red-200 rounded-lg p-3">
+                        <p class="text-xs font-bold uppercase tracking-wider text-red-800 flex items-center gap-1 mb-1">
+                            <svg class="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            Alergias Conocidas
+                        </p>
+                        <p id="hc-alergias-texto" class="text-xs text-red-900 font-semibold italic">Sin alergias registradas</p>
+                    </div>
+                    <div class="bg-blue-50/70 border border-blue-200 rounded-lg p-3">
+                        <p class="text-xs font-bold uppercase tracking-wider text-blue-800 flex items-center gap-1 mb-1">
+                            Antecedentes Patológicos
+                        </p>
+                        <p id="hc-antecedentes-texto" class="text-xs text-slate-700 font-medium">Ninguno informado</p>
+                    </div>
+                    <div class="bg-emerald-50/70 border border-emerald-200 rounded-lg p-3">
+                        <p class="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1 mb-1">
+                            Medicación Activa Habitual
+                        </p>
+                        <p id="hc-medicacion-texto" class="text-xs text-slate-700 font-medium">Sin medicación regular</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grilla Principal: Sala de Espera (Izquierda) + Historia y Consulta (Derecha) -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-1 bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[400px] lg:h-[600px]">
-                    <div class="bg-slate-800 text-white p-4">
-                        <h3 class="font-bold text-lg">Sala de Espera</h3>
+                <!-- Columna Izquierda: Sala de Espera del Día -->
+                <div id="columna-agenda-medico" class="lg:col-span-1 bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[500px] lg:h-[750px]">
+                    <div class="bg-slate-800 text-white p-4 flex justify-between items-center">
+                        <h3 class="font-bold text-base">Sala de Espera (Hoy)</h3>
+                        <span id="badge-total-espera" class="text-xs bg-slate-700 px-2 py-0.5 rounded font-mono font-bold">0</span>
                     </div>
                     <div id="medico-agenda-container" class="p-4 flex-grow overflow-y-auto space-y-3 bg-slate-50">
                         <p class="text-sm text-slate-500 text-center mt-10">Cargando pacientes...</p>
                     </div>
                 </div>
 
-                <div class="lg:col-span-2 bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[500px] lg:h-[600px]">
-                    <div class="bg-blue-50 border-b border-blue-100 p-4">
-                        <p class="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Paciente en Consultorio</p>
-                        <h3 id="medico-paciente-activo" class="text-lg sm:text-xl font-bold text-blue-900">Ningún paciente seleccionado</h3>
-                    </div>
-                    
-                    <div class="p-4 sm:p-6 flex-grow flex flex-col space-y-4">
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1">Motivo de la Consulta</label>
-                            <input type="text" id="input-motivo-consulta" placeholder="Ej: Control de rutina..." class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none">
-                        </div>
-                        <div class="flex-grow flex flex-col">
-                            <label class="block text-sm font-bold text-slate-700 mb-1">Evolución Médica y Notas</label>
-                            <textarea id="texto-evolucion" placeholder="Escriba la evolución clínica aquí..." class="w-full flex-grow border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
+                <!-- Columna Derecha: Formulario Inmutable + Línea de Tiempo -->
+                <div id="columna-historia-clinica" class="lg:col-span-2 space-y-6">
+                    <!-- Formulario de Nueva Consulta -->
+                    <div class="bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="bg-blue-900 text-white p-4 flex justify-between items-center">
+                            <div>
+                                <p class="text-xs uppercase tracking-wider text-blue-200 font-bold">Registro de Atención Médica</p>
+                                <h3 id="medico-paciente-activo" class="text-base sm:text-lg font-bold">Ningún paciente en atención</h3>
+                            </div>
+                            <span id="badge-turno-en-curso" class="hidden text-xs bg-blue-700 px-2.5 py-1 rounded font-bold">Turno en Curso</span>
                         </div>
                         
-                        <div class="flex pt-2">
-                            <button onclick="guardarEvolucionMedico()" class="w-full bg-blue-800 text-white font-bold py-3 rounded-lg hover:bg-blue-900 shadow transition flex items-center justify-center gap-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Guardar y Finalizar
-                            </button>
+                        <div class="p-4 sm:p-6 space-y-4">
+                            <!-- Aviso Legal y de Inmutabilidad -->
+                            <div class="bg-amber-50 border-l-4 border-amber-500 p-3 rounded-r-lg text-xs text-amber-900">
+                                <strong>Registro Clínico Inmutable (Ley 26.529):</strong> Una vez guardada, la consulta no puede ser editada ni eliminada. Todo cambio posterior se registrará como una rectificación firmada.
+                            </div>
+
+                            <!-- Motivo y Diagnóstico -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Motivo de Consulta *</label>
+                                    <input type="text" id="input-motivo-consulta" placeholder="Ej: Control cardiovascular, cefalea..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Diagnóstico (Presuntivo / Definitivo) *</label>
+                                    <input type="text" id="input-diagnostico-consulta" placeholder="Ej: Hipertensión arterial esencial..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                </div>
+                            </div>
+
+                            <!-- Signos Vitales -->
+                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                                <p class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Signos Vitales y Parámetros</p>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-500 mb-0.5">TA (mmHg)</label>
+                                        <input type="text" id="sv-ta" placeholder="120/80" class="w-full border border-slate-300 rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-500 mb-0.5">FC (lpm)</label>
+                                        <input type="number" id="sv-fc" placeholder="75" min="30" max="250" class="w-full border border-slate-300 rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-500 mb-0.5">Temp (°C)</label>
+                                        <input type="number" step="0.1" id="sv-temp" placeholder="36.5" min="30" max="45" class="w-full border border-slate-300 rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-500 mb-0.5">Sat O2 (%)</label>
+                                        <input type="number" id="sv-sat" placeholder="98" min="50" max="100" class="w-full border border-slate-300 rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-500 mb-0.5">Peso (kg)</label>
+                                        <input type="number" step="0.1" id="sv-peso" placeholder="70" min="1" max="300" class="w-full border border-slate-300 rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-500 mb-0.5">Talla (cm)</label>
+                                        <input type="number" id="sv-talla" placeholder="172" min="30" max="250" class="w-full border border-slate-300 rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Evolución Clínica -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Evolución Médica, Examen Físico y Hallazgos *</label>
+                                <textarea id="texto-evolucion" rows="4" placeholder="Describa el estado del paciente, anamnesis, examen físico..." class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                            </div>
+
+                            <!-- Indicaciones y Tratamiento -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Indicaciones, Recetas y Plan Terapéutico</label>
+                                <textarea id="texto-indicaciones" rows="2" placeholder="Indicaciones para el paciente, posología, estudios solicitados..." class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                            </div>
+
+                            <!-- Botón de Envío -->
+                            <div class="pt-2">
+                                <button id="btn-guardar-consulta-hc" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 rounded-lg shadow transition flex items-center justify-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                    Registrar Consulta Inmutable
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Línea de Tiempo de Consultas Previas -->
+                    <div class="bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden p-4 sm:p-6">
+                        <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
+                            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                                <svg class="w-5 h-5 text-blue-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Cronología de Consultas (Historia Clínica)
+                            </h3>
+                            <span id="badge-total-consultas" class="text-xs bg-slate-100 text-slate-700 font-bold px-2 py-1 rounded">0 consultas</span>
+                        </div>
+
+                        <div id="contenedor-cronologia-consultas" class="space-y-4">
+                            <p class="text-sm text-slate-400 text-center py-8">Seleccione un paciente para ver su historial clínico.</p>
                         </div>
                     </div>
                 </div>
@@ -522,6 +683,109 @@
                 <div id="progreso-barra" class="bg-blue-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
             <p class="text-xs text-slate-400 mt-3">Por favor no cierre esta ventana.</p>
+        </div>
+    </div>
+
+    <!-- MODAL: EDITAR RESUMEN CLÍNICO (Alergias, Antecedentes, Medicación) -->
+    <div id="modal-editar-resumen-clinico" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 animate-fade-in-up max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold text-slate-800 mb-1">Actualizar Resumen Clínico</h3>
+            <p class="text-xs text-slate-500 mb-4">Información permanente visible para todo el equipo médico autorizado</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-red-800 uppercase mb-1">Alergias Conocidas</label>
+                    <textarea id="modal-input-alergias" rows="2" placeholder="Ej: Penicilina, Dipirona, Mariscos..." class="w-full border border-red-200 bg-red-50/40 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-red-400"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-blue-800 uppercase mb-1">Antecedentes Patológicos y Quirúrgicos</label>
+                    <textarea id="modal-input-antecedentes" rows="3" placeholder="Ej: DBT tipo 2, HTA, Apendicectomía (2018)..." class="w-full border border-blue-200 bg-blue-50/40 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-400"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-emerald-800 uppercase mb-1">Medicación Activa Habitual</label>
+                    <textarea id="modal-input-medicacion" rows="2" placeholder="Ej: Enalapril 10mg/día, Metformina 850mg c/12hs..." class="w-full border border-emerald-200 bg-emerald-50/40 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Motivo de la Modificación * (Auditoría)</label>
+                    <input type="text" id="modal-input-motivo-cambio-resumen" placeholder="Ej: Paciente refiere nueva alergia medicamentosa..." class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="cerrarModal('modal-editar-resumen-clinico')" class="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition text-sm">Cancelar</button>
+                <button id="btn-confirmar-guardar-resumen" class="px-4 py-2 bg-blue-800 hover:bg-blue-900 text-white font-bold rounded-lg shadow transition text-sm">Guardar Resumen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ACCESO DE EMERGENCIA A HISTORIA CLÍNICA -->
+    <div id="modal-acceso-emergencia" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-fade-in-up border-t-4 border-amber-600">
+            <div class="flex items-center gap-3 mb-2 text-amber-700">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <h3 class="text-lg font-bold text-slate-900">Acceso de Emergencia Médica</h3>
+            </div>
+            <p class="text-xs text-slate-600 mb-4 leading-relaxed">
+                Habilita el acceso inmediato a la historia clínica de un paciente sin turno asignado previo. <strong>Esta acción quedará registrada en el log inmutable de auditoría.</strong>
+            </p>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">DNI del Paciente *</label>
+                    <input type="text" id="modal-emergencia-dni" maxlength="10" placeholder="Sin puntos" inputmode="numeric" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Motivo Justificado de Emergencia * (mínimo 10 caracteres)</label>
+                    <textarea id="modal-emergencia-motivo" rows="3" placeholder="Ej: Paciente ingresa descompensado por guardia central sin turno previo..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="cerrarModal('modal-acceso-emergencia')" class="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition text-sm">Cancelar</button>
+                <button id="btn-confirmar-acceso-emergencia" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow transition text-sm">Habilitar y Acceder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: RECTIFICACIÓN DE CONSULTA INMUTABLE -->
+    <div id="modal-rectificar-consulta" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 animate-fade-in-up max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center gap-2 mb-2 text-blue-900">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <h3 class="text-lg font-bold">Rectificar Consulta Médica</h3>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">
+                La consulta previa permanecerá inmutable en el historial. Esta nueva entrada se vinculará formalmente como su rectificación oficial.
+            </p>
+
+            <input type="hidden" id="rectificar-consulta-original-id">
+
+            <div class="space-y-4">
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
+                    <p class="font-bold text-slate-700 mb-1">Consulta a rectificar:</p>
+                    <p id="rectificar-resumen-original" class="text-slate-600 italic">Cargando...</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Motivo de la Rectificación *</label>
+                    <input type="text" id="rectificar-motivo" placeholder="Ej: Corrección de posología, aclaración diagnóstica..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Texto de la Rectificación / Nueva Evolución *</label>
+                    <textarea id="rectificar-evolucion" rows="4" placeholder="Escriba la corrección médica detallada..." class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nuevas Indicaciones / Receta</label>
+                    <textarea id="rectificar-indicaciones" rows="2" placeholder="Indicaciones actualizadas..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="cerrarModal('modal-rectificar-consulta')" class="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition text-sm">Cancelar</button>
+                <button id="btn-confirmar-guardar-rectificacion" class="px-4 py-2 bg-blue-800 hover:bg-blue-900 text-white font-bold rounded-lg shadow transition text-sm">Guardar Rectificación Inmutable</button>
+            </div>
         </div>
     </div>
 

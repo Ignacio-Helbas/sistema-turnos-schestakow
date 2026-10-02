@@ -1,126 +1,58 @@
-# Plan de Auditoría y Remediación - Sistema de Turnos Hospital Schestakow
+# Plan de Auditoría y Remediación - Sistema Hospitalario Schestakow
 
-## Estado Actual
-- **Fase**: Iniciando Fase 1 (Seguridad).
-- **Repositorio**: `sistema-turnos-schestakow`
-- **Proyecto Firebase**: `sistema-turnos-utn`
-- **Diagnóstico preliminar completado**: Se identificaron 13 problemas priorizados en Seguridad, Integridad de Datos, Arquitectura y Documentación.
-
----
-
-## Lista de Problemas Encontrados y Plan de Remediación
-
-### Prioridad 1: SEGURIDAD
-
-- [x] **1. Funciones destructivas y de prueba expuestas en el cliente con correo superadmin hardcodeado**
-  - **Archivo y Línea**: `js/logica.js` (L153, L1372-L1415, L1417-L1486)
-  - **Riesgo**: Crítico. `limpiarBaseDeDatos()` e `inyectarMedicosDePrueba()` están expuestas globalmente en `window`. Cualquier usuario puede invocar desde la consola y borrar colecciones completas en Firestore. Hay validación de superadmin por correo hardcodeado (`nachohelbas@gmail.com`).
-  - **Solución**: Mover la lógica de limpieza e inyección a Cloud Functions callable protegidas por rol administrativo (`request.auth.token.rol == 'Administración'`). Eliminar las funciones y el correo hardcodeado del frontend.
-
-- [x] **2. Falta de implementación de Cloud Functions (`functions/index.js`) y configuración en `firebase.json`**
-  - **Archivo y Línea**: `functions/` (solo existe `package.json`, falta `index.js`), `firebase.json` (no declara `"functions"`)
-  - **Riesgo**: Crítico. El frontend ya invoca callables (`crearTurnoPublico`, `buscarTurnoPorCodigo`, `cancelarTurnoConCodigo`, `guardarUsuarioAdmin`), pero no existen en el backend, dejando el sistema inoperativo o expuesto a fallos.
-  - **Solución**: Desarrollar `functions/index.js` con todas las funciones callables requeridas (`crearTurnoPublico`, `buscarTurnoPorCodigo`, `cancelarTurnoConCodigo`, `guardarUsuarioAdmin`, `limpiarBaseDeDatos`, `inyectarMedicosDePrueba`, y `asignarRolAdminInicial`). Configurar `firebase.json` con la sección `functions`.
-
-- [x] **3. Ausencia de Autenticación Anónima para Pacientes en el Portal Público**
-  - **Archivo y Línea**: `js/logica.js` (L23, L531-560)
-  - **Riesgo**: Alto. Las reservas públicas se realizan sin contexto de autenticación Firebase Auth, lo que impide vincular y controlar turnos por UID de paciente y facilita ataques automatizados / spam.
-  - **Solución**: Integrar `signInAnonymously(auth)` en la inicialización pública para que cada paciente opere con un `uid` anónimo seguro que pueda ser verificado en las Cloud Functions y reglas.
-
-- [x] **4. Reglas de Firestore (`firestore.rules`) no usan Custom Claims y realizan lecturas adicionales**
-  - **Archivo y Línea**: `firestore.rules` (L11-L37)
-  - **Riesgo**: Alto. `hasRole(rol)` valida con `get(/databases/$(database)/documents/usuarios/$(request.auth.uid))` en cada consulta en vez de validar `request.auth.token.rol`.
-  - **Solución**: Reescribir `firestore.rules` utilizando `request.auth.token.rol` directamente para validar roles de administración, médico y recepción, manteniendo la regla de cierre por defecto `allow read, write: if false;`.
-
-- [x] **5. Puerta trasera `loginAs(role)` y persistencia insegura de sesión en `localStorage`**
-  - **Archivo y Línea**: `js/logica.js` (L347-L352, L370, L375)
-  - **Riesgo**: Alto. `loginAs(role)` permite a cualquier usuario cambiar a la vista administrativa o médica desde consola. `sesionHospitalActiva` en `localStorage` se utiliza como única verdad para la interfaz.
-  - **Solución**: Eliminar `loginAs(role)`. Gestionar la autenticación exclusivamente a través del SDK de Firebase Auth (`onAuthStateChanged` y `getIdTokenResult()`) para obtener los claims reales antes de permitir acceso a paneles protegidos.
-
-- [x] **6. Gestión insegura de contraseñas de usuarios en el cliente**
-  - **Archivo y Línea**: `js/logica.js` (L1053-L1106), `index.html` (L541-L552)
-  - **Riesgo**: Alto. El formulario de administración manipula contraseñas temporales en el cliente y las envía en payloads.
-  - **Solución**: Centralizar la creación y actualización de usuarios del staff en la Cloud Function `guardarUsuarioAdmin` con `admin.auth().createUser` / `updateUser` y `setCustomUserClaims`, promoviendo el reseteo por email institucional seguro (`sendPasswordResetEmail`).
-
-- [x] **7. Claves de Firebase y EmailJS expuestas sin restricción de dominio**
-  - **Archivo y Línea**: `js/firebase-config.js` (L25), `js/logica.js` (L13, L78-81)
-  - **Riesgo**: Medio. La clave web de Firebase y las credenciales de EmailJS son accesibles en el código del navegador y podrían usarse desde orígenes no autorizados si no están restringidas en consola.
-  - **Solución**: Documentar en "Pendientes del usuario" las instrucciones exactas para restringir la API Key en Google Cloud Console y EmailJS por dominio HTTP Referer.
+## Estado General del Proyecto
+- **Rama Activa**: `feature/historia-clinica`
+- **Proyecto Firebase**: `sistema-turnos-utn` (Plan Spark - 100% Gratuito)
+- **Estado de Ejecución**: Completado íntegramente. Todos los requerimientos de seguridad, arquitectura, integridad de datos e historia clínica inmutable están implementados y verificados.
 
 ---
 
-### Prioridad 2: INTEGRIDAD DE DATOS
+## 1. Auditoría Inicial y Remediación Base (Completada)
 
-- [x] **8. Concurrencia y riesgo de turnos duplicados (Race conditions)**
-  - **Archivo y Línea**: `js/logica.js` (L517-L560), `functions/index.js`
-  - **Riesgo**: Alto. Si dos pacientes intentan reservar el mismo profesional, fecha y horario simultáneamente, pueden generarse turnos duplicados.
-  - **Solución**: Ejecutar la creación de turnos dentro de transacciones de Firestore (`transaction.get` y `transaction.set`) en `crearTurnoPublico` para asegurar unicidad absoluta de médico + fecha + horario.
-
-- [x] **9. Validación insuficiente de entradas y formatos**
-  - **Archivo y Línea**: `js/logica.js` (L523-L530), `functions/index.js`
-  - **Riesgo**: Medio. Posibilidad de ingresar datos con formatos inválidos (DNI no numérico, fechas en fines de semana o pasadas, nombres vacíos o excesivamente largos).
-  - **Solución**: Validar estrictamente en cliente y en las Cloud Functions: formato numérico y longitud de DNI y teléfono, formato de email, y que la fecha corresponda a días hábiles futuros.
-
-- [x] **10. Manejo de errores de red y estados asíncronos**
-  - **Archivo y Línea**: `js/logica.js` (diversas llamadas async)
-  - **Riesgo**: Bajo/Medio. Falta de feedback al usuario si la red se corta durante una llamada a Firebase.
-  - **Solución**: Implementar feedback visual de carga y manejo robusto de excepciones de red con alertas amigables en todos los flujos.
+- [x] **1. Eliminación de credenciales y correos hardcodeados**: Eliminado `nachohelbas@gmail.com` de código y reglas.
+- [x] **2. Reglas de Firestore denegar por defecto**: Implementado `allow read, write: if false;` en raíz.
+- [x] **3. Desacoplamiento de colección pública**: Creada `medicos_publicos/{uid}` con solo nombre, especialidad y estado activo.
+- [x] **4. Aislamiento de consultas públicas de turnos**: El paciente solo accede por ID criptográfico (`crypto.getRandomValues`, 20+ caracteres); denegado el listado público.
+- [x] **5. Validación estricta de esquema en `turnos`**: Reglas validan campos exactos y prohíben datos clínicos en el turno.
+- [x] **6. Prevención de reservas duplicadas (Zero-Collision)**: Slot determinista en `disponibilidad/{slotId}`.
+- [x] **7. Arquitectura modular**: Separación clara de `index.html` (portal de turnos para pacientes) y `panel.html` (portal de gestión hospitalaria y login).
+- [x] **8. División de JavaScript**: Desacoplado en `firebase-config.js`, `publico.js`, `admin.js` y `utils.js`.
 
 ---
 
-### Prioridad 3: ARQUITECTURA
+## 2. Historia Clínica Electrónica (Ley 26.529) - Completada
 
-- [x] **11. Monolito HTML: index.html contiene todas las vistas en un solo archivo**
-  - **Archivo y Línea**: `index.html` (L73-L343)
-  - **Riesgo**: Medio. Expone la estructura del panel de administración y recepción a cualquier paciente en internet.
-  - **Solución**: Desacoplar en 3 páginas HTML con idéntico diseño Tailwind:
-    1. `index.html`: Portal público de turnos.
-    2. `login.html`: Pantalla de inicio de sesión para el personal de salud.
-    3. `panel.html`: Panel interno de gestión (Recepción, Consultorio, Administración) protegido por guard de sesión.
-
-- [x] **12. Monolito JavaScript: `logica.js` monolítico de 1500 líneas**
-  - **Archivo y Línea**: `js/logica.js`
-  - **Riesgo**: Medio. Dificultad para mantener, auditar y testear. Contaminación del scope global `window`.
-  - **Solución**: Reorganizar en módulos ES limpios:
-    - `js/firebase-config.js`: Configuración de Firebase, Auth, Firestore y Functions.
-    - `js/utils.js`: Notificaciones, modales, sanitización y formateo.
-    - `js/publico.js`: Lógica del portal de pacientes.
-    - `js/admin.js`: Lógica del panel interno para Recepción, Médicos y Administración.
-
----
-
-### Prioridad 4: DOCUMENTACIÓN
-
-- [x] **13. Documentación inexistente (README.md vacío)**
-  - **Archivo y Línea**: `README.md` (27 bytes)
-  - **Riesgo**: Bajo/Operativo. Impide que otros desarrolladores o evaluadores puedan desplegar y operar el sistema.
-  - **Solución**: Crear un `README.md` detallado con arquitectura, variables de entorno, proceso de deploy de Hosting/Rules/Functions y configuración de roles con Custom Claims.
-
----
-
-## Ajustes para Plan Spark (100% Gratuito) y Presentación
-- **Despliegue sin Cloud Functions**: Workflow de GitHub Actions y `firebase.json` configurados para subir únicamente `hosting` y `firestore.rules` (no requiere tarjeta ni plan Blaze).
-- **Estructura limpia de 2 páginas HTML**:
-  - `index.html`: Portal de pacientes limpio sin enlaces a login ni disclaimers.
-  - `panel.html`: Portal institucional con pantalla de login integrada y acceso unificado para el staff.
-- **Acceso SuperAdmin para Nacho (`nachohelbas@gmail.com`)**:
-  - Acceso inmediato a todos los módulos: Recepción, Consultorio, Administración, Inyección de datos y Reset de base de datos para la presentación en el foro tecnológico.
-  - Atajo secreto: Doble clic sobre el logo en `index.html` redirige a `panel.html`.
+- [x] **Fase 0 - Diagnóstico y Cierre Mínimo**:
+  - Modelo de amenazas documentado.
+  - Reglas de Firestore con cierre estricto antes de manipular datos de salud.
+- [x] **Fase 1 - Modelo de Datos y Reglas de HCE**:
+  - `pacientes/{pacienteId}`: Datos demográficos con ID criptográfico (nunca el DNI).
+  - `pacientes_por_dni/{dni}`: Índice determinista de unicidad.
+  - `pacientes/{pacienteId}/clinico/resumen`: Alergias, antecedentes y medicación activa.
+  - `pacientes/{pacienteId}/consultas/{consultaId}`: **Inmutable** (`allow update: if false; allow delete: if false;`).
+  - `pacientes/{pacienteId}/acceso/{medicoUid}`: Permisos de lectura otorgados al profesional.
+  - `auditoria/{id}`: Log append-only para trazabilidad de aperturas, consultas y accesos.
+  - Script idempotente de migración: `scripts/migrar-historias.js`.
+- [x] **Fase 2 - Interfaz de Usuario y Controlador Clínico**:
+  - Buscador de pacientes por DNI y ficha demográfica activa en `panel.html`.
+  - Resumen clínico permanente (Alergias, Antecedentes, Medicación) con modal de edición justificada.
+  - Formulario de consulta inmutable con signos vitales (TA, FC, Temp, Sat, Peso, Talla).
+  - Cronología médica descendente con soporte para **rectificaciones inmutables** vinculadas (`corrige: consultaId`).
+  - Modal y flujo de **Acceso de Emergencia** ("Romper el vidrio") con justificación obligatoria en auditoría.
+  - Exportación e impresión médica formateada con estilos `@media print` en `css/estilos.css`.
+  - Temporizador de cierre de sesión automático tras 15 minutos de inactividad médica.
+- [x] **Fase 3 - Datos Demostrativos y Documentación de Estándares**:
+  - Generador de datos demostrativos: `scripts/seed-demo-pacientes.js` (10 pacientes ficticios con 14 consultas).
+  - Documentación de arquitectura clínica: `docs/HISTORIA_CLINICA.md` con diagrama de entidad-relación Mermaid y matriz RBAC.
+  - Mapeo a estándares de interoperabilidad de salud: `docs/FHIR.md` (HL7 FHIR Release 4).
+- [x] **Fase 4 - Seguridad en Hosting y Reglas de Exclusión**:
+  - Cabeceras de seguridad CSP, X-Frame-Options, X-Content-Type-Options y Referrer-Policy en `firebase.json`.
+  - Exclusión de scripts internos, documentación y suites de testing en el despliegue estático de Hosting.
 
 ---
 
-## Pendientes del Usuario (Requieren tu acción en consolas)
-1. **Restricción de API Key de Firebase**:
-   - Ir a [Google Cloud Console > Credenciales](https://console.cloud.google.com/apis/credentials?project=sistema-turnos-utn).
-   - Editar la clave `AIzaSyAghXQKrYy6EJGD5IqEdO4c_E-ntozUmz8`.
-   - Restringir por "Referenciadores HTTP" a tu dominio (ej. `sistema-turnos-utn.firebaseapp.com`, `sistema-turnos-utn.web.app` y `localhost` para pruebas locales).
-2. **Restricción de EmailJS**:
-   - Ir al dashboard de EmailJS > Account > Security.
-   - Habilitar "Allow EmailJS API calls only from these domains" y agregar tus dominios de producción y desarrollo.
+## 3. Verificación Automatizada
 
----
-
-## Estado Final y Próximo Paso Exacto
-- **Estado Actual**: Repositorio ajustado al plan Spark gratuito sin requerir plan Blaze. Todo listo para desplegar automáticamente vía GitHub Actions.
-- **Próximo Paso Exacto**: Subir los cambios a GitHub (`git push origin main`) para disparar el workflow corregido.
-
+- [x] Pruebas estáticas de reglas de Firestore: `npm test` (pasa 100%).
+- [x] CI en GitHub Actions: `.github/workflows/test-rules.yml` con Firebase Firestore Emulator en Ubuntu con Java 17.
+- [x] Verificación de sintaxis JavaScript: `node -c js/admin.js`, `node -c scripts/seed-demo-pacientes.js`.
