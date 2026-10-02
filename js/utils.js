@@ -22,9 +22,12 @@ export function enviarCorreoNotificacion(templateId, templateParams) {
 
 export function escaparHTML(texto) {
     if (texto === null || texto === undefined) return '';
-    const div = document.createElement('div');
-    div.textContent = String(texto);
-    return div.innerHTML;
+    return String(texto)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 export function abrirModal(id) { 

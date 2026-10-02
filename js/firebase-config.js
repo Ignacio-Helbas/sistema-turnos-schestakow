@@ -1,7 +1,7 @@
 // ==========================================
 // CONFIGURACIÓN DE FIREBASE (MODO REAL)
 // ==========================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
     getAuth,
     signInWithEmailAndPassword,
@@ -48,6 +48,26 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const functionsInstancia = getFunctions(app);
 
+/**
+ * Crea una cuenta en Firebase Authentication utilizando una instancia secundaria
+ * de la app, permitiendo al Administrador registrar personal sin perder su propia sesión.
+ */
+export async function crearCuentaAuthSecundaria(email, password) {
+    const secondaryAppName = `secondaryApp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const secondaryApp = initializeApp(firebaseConfig, secondaryAppName);
+    const secondaryAuth = getAuth(secondaryApp);
+    try {
+        const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+        const uid = cred.user.uid;
+        await signOut(secondaryAuth);
+        return uid;
+    } finally {
+        try {
+            await deleteApp(secondaryApp);
+        } catch (_) {}
+    }
+}
+
 // Exportar helpers de Firestore para evitar reimportaciones dispersas
 export {
     collection,
@@ -77,17 +97,8 @@ export {
 // ==========================================
 // GESTIÓN DE SESIÓN CON CUSTOM CLAIMS
 // ==========================================
-export async function iniciarSesionFirebase(correoOUsername, password) {
-    let correoFinal = correoOUsername.trim();
-    if (!correoFinal.includes("@")) {
-        const snap = await getDocs(query(collection(db, "usuarios"), where("username", "==", correoFinal)));
-        if (!snap.empty) {
-            correoFinal = snap.docs[0].data().correo;
-        } else {
-            throw new Error("USUARIO_NO_EXISTE");
-        }
-    }
-
+export async function iniciarSesionFirebase(correo, password) {
+    const correoFinal = (correo || "").trim();
     const credencial = await signInWithEmailAndPassword(auth, correoFinal, password);
     const user = credencial.user;
 

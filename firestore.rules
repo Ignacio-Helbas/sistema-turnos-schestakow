@@ -42,8 +42,8 @@ service cloud.firestore {
     // REGLAS: PERFILES DE USUARIOS
     // ==========================================
     match /usuarios/{uid} {
-      allow get: if isStaff() && (request.auth.uid == uid || isSuperAdmin() || isRecepcion());
-      allow list: if isSuperAdmin() || isRecepcion();
+      allow get: if isStaff() && (request.auth.uid == uid || isSuperAdmin());
+      allow list: if isSuperAdmin();
       allow write: if isSuperAdmin();
     }
 
@@ -265,6 +265,11 @@ service cloud.firestore {
     // REGLAS: CONFIGURACIÓN Y MODULACIÓN
     // ==========================================
     match /modulacion_medicos/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /config/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }

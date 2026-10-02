@@ -25,7 +25,8 @@ import {
     createUserWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    crearCuentaAuthSecundaria
 } from "./firebase-config.js";
 
 import {
@@ -124,29 +125,13 @@ onAuthStateChanged(auth, async (user) => {
     let rol = "Recepción";
     let nombre = user.displayName || user.email;
 
-    // SuperAdmin maestro: nachohelbas@gmail.com
-    const esCuentaAdmin = Boolean(user.email && user.email.toLowerCase() === "nachohelbas@gmail.com");
-    if (esCuentaAdmin) {
-        rol = "Administración";
-        nombre = "Ignacio Helbas (Administrador)";
-    }
-
     try {
         const docRef = doc(db, "usuarios", user.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
-            if (data.rol && !esCuentaAdmin) rol = data.rol;
-            if (data.nombre && !esCuentaAdmin) nombre = data.nombre;
-        } else if (esCuentaAdmin) {
-            // Asegurar que el perfil exista en Firestore con el UID de Auth
-            await setDoc(docRef, {
-                nombre: "Ignacio Helbas",
-                correo: user.email,
-                rol: "Administración",
-                activo: true,
-                actualizadoEn: serverTimestamp()
-            }, { merge: true }).catch(() => {});
+            if (data.rol) rol = data.rol;
+            if (data.nombre) nombre = data.nombre;
         }
     } catch (e) {
         console.warn("No se pudo leer perfil desde Firestore:", e);
@@ -181,31 +166,20 @@ function mostrarPantallaLogin() {
 }
 
 export async function iniciarSesionReal() {
-    const userInput = document.getElementById('login-user')?.value.trim();
+    const emailInput = document.getElementById('login-user')?.value.trim();
     const passInput = document.getElementById('login-pass')?.value.trim();
 
-    if (!userInput || !passInput) {
-        mostrarAlerta("Datos Faltantes", "Ingrese correo o usuario y contraseña.");
+    if (!emailInput || !passInput) {
+        mostrarAlerta("Datos Faltantes", "Ingrese correo electrónico y contraseña.");
         return;
     }
 
     try {
-        let correoFinal = userInput;
-        if (!correoFinal.includes("@")) {
-            const snap = await getDocs(query(collection(db, "usuarios"), where("username", "==", correoFinal)));
-            if (!snap.empty) {
-                correoFinal = snap.docs[0].data().correo;
-            } else {
-                mostrarAlerta("Acceso Denegado", "El nombre de usuario especificado no existe.");
-                return;
-            }
-        }
-
         try {
-            await signInWithEmailAndPassword(auth, correoFinal, passInput);
+            await signInWithEmailAndPassword(auth, emailInput, passInput);
         } catch (signInErr) {
             if (passInput.trim() !== passInput) {
-                await signInWithEmailAndPassword(auth, correoFinal, passInput.trim());
+                await signInWithEmailAndPassword(auth, emailInput, passInput.trim());
             } else {
                 throw signInErr;
             }
@@ -215,12 +189,8 @@ export async function iniciarSesionReal() {
         document.getElementById('login-pass').value = '';
     } catch (error) {
         console.error("Error Auth:", error);
-        let mensaje = "Las credenciales ingresadas son incorrectas.";
-        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
-            mensaje = "Contraseña o usuario incorrecto. Verifique mayúsculas y minúsculas (la contraseña es sensible a mayúsculas: 'Nacho2015').";
-        } else if (error.code === 'auth/user-not-found') {
-            mensaje = "El usuario no está registrado en Firebase Authentication.";
-        } else if (error.code === 'auth/too-many-requests') {
+        let mensaje = "Correo o contraseña incorrectos.";
+        if (error.code === 'auth/too-many-requests') {
             mensaje = "Demasiados intentos fallidos. Espere unos minutos o intente más tarde.";
         } else if (error.code === 'auth/operation-not-allowed') {
             mensaje = "El proveedor de Correo/Contraseña no está habilitado en Firebase Authentication.";
@@ -248,15 +218,23 @@ function aplicarPermisosVisuales(sesion) {
         btnLogout.innerText = `Cerrar Sesión (${sesion.nombre || sesion.correo})`;
     }
 
-    // nachohelbas@gmail.com o rol Administración tienen acceso completo a todos los paneles
-    const esSuperAdmin = (sesion.rol === "Administración" || sesion.correo?.toLowerCase() === "nachohelbas@gmail.com");
+    // Rol Administración tiene acceso completo a todos los paneles
+    const esSuperAdmin = (sesion.rol === "Administración");
 
     if (esSuperAdmin) {
         if (btnAdmin) btnAdmin.classList.remove('hidden');
         if (btnRec) btnRec.classList.remove('hidden');
         if (btnDoc) btnDoc.classList.remove('hidden');
         if (btnDummies) btnDummies.classList.remove('hidden');
-        if (btnReset) btnReset.classList.remove('hidden');
+        
+        // Reset de Fábrica solo se muestra si el entorno está marcado como demostración (esDemo == true)
+        verificarEntornoDemo().then(esDemo => {
+            if (btnReset) {
+                if (esDemo) btnReset.classList.remove('hidden');
+                else btnReset.classList.add('hidden');
+            }
+        });
+
         sincronizarMedicosPublicos();
         switchView('admin');
     } else if (sesion.rol === "Médico") {
@@ -269,6 +247,28 @@ function aplicarPermisosVisuales(sesion) {
 }
 
 export function switchView(viewName) {
+    if (viewName !== 'login') {
+        if (!sesionActual) {
+            mostrarPantallaLogin();
+            return;
+        }
+
+        const rol = sesionActual.rol;
+        const esAdmin = (rol === "Administración");
+        const esMedico = (rol === "Médico" || esAdmin);
+        const esRecepcion = (rol === "Recepción" || rol === "Recepcionista" || rol === "Administrativo" || esAdmin);
+
+        let permitido = false;
+        if (viewName === 'admin' && esAdmin) permitido = true;
+        if (viewName === 'doctor' && esMedico) permitido = true;
+        if (viewName === 'reception' && esRecepcion) permitido = true;
+
+        if (!permitido) {
+            mostrarAlerta("Acceso No Autorizado", `Su rol actual (${rol || 'Sin Rol'}) no tiene permisos para acceder a esta vista.`);
+            return;
+        }
+    }
+
     document.body.dataset.view = viewName;
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
     const target = document.getElementById('view-' + viewName);
@@ -303,22 +303,35 @@ async function iniciarModuloStaff() {
 
 async function cargarEspecialistasFirebase() {
     try {
-        const snap = await getDocs(query(collection(db, "usuarios"), where("rol", "==", "Médico")));
+        let snap;
+        try {
+            snap = await getDocs(query(collection(db, "medicos_publicos"), where("activo", "==", true)));
+        } catch (_) {
+            snap = null;
+        }
+        if (!snap || snap.empty) {
+            try {
+                snap = await getDocs(query(collection(db, "usuarios"), where("rol", "==", "Médico")));
+            } catch (_) {}
+        }
         bdMedicosDinamica = {};
         const selectAlcance = document.getElementById('admin-select-alcance');
         if (selectAlcance) selectAlcance.innerHTML = '<option value="global">Todas las especialidades (Global)</option>';
 
-        snap.forEach((documento) => {
-            const u = documento.data();
-            if (u.especialidad && u.nombre && u.activo !== false) {
-                if (!bdMedicosDinamica[u.especialidad]) bdMedicosDinamica[u.especialidad] = [];
-                const yaEsta = bdMedicosDinamica[u.especialidad].some(m => m.uid === documento.id);
-                if (!yaEsta) {
-                    bdMedicosDinamica[u.especialidad].push({ uid: documento.id, nombre: u.nombre });
-                    if (selectAlcance) selectAlcance.innerHTML += `<option value="${escaparHTML(u.nombre)}">Solo: ${escaparHTML(u.nombre)}</option>`;
+        if (snap && !snap.empty) {
+            snap.forEach((documento) => {
+                const u = documento.data();
+                const uid = u.medicoUid || documento.id;
+                if (u.especialidad && u.nombre && u.activo !== false) {
+                    if (!bdMedicosDinamica[u.especialidad]) bdMedicosDinamica[u.especialidad] = [];
+                    const yaEsta = bdMedicosDinamica[u.especialidad].some(m => m.uid === uid);
+                    if (!yaEsta) {
+                        bdMedicosDinamica[u.especialidad].push({ uid: uid, nombre: u.nombre });
+                        if (selectAlcance) selectAlcance.innerHTML += `<option value="${escaparHTML(u.nombre)}">Solo: ${escaparHTML(u.nombre)}</option>`;
+                    }
                 }
-            }
-        });
+            });
+        }
 
         const selectEspRec = document.getElementById('reception-especialidad');
         if (selectEspRec) {
@@ -1550,13 +1563,13 @@ export async function cargarUsuariosAdmin(direccion = 'init') {
                         ${u.matricula ? `<p class="text-xs text-slate-500 mt-1">M.P.: ${escaparHTML(u.matricula)}</p>` : ''}
                     </td>
                     <td class="p-3 text-xs text-slate-600">
-                        <p>User: <span class="font-mono font-bold">${escaparHTML(u.username || 'N/A')}</span></p>
-                        <button onclick="enviarResetPasswordUsuario('${escaparHTML(u.correo)}')" class="text-[11px] text-neutral-700 underline hover:text-neutral-900 mt-1">Enviar reset clave</button>
+                        <p class="font-mono text-slate-700 text-xs font-semibold">${escaparHTML(u.correo || 'N/A')}</p>
+                        <button data-correo="${escaparHTML(u.correo || '')}" onclick="enviarResetPasswordUsuario(this.dataset.correo)" class="text-[11px] text-neutral-700 underline hover:text-neutral-900 mt-1">Enviar reset clave</button>
                     </td>
                     <td class="p-3 text-center">
                         <div class="flex justify-center gap-2">
-                            <button onclick="editarUsuarioAdmin('${id}')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded font-bold transition">Editar</button>
-                            <button onclick="eliminarUsuarioAdmin('${id}')" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded font-bold transition">Eliminar</button>
+                            <button data-id="${escaparHTML(id)}" onclick="editarUsuarioAdmin(this.dataset.id)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded font-bold transition">Editar</button>
+                            <button data-id="${escaparHTML(id)}" onclick="eliminarUsuarioAdmin(this.dataset.id)" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded font-bold transition">Eliminar</button>
                         </div>
                     </td>
                 </tr>
@@ -1573,7 +1586,6 @@ export function abrirModalUsuarioNulo() {
     document.getElementById('input-usuario-id').value = '';
     document.getElementById('input-usuario-nombre').value = '';
     document.getElementById('input-usuario-rol').value = 'Administración';
-    document.getElementById('input-usuario-username').value = '';
     document.getElementById('input-usuario-pass').value = '';
     document.getElementById('input-usuario-tel').value = '';
     document.getElementById('input-usuario-correo').value = '';
@@ -1591,7 +1603,6 @@ export async function editarUsuarioAdmin(id) {
         document.getElementById('input-usuario-id').value = id;
         document.getElementById('input-usuario-nombre').value = u.nombre || '';
         document.getElementById('input-usuario-rol').value = u.rol || 'Administración';
-        document.getElementById('input-usuario-username').value = u.username || '';
         document.getElementById('input-usuario-pass').value = '';
         document.getElementById('input-usuario-tel').value = u.tel || '';
         document.getElementById('input-usuario-correo').value = u.correo || '';
@@ -1610,21 +1621,25 @@ export async function guardarUsuarioAdminFirebase() {
     const id = document.getElementById('input-usuario-id').value;
     const nom = document.getElementById('input-usuario-nombre').value.trim();
     const rol = document.getElementById('input-usuario-rol').value;
-    const user = document.getElementById('input-usuario-username').value.trim();
     const tel = document.getElementById('input-usuario-tel').value.trim();
     const cor = document.getElementById('input-usuario-correo').value.trim();
     const mat = document.getElementById('input-usuario-matricula').value.trim();
     const esp = document.getElementById('input-usuario-especialidad').value;
+    const pass = document.getElementById('input-usuario-pass')?.value?.trim();
 
-    if (!cor || !nom || !user) {
-        mostrarAlerta("Datos Faltantes", "Nombre, Usuario y Correo son obligatorios.");
+    if (!cor || !nom) {
+        mostrarAlerta("Datos Faltantes", "Nombre y Correo Electrónico son obligatorios.");
+        return;
+    }
+
+    if (!id && (!pass || pass.length < 6)) {
+        mostrarAlerta("Contraseña Requerida", "Para nuevos usuarios, la contraseña debe tener al menos 6 caracteres.");
         return;
     }
 
     const payload = {
         nombre: nom,
         rol: rol,
-        username: user,
         correo: cor,
         tel: tel,
         matricula: rol === 'Médico' ? mat : '',
@@ -1635,13 +1650,32 @@ export async function guardarUsuarioAdminFirebase() {
     try {
         let uidFinal = id;
         if (id) {
-            await updateDoc(doc(db, "usuarios", id), payload);
-        } else {
-            const userRef = await addDoc(collection(db, "usuarios"), {
+            await updateDoc(doc(db, "usuarios", id), {
                 ...payload,
+                actualizadoEn: serverTimestamp()
+            });
+        } else {
+            try {
+                uidFinal = await crearCuentaAuthSecundaria(cor, pass);
+            } catch (authErr) {
+                console.error("Error al registrar cuenta Auth:", authErr);
+                let msg = "No se pudo registrar la cuenta en Authentication.";
+                if (authErr.code === 'auth/email-already-in-use') {
+                    msg = "El correo electrónico ya se encuentra registrado en el sistema.";
+                } else if (authErr.code === 'auth/weak-password') {
+                    msg = "La contraseña es muy débil (debe tener al menos 6 caracteres).";
+                } else if (authErr.code === 'auth/invalid-email') {
+                    msg = "El formato del correo electrónico es inválido.";
+                }
+                mostrarAlerta("Error al Registrar", msg);
+                return;
+            }
+
+            await setDoc(doc(db, "usuarios", uidFinal), {
+                ...payload,
+                uid: uidFinal,
                 creadoEn: serverTimestamp()
             });
-            uidFinal = userRef.id;
         }
 
         if (rol === 'Médico') {
@@ -1650,12 +1684,12 @@ export async function guardarUsuarioAdminFirebase() {
                 nombre: nom,
                 especialidad: esp,
                 activo: true
-            });
+            }, { merge: true });
         }
 
         mostrarExito(
             id ? "Actualizado" : "Guardado",
-            id ? "Los datos se guardaron correctamente." : "Usuario registrado en Firestore correctamente."
+            id ? "Los datos se guardaron correctamente." : "Usuario registrado y habilitado para iniciar sesión."
         );
 
         cerrarModal('modal-usuario');
@@ -1848,7 +1882,48 @@ export function ejecutarLimpiezaYDescarga() {
     mostrarExito("Descarga Realizada", "Copia de respaldo exportada.");
 }
 
+export async function verificarEntornoDemo() {
+    try {
+        let snap = await getDoc(doc(db, "configuracion", "entorno"));
+        if (!snap.exists()) {
+            snap = await getDoc(doc(db, "config", "entorno"));
+        }
+        if (!snap.exists()) {
+            // Inicializar documento de entorno para la demo académica (UTN FRSR)
+            await setDoc(doc(db, "configuracion", "entorno"), {
+                esDemo: true,
+                descripcion: "Entorno académico experimental UTN FRSR"
+            }, { merge: true });
+            return true;
+        }
+        return snap.data()?.esDemo === true;
+    } catch (e) {
+        console.warn("No se pudo verificar entorno demo:", e);
+        return false;
+    }
+}
+
 export async function limpiarBaseDeDatos() {
+    // 1. Verificación obligatoria de entorno demo en Firestore
+    try {
+        let snap = await getDoc(doc(db, "configuracion", "entorno"));
+        if (!snap.exists()) {
+            snap = await getDoc(doc(db, "config", "entorno"));
+        }
+        if (!snap.exists() || snap.data()?.esDemo !== true) {
+            mostrarAlerta(
+                "Operación Bloqueada",
+                "El Reset de Fábrica está bloqueado porque el entorno no tiene habilitada la bandera de demostración (configuracion/entorno con esDemo == true)."
+            );
+            return;
+        }
+    } catch (e) {
+        console.error("Error al validar flag demo:", e);
+        mostrarAlerta("Error de Seguridad", "No se pudo verificar la autorización del entorno para esta operación.");
+        return;
+    }
+
+    // 2. Confirmación explícita por palabra clave
     const input = prompt("⚠️ ADVERTENCIA DE SEGURIDAD ⚠️\nEsta acción borrará TODOS los turnos y usuarios de prueba.\n\nPara confirmar, escriba exactamente la palabra: BORRAR");
     if (input !== "BORRAR") {
         mostrarAlerta("Cancelado", "Palabra de confirmación incorrecta. No se ha borrado ningún dato.");

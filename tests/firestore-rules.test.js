@@ -53,6 +53,19 @@ test('Matriz de Seguridad de Reglas de Firestore', async (t) => {
         // 7. Acceso a historia clínica: solo médicos autorizados o emergencia
         assert.match(rulesContent, /match \/acceso\/\{medicoUid\}/,
             'Debe existir control de acceso explícito por médico para la historia clínica');
+
+        // 8. /usuarios: Recepción no puede listar /usuarios ni Médico escribir
+        const usuariosBlockMatch = rulesContent.match(/match \/usuarios\/\{uid\}\s*\{([^}]+)\}/);
+        assert.ok(usuariosBlockMatch, 'Debe existir la regla match /usuarios/{uid}');
+        const usuariosBlock = usuariosBlockMatch[1];
+        assert.doesNotMatch(usuariosBlock, /isRecepcion/,
+            'El bloque /usuarios no debe otorgar permisos a Recepción');
+        assert.doesNotMatch(usuariosBlock, /isMedico/,
+            'El bloque /usuarios no debe otorgar permisos a Médico');
+        assert.match(usuariosBlock, /allow list:\s*if\s*isSuperAdmin\(\);/,
+            'Solo SuperAdmin debe poder listar /usuarios');
+        assert.match(usuariosBlock, /allow write:\s*if\s*isSuperAdmin\(\);/,
+            'Solo SuperAdmin debe poder escribir /usuarios');
     });
 
     // Si está disponible el emulador en vivo, se ejecutan las pruebas de integración
@@ -93,6 +106,16 @@ test('Matriz de Seguridad de Reglas de Firestore', async (t) => {
 
             await rulesTesting.assertFails(auditRef.update({ detalle: 'Modificación' }));
             await rulesTesting.assertFails(auditRef.delete());
+        });
+
+        await t.test('5. usuarios: Recepción NO puede listar usuarios', async () => {
+            const recepDb = testEnv.authenticatedContext('recep_1', { rol: 'Recepción' }).firestore();
+            await rulesTesting.assertFails(recepDb.collection('usuarios').get());
+        });
+
+        await t.test('6. usuarios: Médico NO puede escribir usuarios', async () => {
+            const medDb = testEnv.authenticatedContext('med_1', { rol: 'Médico' }).firestore();
+            await rulesTesting.assertFails(medDb.collection('usuarios').doc('nuevo_u').set({ nombre: 'Hack' }));
         });
     }
 });
