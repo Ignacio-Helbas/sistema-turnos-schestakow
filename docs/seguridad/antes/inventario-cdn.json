@@ -1,0 +1,34 @@
+[
+    {
+        "Archivo":  "index.html",
+        "Linea":  9,
+        "Tipo":  "Script",
+        "URL":  "https://cdn.tailwindcss.com",
+        "TieneSRI":  false,
+        "Tag":  "\u003cscript src=\"https://cdn.tailwindcss.com\"\u003e\u003c/script\u003e"
+    },
+    {
+        "Archivo":  "index.html",
+        "Linea":  12,
+        "Tipo":  "Script",
+        "URL":  "https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js",
+        "TieneSRI":  false,
+        "Tag":  "\u003cscript type=\"text/javascript\" src=\"https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js\"\u003e\u003c/script\u003e"
+    },
+    {
+        "Archivo":  "panel.html",
+        "Linea":  9,
+        "Tipo":  "Script",
+        "URL":  "https://cdn.tailwindcss.com",
+        "TieneSRI":  false,
+        "Tag":  "\u003cscript src=\"https://cdn.tailwindcss.com\"\u003e\u003c/script\u003e"
+    },
+    {
+        "Archivo":  "panel.html",
+        "Linea":  12,
+        "Tipo":  "Script",
+        "URL":  "https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js",
+        "TieneSRI":  false,
+        "Tag":  "\u003cscript src=\"https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js\"\u003e\u003c/script\u003e"
+    }
+]

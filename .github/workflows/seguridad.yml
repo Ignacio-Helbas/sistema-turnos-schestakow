@@ -1,0 +1,91 @@
+name: Pipeline de Seguridad (DevSecOps)
+
+on:
+  push:
+    branches:
+      - main
+      - feature/**
+      - mejoras/**
+      - auditoria-foro
+  pull_request:
+    branches:
+      - main
+
+# Principio de privilegio mínimo: permisos globales de solo lectura
+permissions:
+  contents: read
+
+jobs:
+  # -------------------------------------------------------------
+  # Job 1: Detección y Prevención de Secretos con Gitleaks
+  # -------------------------------------------------------------
+  secret-scan:
+    name: 1. Escaneo de Secretos (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código (historial completo)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Instalar Gitleaks
+        run: |
+          wget -q https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz
+          tar -xzf gitleaks_8.21.2_linux_x64.tar.gz
+          sudo mv gitleaks /usr/local/bin/
+          gitleaks version
+
+      - name: Ejecutar escaneo estricto de secretos
+        run: |
+          gitleaks git --config .gitleaks.toml --verbose
+
+  # -------------------------------------------------------------
+  # Job 2: Auditoría de Dependencias y Cadena de Suministro
+  # -------------------------------------------------------------
+  dependency-audit:
+    name: 2. Auditoría de Dependencias y SRI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.2.0
+        with:
+          node-version: '20'
+
+      - name: Auditoría de dependencias (Root)
+        run: |
+          npm i --package-lock-only
+          npm audit --audit-level=high || true
+
+      - name: Auditoría de dependencias (Cloud Functions)
+        run: |
+          cd functions
+          npm i --package-lock-only
+          npm audit --audit-level=high || true
+
+      - name: Auditoría de Integridad SRI en CDNs
+        run: |
+          node tools/audit-cdn-sri.js
+
+  # -------------------------------------------------------------
+  # Job 3: Pruebas Automatizadas de Reglas de Firestore
+  # -------------------------------------------------------------
+  firestore-rules-test:
+    name: 3. Validación de Reglas de Seguridad
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.2.0
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Ejecutar Suite de Seguridad y Pruebas Unitarias
+        run: node --test tests/firestore-rules.test.js tests/metricas.test.js

@@ -1,5 +1,8 @@
 # Sistema Hospitalario y Gestión de Turnos Online - Hospital Teodoro J. Schestakow
 
+[![Seguridad y DevSecOps](https://github.com/Ignacio-Helbas/sistema-turnos-schestakow/actions/workflows/seguridad.yml/badge.svg)](https://github.com/Ignacio-Helbas/sistema-turnos-schestakow/actions/workflows/seguridad.yml)
+[![Pruebas de Reglas de Firestore](https://github.com/Ignacio-Helbas/sistema-turnos-schestakow/actions/workflows/test-rules.yml/badge.svg)](https://github.com/Ignacio-Helbas/sistema-turnos-schestakow/actions/workflows/test-rules.yml)
+
 Sistema integral de reserva de turnos para pacientes, gestión administrativa y **Historia Clínica Electrónica (HCE)** inmutable y trazable (conforme a la Ley 26.529 de Derechos del Paciente) del **Hospital Teodoro J. Schestakow** (San Rafael, Mendoza).
 
 Desarrollado como prototipo para el **Foro Tecnológico de Ingeniería, Innovación y Desarrollo** (UTN - Facultad Regional San Rafael), optimizado al 100% para operar con servicios gratuitos en **Firebase Spark**.

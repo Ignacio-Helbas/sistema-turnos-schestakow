@@ -1,0 +1,368 @@
+[
+    {
+        "Archivo":  "admin.js",
+        "Linea":  133,
+        "Patron":  "sessionStorage_role",
+        "Contenido":  "if (!user || user.isAnonymous || sessionStorage.getItem(\u0027hospital_sesion_activa\u0027) !== \u0027true\u0027) {"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  135,
+        "Patron":  "sessionStorage_role",
+        "Contenido":  "if (user \u0026\u0026 !user.isAnonymous \u0026\u0026 sessionStorage.getItem(\u0027hospital_sesion_activa\u0027) !== \u0027true\u0027) {"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  190,
+        "Patron":  "client_access_control",
+        "Contenido":  "document.body.dataset.view = \u0027login\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  224,
+        "Patron":  "sessionStorage_role",
+        "Contenido":  "sessionStorage.setItem(\u0027hospital_sesion_activa\u0027, \u0027true\u0027);"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  318,
+        "Patron":  "sessionStorage_role",
+        "Contenido":  "if (!sesionActual || sessionStorage.getItem(\u0027hospital_sesion_activa\u0027) !== \u0027true\u0027) {"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  344,
+        "Patron":  "client_access_control",
+        "Contenido":  "document.body.dataset.view = viewName;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  393,
+        "Patron":  "innerHTML",
+        "Contenido":  "if (selectAlcance) selectAlcance.innerHTML = \u0027\u003coption value=\"global\"\u003eTodas las especialidades (Global)\u003c/option\u003e\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  416,
+        "Patron":  "innerHTML",
+        "Contenido":  "selectEspRec.innerHTML = opts;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  476,
+        "Patron":  "innerHTML",
+        "Contenido":  "selectMed.innerHTML = \u0027\u003coption value=\"\"\u003ePrimero seleccione especialidad\u003c/option\u003e\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  489,
+        "Patron":  "innerHTML",
+        "Contenido":  "selectMed.innerHTML = opts;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  519,
+        "Patron":  "innerHTML",
+        "Contenido":  "tbody.innerHTML = \u0027\u003ctr\u003e\u003ctd colspan=\"5\" class=\"p-6 text-center text-slate-400\"\u003eCargando turnos...\u003c/td\u003e\u003c/tr\u003e\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  596,
+        "Patron":  "innerHTML",
+        "Contenido":  "tbody.innerHTML = filas;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  841,
+        "Patron":  "innerHTML",
+        "Contenido":  "container.innerHTML = \u0027\u003cp class=\"text-sm text-slate-400 text-center mt-10\"\u003eCargando pacientes del día...\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  863,
+        "Patron":  "innerHTML",
+        "Contenido":  "container.innerHTML = \u0027\u003cp class=\"text-sm text-slate-500 text-center mt-10\"\u003eNo hay turnos programados para hoy.\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  906,
+        "Patron":  "innerHTML",
+        "Contenido":  "container.innerHTML = html;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  909,
+        "Patron":  "innerHTML",
+        "Contenido":  "container.innerHTML = \u0027\u003cp class=\"text-sm text-red-500 text-center mt-10\"\u003eError al cargar pacientes.\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  1117,
+        "Patron":  "innerHTML",
+        "Contenido":  "container.innerHTML = \u0027\u003cp class=\"text-xs text-slate-400 text-center py-4\"\u003eCargando cronología médica...\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  1127,
+        "Patron":  "innerHTML",
+        "Contenido":  "container.innerHTML = \u0027\u003cp class=\"text-sm text-slate-500 text-center py-6\"\u003eNo hay consultas previas registradas para este paciente.\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  1208,
+        "Patron":  "innerHTML",
+        "Contenido":  "container.innerHTML = html;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  1211,
+        "Patron":  "innerHTML",
+        "Contenido":  "container.innerHTML = \u0027\u003cp class=\"text-sm text-red-500 text-center py-4\"\u003eError al cargar la cronología de consultas.\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  1537,
+        "Patron":  "innerHTML",
+        "Contenido":  "if (container) container.innerHTML = \u0027\u003cp class=\"text-sm text-slate-400 text-center py-8\"\u003eSeleccione un paciente para ver su historial clínico.\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  1641,
+        "Patron":  "innerHTML",
+        "Contenido":  "tbody.innerHTML = \u0027\u003ctr\u003e\u003ctd colspan=\"4\" class=\"p-4 text-center text-slate-400\"\u003eCargando personal institucional...\u003c/td\u003e\u003c/tr\u003e\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  1667,
+        "Patron":  "innerHTML",
+        "Contenido":  "tbody.innerHTML = \u0027\u003ctr\u003e\u003ctd colspan=\"4\" class=\"p-4 text-center text-slate-500\"\u003eNo hay usuarios registrados.\u003c/td\u003e\u003c/tr\u003e\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  1704,
+        "Patron":  "innerHTML",
+        "Contenido":  "tbody.innerHTML = filas;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  1707,
+        "Patron":  "innerHTML",
+        "Contenido":  "tbody.innerHTML = \u0027\u003ctr\u003e\u003ctd colspan=\"4\" class=\"p-4 text-center text-red-500\"\u003eError al cargar usuarios.\u003c/td\u003e\u003c/tr\u003e\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  2348,
+        "Patron":  "innerHTML",
+        "Contenido":  "contenedor.innerHTML = \u0027\u003cp class=\"text-xs text-slate-400 col-span-3 sm:col-span-4 text-center py-4\"\u003eConsultando disponibilidad...\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  2408,
+        "Patron":  "innerHTML",
+        "Contenido":  "contenedor.innerHTML = html;"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  2551,
+        "Patron":  "innerHTML",
+        "Contenido":  "cuerpo.innerHTML = `"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  2616,
+        "Patron":  "document.write",
+        "Contenido":  "printWin.document.write(`"
+    },
+    {
+        "Archivo":  "admin.js",
+        "Linea":  2957,
+        "Patron":  "client_access_control",
+        "Contenido":  "if (document.body.dataset.view === \u0027doctor\u0027) cargarAgendaMedico();"
+    },
+    {
+        "Archivo":  "firebase-config.js",
+        "Linea":  38,
+        "Patron":  "hardcoded_key",
+        "Contenido":  "apiKey: \"AIzaSyAghXQKrYy6EJGD5IqEdO4c_E-ntozUmz8\", // Restringir a tus dominios en GCP Console"
+    },
+    {
+        "Archivo":  "metricas-ui.js",
+        "Linea":  260,
+        "Patron":  "innerHTML",
+        "Contenido":  "selEsp.innerHTML = html;"
+    },
+    {
+        "Archivo":  "metricas-ui.js",
+        "Linea":  270,
+        "Patron":  "innerHTML",
+        "Contenido":  "selMed.innerHTML = html;"
+    },
+    {
+        "Archivo":  "metricas-ui.js",
+        "Linea":  279,
+        "Patron":  "innerHTML",
+        "Contenido":  "selRecep.innerHTML = html;"
+    },
+    {
+        "Archivo":  "metricas-ui.js",
+        "Linea":  288,
+        "Patron":  "innerHTML",
+        "Contenido":  "selCompA.innerHTML = htmlComp;"
+    },
+    {
+        "Archivo":  "metricas-ui.js",
+        "Linea":  289,
+        "Patron":  "innerHTML",
+        "Contenido":  "selCompB.innerHTML = htmlComp;"
+    },
+    {
+        "Archivo":  "metricas-ui.js",
+        "Linea":  439,
+        "Patron":  "innerHTML",
+        "Contenido":  "boxConclusiones.innerHTML = mg.conclusionesAutomaticas.map(c =\u003e `"
+    },
+    {
+        "Archivo":  "metricas-ui.js",
+        "Linea":  446,
+        "Patron":  "innerHTML",
+        "Contenido":  "boxConclusiones.innerHTML = \u0027\u003cli\u003eDatos de operación estables dentro de los parámetros esperados.\u003c/li\u003e\u0027;"
+    },
+    {
+        "Archivo":  "metricas-ui.js",
+        "Linea":  515,
+        "Patron":  "innerHTML",
+        "Contenido":  "container.innerHTML = kpis.map(k =\u003e {"
+    },
+    {
+        "Archivo":  "metricas-ui.js",
+        "Linea":  791,
+        "Patron":  "innerHTML",
+        "Contenido":  "contenedor.innerHTML = html;"
+    },
+    {
+        "Archivo":  "metricas-ui.js",
+        "Linea":  828,
+        "Patron":  "innerHTML",
+        "Contenido":  "kpisMedContainer.innerHTML = `"
+    },
+    {
+        "Archivo":  "metricas-ui.js",
+        "Linea":  931,
+        "Patron":  "innerHTML",
+        "Contenido":  "kpisRecepContainer.innerHTML = `"
+    },
+    {
+        "Archivo":  "metricas-ui.js",
+        "Linea":  1030,
+        "Patron":  "innerHTML",
+        "Contenido":  "tablaTbody.innerHTML = comparativa.comparaciones.map(c =\u003e `"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  118,
+        "Patron":  "innerHTML",
+        "Contenido":  "if (selectEspPublico) selectEspPublico.innerHTML = opcionesHtml;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  148,
+        "Patron":  "innerHTML",
+        "Contenido":  "selectMed.innerHTML = \u0027\u003coption value=\"\"\u003ePrimero seleccione especialidad\u003c/option\u003e\u0027;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  151,
+        "Patron":  "innerHTML",
+        "Contenido":  "if (containerHorarios) containerHorarios.innerHTML = \u0027\u003cp class=\"text-sm text-slate-500 col-span-2 sm:col-span-3 text-center\"\u003eSeleccione Especialidad y Profesional.\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  157,
+        "Patron":  "innerHTML",
+        "Contenido":  "selectMed.innerHTML = \u0027\u003coption value=\"\"\u003eNo hay profesionales disponibles\u003c/option\u003e\u0027;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  160,
+        "Patron":  "innerHTML",
+        "Contenido":  "if (containerHorarios) containerHorarios.innerHTML = \u0027\u003cp class=\"text-sm text-slate-500 col-span-2 sm:col-span-3 text-center\"\u003eNo hay profesionales disponibles en esta área.\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  170,
+        "Patron":  "innerHTML",
+        "Contenido":  "selectMed.innerHTML = opts;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  183,
+        "Patron":  "innerHTML",
+        "Contenido":  "container.innerHTML = \u0027\u003cp class=\"text-sm text-slate-500 col-span-2 sm:col-span-3 text-center\"\u003eSeleccione Profesional y Fecha.\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  190,
+        "Patron":  "innerHTML",
+        "Contenido":  "container.innerHTML = \u0027\u003cp class=\"text-sm text-slate-400 col-span-2 sm:col-span-3 text-center\"\u003eConsultando disponibilidad en vivo...\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  241,
+        "Patron":  "innerHTML",
+        "Contenido":  "container.innerHTML = html || \u0027\u003cp class=\"text-sm text-slate-500 col-span-2 sm:col-span-3 text-center\"\u003eNo hay turnos web disponibles.\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  353,
+        "Patron":  "innerHTML",
+        "Contenido":  "document.getElementById(\u0027horarios-publicos\u0027).innerHTML = \u0027\u003cp class=\"text-sm text-slate-500 col-span-2 sm:col-span-3 text-center mt-2\"\u003eSeleccione una fecha.\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  354,
+        "Patron":  "innerHTML",
+        "Contenido":  "document.getElementById(\u0027select-medico\u0027).innerHTML = \u0027\u003coption\u003ePrimero seleccione especialidad\u003c/option\u003e\u0027;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  381,
+        "Patron":  "innerHTML",
+        "Contenido":  "res.innerHTML = \u0027\u003cp class=\"text-sm text-red-600 font-semibold text-center mt-4\"\u003eNo encontramos ningún turno con ese identificador.\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  388,
+        "Patron":  "innerHTML",
+        "Contenido":  "res.innerHTML = \u0027\u003cp class=\"text-sm text-red-600 font-semibold text-center mt-4\"\u003eEl DNI ingresado no coincide con el turno registrado.\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  419,
+        "Patron":  "innerHTML",
+        "Contenido":  "res.innerHTML = `"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  439,
+        "Patron":  "innerHTML",
+        "Contenido":  "res.innerHTML = \u0027\u003cp class=\"text-sm text-red-600 font-semibold text-center mt-4\"\u003eError al buscar el turno.\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  495,
+        "Patron":  "innerHTML",
+        "Contenido":  "container.innerHTML = \u0027\u003cp class=\"text-xs text-slate-400 col-span-3 text-center py-4\"\u003eConsultando disponibilidad en vivo...\u003c/p\u003e\u0027;"
+    },
+    {
+        "Archivo":  "publico.js",
+        "Linea":  546,
+        "Patron":  "innerHTML",
+        "Contenido":  "container.innerHTML = html;"
+    },
+    {
+        "Archivo":  "utils.js",
+        "Linea":  49,
+        "Patron":  "innerHTML",
+        "Contenido":  "resTurnos.innerHTML = \u0027\u0027;"
+    }
+]

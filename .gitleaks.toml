@@ -1,0 +1,19 @@
+title = "Configuracion Gitleaks - Sistema de Turnos Schestakow"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Permitir clave publica cliente de Firebase y archivos de auditoria"
+paths = [
+  '''docs/seguridad/.*''',
+  '''tests/.*''',
+  '''PLAN\.md''',
+  '''README\.md''',
+  '''js/firebase-config\.js''',
+  '''index\.html''',
+  '''js/logica\.js'''
+]
+regexes = [
+  '''AIzaSy[a-zA-Z0-9_\-]{33}'''
+]
