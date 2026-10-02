@@ -197,7 +197,11 @@
                             </p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 w-full lg:w-auto justify-end">
+                    <div class="flex items-center gap-2 w-full lg:w-auto justify-end flex-wrap">
+                        <button id="btn-agendar-proxima-consulta" onclick="abrirModalProximaConsulta()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3 py-2 rounded-lg transition border border-emerald-800 flex items-center gap-1.5 shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            Agendar Próxima Consulta
+                        </button>
                         <button id="btn-editar-resumen-clinico" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-3 py-2 rounded-lg transition border border-slate-300 flex items-center gap-1">
                             <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             Editar Resumen
@@ -322,11 +326,15 @@
                                 <textarea id="texto-indicaciones" rows="2" placeholder="Indicaciones para el paciente, posología, estudios solicitados..." class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
                             </div>
 
-                            <!-- Botón de Envío -->
-                            <div class="pt-2">
-                                <button id="btn-guardar-consulta-hc" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-lg shadow transition flex items-center justify-center gap-2">
+                            <!-- Botones de Envío y Citación -->
+                            <div class="pt-2 flex flex-col sm:flex-row gap-3">
+                                <button id="btn-guardar-consulta-hc" class="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 px-4 rounded-lg shadow transition flex items-center justify-center gap-2 text-sm sm:text-base">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                                     Registrar Consulta Inmutable
+                                </button>
+                                <button type="button" onclick="abrirModalProximaConsulta()" class="bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold py-3 px-4 rounded-lg border border-teal-300 transition flex items-center justify-center gap-2 text-sm shadow-sm">
+                                    <svg class="w-4 h-4 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    Citar Próxima Consulta
                                 </button>
                             </div>
                         </div>
@@ -785,6 +793,157 @@
             <div class="flex justify-end gap-3 mt-6">
                 <button onclick="cerrarModal('modal-rectificar-consulta')" class="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition text-sm">Cancelar</button>
                 <button id="btn-confirmar-guardar-rectificacion" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg shadow transition text-sm">Guardar Rectificación Inmutable</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: AGENDAR PRÓXIMA CONSULTA / CITACIÓN MÉDICA -->
+    <div id="modal-proxima-consulta" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up max-h-[92vh] flex flex-col">
+            <!-- Cabecera -->
+            <div class="bg-emerald-800 text-white p-4 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <div class="p-1.5 bg-emerald-700 rounded-lg">
+                        <svg class="w-5 h-5 text-emerald-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base sm:text-lg leading-tight">Agendar Próxima Consulta</h3>
+                        <p class="text-xs text-emerald-100">Citación médica y seguimiento del paciente</p>
+                    </div>
+                </div>
+                <button onclick="cerrarModal('modal-proxima-consulta')" class="text-emerald-200 hover:text-white transition" aria-label="Cerrar modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Cuerpo scrollable -->
+            <div class="p-5 space-y-4 overflow-y-auto flex-grow">
+                <!-- Ficha del Paciente Activo -->
+                <div class="bg-emerald-50/70 border border-emerald-200 rounded-lg p-3">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider mb-0.5">Paciente Citado</p>
+                            <h4 id="prox-consulta-paciente-nombre" class="font-bold text-slate-900 text-sm">--</h4>
+                            <p class="text-xs text-slate-600">DNI: <span id="prox-consulta-paciente-dni" class="font-bold font-mono">--</span></p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider mb-0.5">Profesional Asignado</p>
+                            <p id="prox-consulta-medico-nombre" class="font-bold text-xs text-slate-800">--</p>
+                            <p id="prox-consulta-medico-especialidad" class="text-[11px] text-slate-500">--</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1. Día de la Consulta (Fecha) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1" for="prox-consulta-fecha">1. Fecha Asignada por el Médico *</label>
+                    <input type="date" id="prox-consulta-fecha" onchange="cambioFechaProximaConsulta(this)" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <p class="text-[11px] text-slate-500 mt-1">Días hábiles de lunes a viernes.</p>
+                </div>
+
+                <!-- 2. Modalidad de Asignación de Horario -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-2">2. Modalidad del Horario</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <!-- Opción A: Médico asigna horario -->
+                        <label id="label-modo-exacto" class="border-2 border-emerald-600 bg-emerald-50/50 rounded-lg p-3 cursor-pointer transition flex flex-col justify-between">
+                            <div class="flex items-start gap-2">
+                                <input type="radio" name="modo-horario-citacion" id="modo-horario-exacto" value="exacto" checked onchange="toggleModoHorarioCitacion()" class="mt-0.5 text-emerald-600 focus:ring-emerald-500">
+                                <div>
+                                    <span class="block text-xs font-bold text-slate-900">Horario Exacto</span>
+                                    <span class="block text-[11px] text-slate-600 mt-0.5">El médico asigna la hora de atención ahora mismo.</span>
+                                </div>
+                            </div>
+                        </label>
+
+                        <!-- Opción B: Paciente elige horario -->
+                        <label id="label-modo-paciente" class="border-2 border-slate-200 hover:border-emerald-300 rounded-lg p-3 cursor-pointer transition flex flex-col justify-between">
+                            <div class="flex items-start gap-2">
+                                <input type="radio" name="modo-horario-citacion" id="modo-horario-paciente" value="paciente" onchange="toggleModoHorarioCitacion()" class="mt-0.5 text-emerald-600 focus:ring-emerald-500">
+                                <div>
+                                    <span class="block text-xs font-bold text-slate-900">A Elección del Paciente</span>
+                                    <span class="block text-[11px] text-slate-600 mt-0.5">El paciente elige su horario dentro del día fijado.</span>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Bloque Horario Exacto (Opción A) -->
+                <div id="bloque-horarios-exactos" class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-700 uppercase">Horarios Disponibles de ese Día</label>
+                    <div id="contenedor-slots-proxima-consulta" class="grid grid-cols-3 sm:grid-cols-4 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200 max-h-36 overflow-y-auto">
+                        <p class="text-xs text-slate-400 col-span-3 sm:col-span-4 text-center py-4">Seleccione una fecha para ver los horarios disponibles.</p>
+                    </div>
+                    <input type="hidden" id="prox-consulta-horario-seleccionado" value="">
+                </div>
+
+                <!-- Bloque Info Elección Paciente (Opción B) -->
+                <div id="bloque-info-paciente" class="hidden bg-teal-50 border border-teal-200 rounded-lg p-3 text-xs text-teal-900">
+                    <div class="flex items-start gap-2">
+                        <svg class="w-5 h-5 text-teal-700 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <p>
+                            El día quedará <strong>oficialmente asignado y reservado</strong>. Se generará un comprobante de citación con enlace directo y código único para que el paciente seleccione su horario preferido desde su celular o recepción.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 3. Motivo / Indicación de la Citación -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1" for="prox-consulta-motivo">3. Motivo / Indicación de la Citación (Opcional)</label>
+                    <input type="text" id="prox-consulta-motivo" placeholder="Ej: Control evolutivo, revisión de estudios de laboratorio..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-3">
+                <button onclick="cerrarModal('modal-proxima-consulta')" class="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition text-sm">Cancelar</button>
+                <button id="btn-guardar-proxima-consulta" onclick="guardarProximaConsultaMedico()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg shadow transition text-sm flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Confirmar Citación
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: COMPROBANTE DE CITACIÓN / PRÓXIMA CONSULTA -->
+    <div id="modal-comprobante-citacion" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
+            <div class="bg-emerald-800 text-white p-4 flex justify-between items-center">
+                <h3 class="font-bold text-base flex items-center gap-2">
+                    <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Citación Médica Registrada
+                </h3>
+                <button onclick="cerrarModal('modal-comprobante-citacion')" class="text-emerald-200 hover:text-white transition">✕</button>
+            </div>
+
+            <div class="p-5 space-y-4">
+                <div id="comprobante-citacion-cuerpo" class="border border-slate-200 rounded-lg p-4 bg-slate-50 text-xs space-y-2">
+                    <!-- Dinámico -->
+                </div>
+
+                <div id="contenedor-enlace-citacion" class="hidden bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs space-y-2">
+                    <p class="font-bold text-emerald-900">Enlace de Citación para el Paciente:</p>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="input-enlace-citacion" readonly class="w-full bg-white border border-emerald-300 rounded p-1.5 text-[11px] font-mono select-all">
+                        <button onclick="copiarEnlaceCitacion()" id="btn-copiar-enlace-citacion" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded font-bold transition flex items-center gap-1 flex-shrink-0 text-xs">
+                            Copiar
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-500">Compartí este enlace por WhatsApp o email para que el paciente elija su horario dentro de la fecha asignada.</p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-end gap-2 pt-2">
+                    <button onclick="imprimirComprobanteCitacion()" class="w-full sm:w-auto px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold rounded-lg transition text-xs flex items-center justify-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        Imprimir Talón
+                    </button>
+                    <button onclick="cerrarModal('modal-comprobante-citacion')" class="w-full sm:w-auto px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition text-xs">
+                        Aceptar
+                    </button>
+                </div>
             </div>
         </div>
     </div>

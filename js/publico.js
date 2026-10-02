@@ -46,6 +46,9 @@ window.seleccionarHorario = seleccionarHorario;
 window.confirmarTurnoFirebase = confirmarTurnoFirebase;
 window.buscarTurnosPaciente = buscarTurnosPaciente;
 window.cancelarTurnoFirebase = cancelarTurnoFirebase;
+window.abrirModalElegirHorarioCitacion = abrirModalElegirHorarioCitacion;
+window.seleccionarSlotCitacion = seleccionarSlotCitacion;
+window.confirmarHorarioCitacionPaciente = confirmarHorarioCitacionPaciente;
 
 /**
  * Genera un identificador largo criptográficamente impredecible (>= 20 caracteres)
@@ -383,14 +386,35 @@ export async function buscarTurnosPaciente() {
         turnoEncontradoActivo = { id: snap.id, ...t };
 
         const cancelado = t.estado && t.estado.includes("Cancelado");
-        const badge = cancelado ? `<span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${escaparHTML(t.estado)}</span>` : '';
-        const btnHtml = cancelado || t.estado === "Atendido" || t.estado === "Ausente" ? '' : `<button id="btn-cancelar-turno-paciente" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>`;
+        let badge = '';
+        let btnHtml = '';
+        const esPendienteHorario = (t.estado === "Pendiente de Horario");
+
+        if (cancelado) {
+            badge = `<span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${escaparHTML(t.estado)}</span>`;
+        } else if (esPendienteHorario) {
+            badge = `<span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold">Horario a Elección</span>`;
+            btnHtml = `
+                <div class="flex gap-2">
+                    <button onclick="abrirModalElegirHorarioCitacion('${snap.id}')" class="text-xs bg-emerald-700 text-white px-3 py-2 rounded font-bold hover:bg-emerald-800 transition shadow-sm">Elegir Horario</button>
+                    <button id="btn-cancelar-turno-paciente" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>
+                </div>
+            `;
+        } else if (t.estado === "Atendido" || t.estado === "Ausente") {
+            badge = `<span class="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded font-bold">${escaparHTML(t.estado)}</span>`;
+        } else {
+            badge = `<span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">${escaparHTML(t.estado)}</span>`;
+            btnHtml = `<button id="btn-cancelar-turno-paciente" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>`;
+        }
+
+        const horarioTexto = esPendienteHorario ? 'Horario a confirmar por el paciente' : `${escaparHTML(t.horario)} hs`;
 
         res.innerHTML = `
             <div class="bg-slate-50 border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
                 <div class="w-full">
                     <p class="font-bold text-sm text-blue-900">${escaparHTML(t.especialidad)} - ${escaparHTML(t.medico)}</p>
-                    <p class="text-xs text-slate-600 mt-1">${escaparHTML(t.fecha)} - ${escaparHTML(t.horario)} hs ${badge}</p>
+                    <p class="text-xs text-slate-600 mt-1">${escaparHTML(t.fecha)} - ${horarioTexto} ${badge}</p>
+                    ${t.motivoCitacion ? `<p class="text-xs text-slate-500 italic mt-0.5">Indicación: ${escaparHTML(t.motivoCitacion)}</p>` : ''}
                 </div>
                 ${btnHtml}
             </div>
@@ -407,6 +431,209 @@ export async function buscarTurnosPaciente() {
         console.error(error);
         res.innerHTML = '<p class="text-sm text-red-600 font-semibold text-center mt-4">Error al buscar el turno.</p>';
         res.classList.remove('hidden');
+    }
+}
+
+export async function abrirModalElegirHorarioCitacion(citaId) {
+    if (!citaId) return;
+    try {
+        const snap = await getDoc(doc(db, "turnos", citaId));
+        if (!snap.exists()) {
+            mostrarAlerta("Citación no encontrada", "El enlace o código ingresado no corresponde a ninguna citación válida.");
+            return;
+        }
+
+        const t = snap.data();
+        if (t.estado !== "Pendiente de Horario") {
+            if (t.estado === "Confirmado" || t.estado === "Confirmado Presencial") {
+                mostrarAlerta("Turno ya Confirmado", `Esta citación ya cuenta con horario asignado: ${t.fecha} a las ${t.horario} hs.`);
+            } else {
+                mostrarAlerta("Estado del Turno", `Esta citación se encuentra en estado: ${t.estado}.`);
+            }
+            return;
+        }
+
+        const elNom = document.getElementById('cita-paciente-nombre');
+        const elMed = document.getElementById('cita-medico-nombre');
+        const elEsp = document.getElementById('cita-especialidad');
+        const elFec = document.getElementById('cita-fecha');
+        const elMot = document.getElementById('cita-motivo-texto');
+        const elId = document.getElementById('cita-turno-id');
+        const elHor = document.getElementById('cita-horario-seleccionado');
+
+        if (elNom) elNom.innerText = t.pacienteNombre || 'Paciente';
+        if (elMed) elMed.innerText = t.medico || 'Médico Asignado';
+        if (elEsp) elEsp.innerText = t.especialidad || 'Consulta';
+        if (elFec) elFec.innerText = t.fecha || '--';
+        if (elMot) elMot.innerText = t.motivoCitacion ? `Indicación de su médico: ${t.motivoCitacion}` : '';
+        if (elId) elId.value = citaId;
+        if (elHor) elHor.value = '';
+
+        const btnConfirmar = document.getElementById('btn-confirmar-horario-citacion');
+        if (btnConfirmar) btnConfirmar.disabled = true;
+
+        abrirModal('modal-elegir-horario-citacion');
+
+        await cargarHorariosCitacion(t.medicoUid, t.medico, t.fecha);
+    } catch (e) {
+        console.error("Error al cargar citación:", e);
+        mostrarAlerta("Error", "No se pudo cargar la información de la citación.");
+    }
+}
+
+async function cargarHorariosCitacion(medicoUid, medicoNombre, fecha) {
+    const container = document.getElementById('horarios-citacion-container');
+    if (!container) return;
+
+    container.innerHTML = '<p class="text-xs text-slate-400 col-span-3 text-center py-4">Consultando disponibilidad en vivo...</p>';
+
+    let turnosOcupados = {};
+    try {
+        if (medicoUid) {
+            const qDisp = query(
+                collection(db, "disponibilidad"),
+                where("medicoUid", "==", medicoUid),
+                where("fecha", "==", fecha)
+            );
+            const snapDisp = await getDocs(qDisp);
+            snapDisp.forEach(d => {
+                const data = d.data();
+                if (data.horario) turnosOcupados[data.horario] = true;
+            });
+        }
+    } catch (e) {
+        console.warn("Fallo lectura de disponibilidad:", e);
+    }
+
+    const duracionActual = modulacionPorMedico[medicoNombre] || duracionTurnoGlobal || 15;
+    const hoy = new Date();
+    const hoyStr = hoy.toISOString().split('T')[0];
+    const esHoy = (fecha === hoyStr);
+    const minActuales = hoy.getHours() * 60 + hoy.getMinutes();
+
+    let html = '';
+    let minBucle = 7 * 60;
+    const finBucle = 12 * 60 + 30;
+    let disponiblesCount = 0;
+
+    while (minBucle <= finBucle) {
+        let h = Math.floor(minBucle / 60);
+        let m = minBucle % 60;
+        let hsStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+
+        if (turnosOcupados[hsStr]) {
+            html += `<button type="button" class="bg-slate-100 text-slate-400 font-bold rounded p-2 text-xs border cursor-not-allowed" disabled>${hsStr} (Ocupado)</button>`;
+        } else if (esHoy && (minBucle - minActuales) < 60) {
+            html += `<button type="button" class="bg-red-50 text-red-400 font-bold rounded p-2 text-xs border border-red-200 cursor-not-allowed" disabled>${hsStr} (Cerrado)</button>`;
+        } else {
+            disponiblesCount++;
+            html += `<button type="button" onclick="seleccionarSlotCitacion(this, '${hsStr}')" class="btn-slot-citacion bg-white border border-emerald-600 text-emerald-900 font-bold rounded p-2 text-xs hover:bg-emerald-50 shadow-sm transition">${hsStr}</button>`;
+        }
+        minBucle += duracionActual;
+    }
+
+    if (disponiblesCount === 0) {
+        html = '<p class="text-xs text-red-500 col-span-3 text-center py-4">No quedan horarios disponibles para este día.</p>';
+    }
+
+    container.innerHTML = html;
+}
+
+export function seleccionarSlotCitacion(btn, horario) {
+    document.querySelectorAll('.btn-slot-citacion').forEach(b => {
+        b.classList.remove('bg-emerald-700', 'text-white', 'border-emerald-800');
+        b.classList.add('bg-white', 'text-emerald-900', 'border-emerald-600');
+    });
+    btn.classList.remove('bg-white', 'text-emerald-900', 'border-emerald-600');
+    btn.classList.add('bg-emerald-700', 'text-white', 'border-emerald-800');
+
+    const inputHorario = document.getElementById('cita-horario-seleccionado');
+    if (inputHorario) inputHorario.value = horario;
+
+    const btnConfirmar = document.getElementById('btn-confirmar-horario-citacion');
+    if (btnConfirmar) btnConfirmar.disabled = false;
+}
+
+export async function confirmarHorarioCitacionPaciente() {
+    const citaId = document.getElementById('cita-turno-id')?.value;
+    const horario = document.getElementById('cita-horario-seleccionado')?.value;
+
+    if (!citaId || !horario) {
+        mostrarAlerta("Horario Requerido", "Por favor seleccione un horario para su cita.");
+        return;
+    }
+
+    const ok = await pedirConfirmacion("Confirmar Horario", `¿Desea confirmar su turno para las ${horario} hs?`, "Sí, Confirmar");
+    if (!ok) return;
+
+    const btnConfirmar = document.getElementById('btn-confirmar-horario-citacion');
+    if (btnConfirmar) {
+        btnConfirmar.disabled = true;
+        btnConfirmar.innerText = "Guardando...";
+    }
+
+    try {
+        const snap = await getDoc(doc(db, "turnos", citaId));
+        if (!snap.exists()) {
+            mostrarAlerta("Error", "No se encontró el turno.");
+            return;
+        }
+
+        const t = snap.data();
+        if (t.estado !== "Pendiente de Horario") {
+            mostrarAlerta("Atención", "Este turno ya no se encuentra pendiente de horario.");
+            cerrarModal('modal-elegir-horario-citacion');
+            return;
+        }
+
+        const slotId = `${t.medicoUid}_${t.fecha}_${horario.replace(':', '')}`;
+        const batch = writeBatch(db);
+
+        // 1. Reservar slot en disponibilidad
+        batch.set(doc(db, "disponibilidad", slotId), {
+            medicoUid: t.medicoUid,
+            fecha: t.fecha,
+            horario: horario,
+            creadoEn: serverTimestamp()
+        });
+
+        // 2. Actualizar turno
+        const turnoRef = doc(db, "turnos", citaId);
+        batch.update(turnoRef, {
+            horario: horario,
+            estado: "Confirmado",
+            confirmadoEn: serverTimestamp()
+        });
+
+        await batch.commit();
+
+        cerrarModal('modal-elegir-horario-citacion');
+        mostrarExito("¡Turno Confirmado!", `Tu consulta con ${t.medico} quedó confirmada para el día ${t.fecha} a las ${horario} hs.`);
+
+        if (t.pacienteEmail) {
+            enviarCorreoNotificacion(EMAILJS_TEMPLATE_CONFIRMACION, {
+                nombre_paciente: t.pacienteNombre,
+                medico: t.medico,
+                especialidad: t.especialidad,
+                fecha: t.fecha,
+                hora: horario,
+                codigo_turno: citaId,
+                email_destino: t.pacienteEmail
+            });
+        }
+
+        const inputCodigo = document.getElementById('consulta-codigo-turno');
+        if (inputCodigo && inputCodigo.value === citaId) {
+            buscarTurnosPaciente();
+        }
+    } catch (e) {
+        console.error("Error al confirmar horario de citación:", e);
+        mostrarAlerta("Error al Confirmar", "No se pudo confirmar el horario seleccionado. Es posible que otro paciente lo haya ocupado recién.");
+    } finally {
+        if (btnConfirmar) {
+            btnConfirmar.disabled = false;
+            btnConfirmar.innerText = "Confirmar Horario";
+        }
     }
 }
 
@@ -455,4 +682,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     establecerLimitesFecha(['input-fecha-paciente']);
     await cargarEspecialistasPublico();
     await cargarConfiguracionModulacionPublico();
+
+    // Detección automática de parámetro ?cita=ID en la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const citaIdParam = urlParams.get('cita');
+    if (citaIdParam) {
+        await abrirModalElegirHorarioCitacion(citaIdParam);
+    }
 });

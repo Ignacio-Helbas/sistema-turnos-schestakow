@@ -230,6 +230,46 @@
         </div>
     </div>
 
+    <!-- MODAL: ELECCIÓN DE HORARIO DE CITACIÓN POR PACIENTE -->
+    <div id="modal-elegir-horario-citacion" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
+            <div class="bg-emerald-800 text-white p-4 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <svg class="w-6 h-6 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <div>
+                        <h3 class="font-bold text-base leading-tight">Elegí tu Horario de Atención</h3>
+                        <p class="text-xs text-emerald-100">Próxima Consulta Asignada por tu Médico</p>
+                    </div>
+                </div>
+                <button onclick="cerrarModal('modal-elegir-horario-citacion')" class="text-emerald-200 hover:text-white transition">✕</button>
+            </div>
+            
+            <div class="p-5 space-y-4">
+                <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs space-y-1">
+                    <p class="text-slate-700">Hola <strong id="cita-paciente-nombre" class="text-slate-900 font-bold">--</strong>,</p>
+                    <p class="text-slate-700">
+                        Tu médico <strong id="cita-medico-nombre" class="text-emerald-900 font-bold">--</strong> (<span id="cita-especialidad" class="text-slate-600">--</span>) te asignó el día <strong id="cita-fecha" class="text-emerald-900 font-bold">--</strong> para tu seguimiento.
+                    </p>
+                    <p class="text-slate-500 italic mt-1" id="cita-motivo-texto"></p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Seleccioná tu horario preferido para este día:</label>
+                    <div id="horarios-citacion-container" class="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200 max-h-48 overflow-y-auto">
+                        <p class="text-xs text-slate-400 col-span-3 text-center py-4">Cargando horarios disponibles...</p>
+                    </div>
+                    <input type="hidden" id="cita-horario-seleccionado" value="">
+                    <input type="hidden" id="cita-turno-id" value="">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button onclick="cerrarModal('modal-elegir-horario-citacion')" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg transition text-xs">Cancelar</button>
+                    <button id="btn-confirmar-horario-citacion" onclick="confirmarHorarioCitacionPaciente()" disabled class="px-4 py-2 bg-emerald-700 text-white font-bold rounded-lg hover:bg-emerald-800 shadow transition text-xs disabled:opacity-50 disabled:cursor-not-allowed">Confirmar Horario</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Script del Portal Público -->
     <script type="module" src="js/publico.js"></script>
 

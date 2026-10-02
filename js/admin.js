@@ -103,6 +103,13 @@ window.guardarResumenClinico = guardarResumenClinico;
 window.ejecutarAccesoEmergencia = ejecutarAccesoEmergencia;
 window.exportarHistoriaClinica = exportarHistoriaClinica;
 window.cerrarFichaPacienteHC = cerrarFichaPacienteHC;
+window.abrirModalProximaConsulta = abrirModalProximaConsulta;
+window.toggleModoHorarioCitacion = toggleModoHorarioCitacion;
+window.cambioFechaProximaConsulta = cambioFechaProximaConsulta;
+window.seleccionarSlotProximaConsulta = seleccionarSlotProximaConsulta;
+window.guardarProximaConsultaMedico = guardarProximaConsultaMedico;
+window.copiarEnlaceCitacion = copiarEnlaceCitacion;
+window.imprimirComprobanteCitacion = imprimirComprobanteCitacion;
 
 // ==========================================
 // SESIÓN Y AUTENTICACIÓN
@@ -2084,6 +2091,414 @@ function inicializarEventosHC() {
     if (btnLogin) {
         btnLogin.addEventListener('click', () => iniciarSesionReal());
     }
+}
+
+// ==========================================
+// CITACIÓN Y PRÓXIMA CONSULTA (MÉDICOS)
+// ==========================================
+let ultimaCitacionGenerada = null;
+
+export async function abrirModalProximaConsulta() {
+    if (!pacienteActivoHC) {
+        mostrarAlerta("Sin Paciente Seleccionado", "Debe buscar o atender a un paciente primero para agendarle su próxima consulta.");
+        return;
+    }
+
+    const elNom = document.getElementById('prox-consulta-paciente-nombre');
+    const elDni = document.getElementById('prox-consulta-paciente-dni');
+    const elMed = document.getElementById('prox-consulta-medico-nombre');
+    const elEsp = document.getElementById('prox-consulta-medico-especialidad');
+    const elMot = document.getElementById('prox-consulta-motivo');
+    const elFecha = document.getElementById('prox-consulta-fecha');
+    const elSlot = document.getElementById('prox-consulta-horario-seleccionado');
+
+    const nombreCompleto = `${pacienteActivoHC.nombre || ''} ${pacienteActivoHC.apellido || ''}`.trim() || 'Paciente';
+    if (elNom) elNom.innerText = nombreCompleto;
+    if (elDni) elDni.innerText = pacienteActivoHC.dni || '--';
+
+    const nombreMed = sesionActual?.nombre || 'Médico Asignado';
+    if (elMed) elMed.innerText = nombreMed;
+
+    let especialidadMed = "Consulta Médica";
+    for (const [esp, medList] of Object.entries(bdMedicosDinamica)) {
+        if (medList.some(m => m.uid === sesionActual?.uid || m.nombre === nombreMed)) {
+            especialidadMed = esp;
+            break;
+        }
+    }
+    if (elEsp) elEsp.innerText = especialidadMed;
+    if (elMot) elMot.value = '';
+    if (elSlot) elSlot.value = '';
+
+    // Fecha mínima: mañana (evitando fin de semana)
+    const manana = new Date();
+    manana.setDate(manana.getDate() + 1);
+    if (manana.getDay() === 6) manana.setDate(manana.getDate() + 2);
+    if (manana.getDay() === 0) manana.setDate(manana.getDate() + 1);
+    const mananaStr = manana.toISOString().split('T')[0];
+
+    if (elFecha) {
+        elFecha.min = mananaStr;
+        elFecha.value = mananaStr;
+    }
+
+    const radioExacto = document.getElementById('modo-horario-exacto');
+    if (radioExacto) radioExacto.checked = true;
+    toggleModoHorarioCitacion();
+
+    if (elFecha && elFecha.value) {
+        await cargarHorariosDisponiblesProximaConsulta(elFecha.value);
+    }
+
+    abrirModal('modal-proxima-consulta');
+}
+
+export function toggleModoHorarioCitacion() {
+    const esExacto = document.getElementById('modo-horario-exacto')?.checked;
+    const labelExacto = document.getElementById('label-modo-exacto');
+    const labelPaciente = document.getElementById('label-modo-paciente');
+    const bloqueExacto = document.getElementById('bloque-horarios-exactos');
+    const bloquePaciente = document.getElementById('bloque-info-paciente');
+
+    if (esExacto) {
+        if (labelExacto) {
+            labelExacto.className = "border-2 border-emerald-600 bg-emerald-50/50 rounded-lg p-3 cursor-pointer transition flex flex-col justify-between";
+        }
+        if (labelPaciente) {
+            labelPaciente.className = "border-2 border-slate-200 hover:border-emerald-300 rounded-lg p-3 cursor-pointer transition flex flex-col justify-between";
+        }
+        if (bloqueExacto) bloqueExacto.classList.remove('hidden');
+        if (bloquePaciente) bloquePaciente.classList.add('hidden');
+    } else {
+        if (labelExacto) {
+            labelExacto.className = "border-2 border-slate-200 hover:border-emerald-300 rounded-lg p-3 cursor-pointer transition flex flex-col justify-between";
+        }
+        if (labelPaciente) {
+            labelPaciente.className = "border-2 border-teal-600 bg-teal-50/50 rounded-lg p-3 cursor-pointer transition flex flex-col justify-between";
+        }
+        if (bloqueExacto) bloqueExacto.classList.add('hidden');
+        if (bloquePaciente) bloquePaciente.classList.remove('hidden');
+    }
+}
+
+export async function cambioFechaProximaConsulta(input) {
+    if (!validarDiaHabil(input)) return;
+    await cargarHorariosDisponiblesProximaConsulta(input.value);
+}
+
+export async function cargarHorariosDisponiblesProximaConsulta(fecha) {
+    const contenedor = document.getElementById('contenedor-slots-proxima-consulta');
+    const inputSlot = document.getElementById('prox-consulta-horario-seleccionado');
+    if (!contenedor) return;
+
+    if (inputSlot) inputSlot.value = '';
+    contenedor.innerHTML = '<p class="text-xs text-slate-400 col-span-3 sm:col-span-4 text-center py-4">Consultando disponibilidad...</p>';
+
+    const nombreMed = sesionActual?.nombre || 'Médico Asignado';
+    const medUid = sesionActual?.uid || 'medico_demo';
+
+    let turnosOcupados = {};
+    try {
+        const q = query(
+            collection(db, "turnos"),
+            where("medico", "==", nombreMed),
+            where("fecha", "==", fecha)
+        );
+        const snap = await getDocs(q);
+        snap.forEach(d => {
+            const data = d.data();
+            const est = data.estado;
+            if (!est || !est.toLowerCase().includes("cancelado")) {
+                if (data.horario) turnosOcupados[data.horario] = true;
+            }
+        });
+
+        const qDisp = query(
+            collection(db, "disponibilidad"),
+            where("medicoUid", "==", medUid),
+            where("fecha", "==", fecha)
+        );
+        const snapDisp = await getDocs(qDisp);
+        snapDisp.forEach(d => {
+            const data = d.data();
+            if (data.horario) turnosOcupados[data.horario] = true;
+        });
+    } catch (e) {
+        console.warn("Fallo lectura de disponibilidad para citación:", e);
+    }
+
+    const duracionActual = modulacionPorMedico[nombreMed] || duracionTurnoGlobal || 15;
+    let minBucle = 7 * 60;
+    const finBucle = 12 * 60 + 30;
+
+    let html = '';
+    let disponiblesCount = 0;
+
+    while (minBucle <= finBucle) {
+        const h = Math.floor(minBucle / 60);
+        const m = minBucle % 60;
+        const hsStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+
+        if (turnosOcupados[hsStr]) {
+            html += `<button type="button" disabled class="bg-slate-100 text-slate-400 text-xs font-bold rounded p-2 border border-slate-200 cursor-not-allowed text-center">${hsStr} (Ocupado)</button>`;
+        } else {
+            html += `<button type="button" onclick="seleccionarSlotProximaConsulta(this, '${hsStr}')" class="btn-slot-prox bg-white hover:bg-emerald-50 text-slate-800 border border-slate-300 text-xs font-bold rounded p-2 transition text-center shadow-sm">${hsStr}</button>`;
+            disponiblesCount++;
+        }
+        minBucle += duracionActual;
+    }
+
+    if (disponiblesCount === 0) {
+        html = '<p class="text-xs text-red-500 col-span-3 sm:col-span-4 text-center py-4">No hay horarios libres en este día. Seleccione otra fecha o elija la opción de horario por paciente.</p>';
+    }
+
+    contenedor.innerHTML = html;
+}
+
+export function seleccionarSlotProximaConsulta(btn, horario) {
+    document.querySelectorAll('.btn-slot-prox').forEach(b => {
+        b.classList.remove('bg-emerald-700', 'text-white', 'border-emerald-800');
+        b.classList.add('bg-white', 'text-slate-800', 'border-slate-300');
+    });
+    btn.classList.remove('bg-white', 'text-slate-800', 'border-slate-300');
+    btn.classList.add('bg-emerald-700', 'text-white', 'border-emerald-800');
+
+    const inputSlot = document.getElementById('prox-consulta-horario-seleccionado');
+    if (inputSlot) inputSlot.value = horario;
+}
+
+export async function guardarProximaConsultaMedico() {
+    if (!pacienteActivoHC) {
+        mostrarAlerta("Error", "No hay un paciente activo.");
+        return;
+    }
+
+    const fecha = document.getElementById('prox-consulta-fecha')?.value;
+    if (!fecha) {
+        mostrarAlerta("Fecha Requerida", "Debe seleccionar una fecha para la próxima consulta.");
+        return;
+    }
+
+    const esExacto = document.getElementById('modo-horario-exacto')?.checked;
+    const horario = esExacto ? document.getElementById('prox-consulta-horario-seleccionado')?.value : 'Pendiente';
+
+    if (esExacto && !horario) {
+        mostrarAlerta("Horario Requerido", "Por favor seleccione un horario disponible de la grilla.");
+        return;
+    }
+
+    const motivo = document.getElementById('prox-consulta-motivo')?.value.trim() || 'Control y Seguimiento';
+    const nombreMed = sesionActual?.nombre || 'Médico Asignado';
+    const medUid = sesionActual?.uid || 'medico_demo';
+
+    let especialidadMed = "Consulta Médica";
+    for (const [esp, medList] of Object.entries(bdMedicosDinamica)) {
+        if (medList.some(m => m.uid === medUid || m.nombre === nombreMed)) {
+            especialidadMed = esp;
+            break;
+        }
+    }
+
+    const nombreCompleto = `${pacienteActivoHC.nombre || ''} ${pacienteActivoHC.apellido || ''}`.trim() || 'Paciente';
+
+    const msgConfirm = esExacto 
+        ? `¿Confirmar próxima consulta para ${nombreCompleto} el día ${fecha} a las ${horario} hs?`
+        : `¿Asignar el día ${fecha} para ${nombreCompleto}, dejando que el paciente elija su horario dentro de esa fecha?`;
+
+    const ok = await pedirConfirmacion("Confirmar Citación", msgConfirm, "Sí, Agendar");
+    if (!ok) return;
+
+    try {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+        const arr = new Uint8Array(20);
+        window.crypto.getRandomValues(arr);
+        let randStr = '';
+        for (let i = 0; i < 20; i++) randStr += chars[arr[i] % chars.length];
+        const turnoId = `TUR_${randStr}`;
+
+        const batch = writeBatch(db);
+        const turnoRef = doc(db, "turnos", turnoId);
+
+        const turnoData = {
+            especialidad: especialidadMed,
+            medico: nombreMed,
+            medicoUid: medUid,
+            fecha: fecha,
+            horario: horario,
+            pacienteNombre: nombreCompleto,
+            pacienteDni: pacienteActivoHC.dni,
+            pacienteCelular: pacienteActivoHC.contacto || '',
+            pacienteEmail: pacienteActivoHC.email || '',
+            pacienteId: pacienteActivoHC.id,
+            codigoConfirmacion: turnoId,
+            canal: "Consultorio",
+            estado: esExacto ? "Confirmado Presencial" : "Pendiente de Horario",
+            motivoCitacion: motivo,
+            modoHorario: esExacto ? "exacto" : "paciente",
+            creadoEn: serverTimestamp(),
+            timestamp: serverTimestamp()
+        };
+
+        batch.set(turnoRef, turnoData);
+
+        if (esExacto) {
+            const slotId = `${medUid}_${fecha}_${horario.replace(':', '')}`;
+            batch.set(doc(db, "disponibilidad", slotId), {
+                medicoUid: medUid,
+                fecha: fecha,
+                horario: horario,
+                creadoEn: serverTimestamp()
+            });
+        }
+
+        batch.set(doc(collection(db, "auditoria")), {
+            actorUid: sesionActual ? sesionActual.uid : "medico",
+            actorRol: sesionActual ? sesionActual.rol : "Médico",
+            accion: "CITACION_PROXIMA_CONSULTA",
+            pacienteId: pacienteActivoHC.id,
+            detalle: `Citación agendada para ${fecha} (${esExacto ? horario + ' hs' : 'Horario a elección del paciente'}) - Motivo: ${motivo}`,
+            fecha: serverTimestamp()
+        });
+
+        await batch.commit();
+
+        ultimaCitacionGenerada = {
+            id: turnoId,
+            ...turnoData
+        };
+
+        cerrarModal('modal-proxima-consulta');
+        mostrarComprobanteCitacion(ultimaCitacionGenerada);
+
+    } catch (e) {
+        console.error("Error al agendar próxima consulta:", e);
+        mostrarAlerta("Error al Agendar", "No se pudo registrar la citación. Verifique los datos ingresados.");
+    }
+}
+
+function mostrarComprobanteCitacion(cita) {
+    const cuerpo = document.getElementById('comprobante-citacion-cuerpo');
+    const contenedorEnlace = document.getElementById('contenedor-enlace-citacion');
+    const inputEnlace = document.getElementById('input-enlace-citacion');
+
+    if (!cuerpo) return;
+
+    const esExacto = cita.modoHorario === 'exacto';
+    const horarioTexto = esExacto 
+        ? `<strong class="text-emerald-800 font-bold">${cita.horario} hs</strong> (Confirmado)`
+        : `<span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">A elección del paciente</span>`;
+
+    cuerpo.innerHTML = `
+        <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-2">
+            <span class="font-bold text-slate-800 text-sm">Resumen de Citación Médica</span>
+            <span class="font-mono text-slate-500 text-[11px]">${cita.canal}</span>
+        </div>
+        <div class="space-y-1">
+            <p><strong>Paciente:</strong> ${escaparHTML(cita.pacienteNombre)} (DNI ${escaparHTML(cita.pacienteDni)})</p>
+            <p><strong>Profesional:</strong> ${escaparHTML(cita.medico)} (${escaparHTML(cita.especialidad)})</p>
+            <p><strong>Fecha Asignada:</strong> <span class="font-bold text-emerald-800">${escaparHTML(cita.fecha)}</span></p>
+            <p><strong>Horario:</strong> ${horarioTexto}</p>
+            ${cita.motivoCitacion ? `<p><strong>Motivo / Plan:</strong> ${escaparHTML(cita.motivoCitacion)}</p>` : ''}
+            <p class="pt-1 text-[11px] text-slate-500">Código de Turno: <strong class="font-mono text-slate-800 select-all">${cita.codigoConfirmacion}</strong></p>
+        </div>
+    `;
+
+    if (!esExacto && contenedorEnlace && inputEnlace) {
+        const urlBase = window.location.href.split('panel.html')[0];
+        const link = `${urlBase}index.html?cita=${cita.id}`;
+        inputEnlace.value = link;
+        contenedorEnlace.classList.remove('hidden');
+    } else if (contenedorEnlace) {
+        contenedorEnlace.classList.add('hidden');
+    }
+
+    abrirModal('modal-comprobante-citacion');
+}
+
+export function copiarEnlaceCitacion() {
+    const input = document.getElementById('input-enlace-citacion');
+    const btn = document.getElementById('btn-copiar-enlace-citacion');
+    if (!input || !input.value) return;
+
+    const textoAviso = `Hospital Teodoro J. Schestakow: Tu médico te asignó consulta médica de seguimiento. Elegí tu horario preferido ingresando aquí: ${input.value}`;
+
+    navigator.clipboard.writeText(textoAviso).then(() => {
+        if (btn) {
+            const original = btn.innerText;
+            btn.innerText = "¡Copiado!";
+            setTimeout(() => { btn.innerText = original; }, 2000);
+        }
+    }).catch(() => {
+        input.select();
+        document.execCommand('copy');
+        if (btn) {
+            btn.innerText = "¡Copiado!";
+            setTimeout(() => { btn.innerText = "Copiar"; }, 2000);
+        }
+    });
+}
+
+export function imprimirComprobanteCitacion() {
+    if (!ultimaCitacionGenerada) return;
+    const c = ultimaCitacionGenerada;
+    const esExacto = c.modoHorario === 'exacto';
+    const horarioTexto = esExacto ? `${c.horario} hs` : `Pendiente de elección por el paciente`;
+
+    const printWin = window.open('', '_blank', 'width=600,height=520');
+    if (!printWin) {
+        window.print();
+        return;
+    }
+
+    const urlBase = window.location.href.split('panel.html')[0];
+    const linkCita = `${urlBase}index.html?cita=${c.id}`;
+
+    printWin.document.write(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <title>Talón de Citación - Hospital Schestakow</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 24px; color: #1e293b; }
+                .header { text-align: center; border-bottom: 2px solid #047857; padding-bottom: 12px; margin-bottom: 16px; }
+                .title { font-size: 16px; font-weight: bold; text-transform: uppercase; color: #047857; }
+                .subtitle { font-size: 12px; color: #64748b; }
+                .box { border: 1px dashed #047857; padding: 14px; border-radius: 8px; margin-bottom: 16px; background: #f8fafc; }
+                .row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+                .label { font-weight: bold; color: #334155; }
+                .val { font-weight: bold; color: #047857; }
+                .footer { font-size: 11px; color: #64748b; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="title">Hospital Teodoro J. Schestakow</div>
+                <div class="subtitle">Orden de Citación y Seguimiento Médico</div>
+            </div>
+            <div class="box">
+                <div class="row"><span class="label">Paciente:</span> <span>${c.pacienteNombre} (DNI ${c.pacienteDni})</span></div>
+                <div class="row"><span class="label">Profesional:</span> <span>${c.medico} (${c.especialidad})</span></div>
+                <div class="row"><span class="label">Fecha Asignada:</span> <span class="val">${c.fecha}</span></div>
+                <div class="row"><span class="label">Horario:</span> <span class="val">${horarioTexto}</span></div>
+                ${c.motivoCitacion ? `<div class="row"><span class="label">Indicación / Plan:</span> <span>${c.motivoCitacion}</span></div>` : ''}
+                <div class="row"><span class="label">Código de Turno:</span> <span style="font-family: monospace;">${c.codigoConfirmacion}</span></div>
+            </div>
+            ${!esExacto ? `
+                <div style="background:#ecfdf5; border:1px solid #a7f3d0; padding:10px; border-radius:6px; font-size:12px; margin-bottom:14px; text-align:center;">
+                    <strong>Elección de Horario:</strong> Ingresá al siguiente enlace para elegir tu horario preferido del día asignado:<br>
+                    <span style="font-family:monospace; color:#047857; word-break:break-all; font-weight:bold;">${linkCita}</span>
+                </div>
+            ` : ''}
+            <div class="footer">
+                Presentarse con 10 minutos de anticipación y DNI.<br>
+                Emilio Civit 150, San Rafael, Mendoza. Tel: (0260) 442-7086.
+            </div>
+            <script>window.onload = function() { window.print(); }<\/script>
+        </body>
+        </html>
+    `);
+    printWin.document.close();
 }
 
 if (document.readyState === 'loading') {
