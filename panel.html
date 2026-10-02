@@ -11,6 +11,9 @@
     <!-- SheetJS para exportación a Excel -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
+    <!-- Chart.js Local UMD (Sin CDN externo, compatible con CSP estricta) -->
+    <script src="vendor/chart.umd.min.js"></script>
+
     <!-- Estilos Externos -->
     <link rel="stylesheet" href="css/estilos.css">
 
@@ -444,22 +447,398 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 2: MÉTRICAS -->
-            <div id="admin-sec-metricas" class="admin-section hidden">
-                <div id="metricas-kpi-container" class="mb-6"></div>
-                <div class="overflow-x-auto bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200">
-                    <table class="w-full text-left border-collapse min-w-[700px]">
-                        <thead class="bg-neutral-900 text-white text-xs uppercase font-bold border-b border-neutral-900">
-                            <tr>
-                                <th class="p-3">Profesional</th>
-                                <th class="p-3">Especialidad</th>
-                                <th class="p-3 text-center">Volumen Asignado</th>
-                                <th class="p-3 text-center">Efectividad (Atendidos)</th>
-                                <th class="p-3 text-center">Tasa Ausentismo</th>
-                            </tr>
-                        </thead>
-                        <tbody id="metricas-tbody" class="text-sm"></tbody>
-                    </table>
+            <!-- SECCIÓN 2: MÉTRICAS Y RENDIMIENTO -->
+            <div id="admin-sec-metricas" class="admin-section hidden space-y-6">
+                
+                <!-- 1. Barra de Controles y Filtros Superior -->
+                <div class="bg-white/95 backdrop-blur p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-slate-100 pb-3">
+                        <!-- Selector de Sub-vistas -->
+                        <div class="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-lg">
+                            <button id="btn-subvista-general" onclick="cambiarSubvistaMetricas('general')" class="btn-subvista-metricas active px-3 py-1.5 rounded-md font-bold text-xs bg-neutral-900 text-white shadow-sm transition">
+                                Vista General
+                            </button>
+                            <button id="btn-subvista-medico" onclick="cambiarSubvistaMetricas('medico')" class="btn-subvista-metricas px-3 py-1.5 rounded-md font-bold text-xs bg-white text-slate-600 hover:bg-slate-100 transition">
+                                Por Médico
+                            </button>
+                            <button id="btn-subvista-recepcion" onclick="cambiarSubvistaMetricas('recepcion')" class="btn-subvista-metricas px-3 py-1.5 rounded-md font-bold text-xs bg-white text-slate-600 hover:bg-slate-100 transition">
+                                Por Recepción
+                            </button>
+                            <button id="btn-subvista-comparador" onclick="cambiarSubvistaMetricas('comparador')" class="btn-subvista-metricas px-3 py-1.5 rounded-md font-bold text-xs bg-white text-slate-600 hover:bg-slate-100 transition">
+                                Comparador
+                            </button>
+                        </div>
+
+                        <!-- Acciones Globales: Exportar a Excel y Refrescar -->
+                        <div class="flex items-center gap-2 w-full lg:w-auto justify-end">
+                            <button onclick="exportarMetricasAExcel()" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg text-xs transition shadow-sm flex items-center gap-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                <span>Exportar a Excel</span>
+                            </button>
+                            <button onclick="iniciarModuloMetricasUI(true)" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition border border-slate-200" title="Actualizar datos">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Fila de Filtros de Período y Alcance -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end text-xs">
+                        <!-- Atajos Rápidos de Período -->
+                        <div class="lg:col-span-2">
+                            <label class="block font-bold text-slate-600 mb-1">Período de Análisis</label>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button id="btn-atajo-hoy" onclick="aplicarFiltroAtajoFecha('hoy')" class="btn-atajo-fecha px-2.5 py-1.5 bg-white border border-slate-300 rounded font-bold hover:bg-slate-50 transition">Hoy</button>
+                                <button id="btn-atajo-7dias" onclick="aplicarFiltroAtajoFecha('7dias')" class="btn-atajo-fecha px-2.5 py-1.5 bg-white border border-slate-300 rounded font-bold hover:bg-slate-50 transition">7 Días</button>
+                                <button id="btn-atajo-30dias" onclick="aplicarFiltroAtajoFecha('30dias')" class="btn-atajo-fecha px-2.5 py-1.5 bg-teal-700 text-white border border-teal-800 rounded font-bold transition">30 Días</button>
+                                <button id="btn-atajo-mes" onclick="aplicarFiltroAtajoFecha('mes')" class="btn-atajo-fecha px-2.5 py-1.5 bg-white border border-slate-300 rounded font-bold hover:bg-slate-50 transition">Este Mes</button>
+                            </div>
+                        </div>
+
+                        <!-- Fechas Desde / Hasta -->
+                        <div>
+                            <label class="block font-bold text-slate-600 mb-1">Desde</label>
+                            <input type="date" id="metricas-fecha-desde" onchange="iniciarModuloMetricasUI(false)" class="w-full border border-slate-300 rounded p-1.5 outline-none focus:ring-2 focus:ring-teal-600 font-mono text-xs">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-600 mb-1">Hasta</label>
+                            <input type="date" id="metricas-fecha-hasta" onchange="iniciarModuloMetricasUI(false)" class="w-full border border-slate-300 rounded p-1.5 outline-none focus:ring-2 focus:ring-teal-600 font-mono text-xs">
+                        </div>
+
+                        <!-- Filtro de Especialidad -->
+                        <div>
+                            <label class="block font-bold text-slate-600 mb-1">Especialidad</label>
+                            <select id="metricas-filtro-especialidad" onchange="actualizarVistaMetricas()" class="w-full border border-slate-300 rounded p-1.5 outline-none focus:ring-2 focus:ring-teal-600 text-xs">
+                                <option value="">Todas las Especialidades</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skeleton de Carga -->
+                <div id="metricas-loading-skeleton" class="hidden space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div class="h-28 bg-white/70 rounded-xl animate-pulse"></div>
+                        <div class="h-28 bg-white/70 rounded-xl animate-pulse"></div>
+                        <div class="h-28 bg-white/70 rounded-xl animate-pulse"></div>
+                        <div class="h-28 bg-white/70 rounded-xl animate-pulse"></div>
+                        <div class="h-28 bg-white/70 rounded-xl animate-pulse"></div>
+                    </div>
+                    <div class="h-64 bg-white/70 rounded-xl animate-pulse"></div>
+                </div>
+
+                <!-- Estado Vacío Amigable -->
+                <div id="metricas-estado-vacio" class="hidden bg-white/95 backdrop-blur p-8 rounded-xl border border-slate-200 text-center space-y-3 shadow-sm">
+                    <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-800">Todavía no hay datos en este período</h3>
+                    <p class="text-xs text-slate-500 max-w-md mx-auto">No se encontraron turnos registrados en las fechas seleccionadas. Probá ampliando el rango en el calendario o utilizando el botón de "Cargar Demo 100% Funcional".</p>
+                </div>
+
+                <!-- Contenedor Principal de Sub-vistas -->
+                <div id="metricas-vistas-container" class="space-y-6">
+
+                    <!-- ============================================== -->
+                    <!-- SUB-VISTA 1: VISTA GENERAL E INSTITUCIONAL -->
+                    <!-- ============================================== -->
+                    <div id="panel-subvista-general" class="subvista-panel-metricas space-y-6">
+                        
+                        <!-- Tarjetas KPI -->
+                        <div id="metricas-kpi-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"></div>
+
+                        <!-- Banner de Conclusiones Ejecutivas Automáticas -->
+                        <div class="bg-gradient-to-r from-teal-900 to-slate-900 text-white p-4 sm:p-5 rounded-xl shadow-md border border-teal-800/40">
+                            <div class="flex items-center gap-2 mb-2 text-teal-300">
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span class="font-bold text-xs uppercase tracking-wider">Conclusión Ejecutiva Automática del Período</span>
+                            </div>
+                            <ul id="metricas-conclusiones-texto" class="text-xs sm:text-sm text-slate-200 space-y-1.5 pl-1">
+                                <li>Calculando análisis de tendencia...</li>
+                            </ul>
+                        </div>
+
+                        <!-- Grilla de Gráficos Principales -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            
+                            <!-- Gráfico de Líneas: Evolución Diaria (2 cols) -->
+                            <div class="lg:col-span-2 bg-white/95 backdrop-blur p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 border-b border-slate-100 pb-2">
+                                    <div>
+                                        <div class="flex items-center gap-1.5">
+                                            <h4 class="font-bold text-sm text-slate-800">Evolución de Turnos por Día</h4>
+                                            <button onclick="window.mostrarInfoMetrica('tasaAtencion')" class="text-slate-400 hover:text-blue-600 text-xs">
+                                                <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-slate-300 text-[9px] font-bold">i</span>
+                                            </button>
+                                        </div>
+                                        <p class="text-xs text-slate-500">Asignados vs. Atendidos efectivos vs. Ausentes</p>
+                                    </div>
+                                    <button onclick="window.descargarGraficoImagen('chart-evolucion-diaria', 'turnos-por-dia')" class="text-xs text-slate-600 hover:text-slate-900 border border-slate-200 px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 font-bold transition flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                        <span>Descargar</span>
+                                    </button>
+                                </div>
+                                <div class="relative h-64 w-full">
+                                    <canvas id="chart-evolucion-diaria"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Gráfico de Dona: Mix de Canales (1 col) -->
+                            <div class="bg-white/95 backdrop-blur p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                                <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
+                                    <div>
+                                        <div class="flex items-center gap-1.5">
+                                            <h4 class="font-bold text-sm text-slate-800">Mix de Canales</h4>
+                                            <button onclick="window.mostrarInfoMetrica('turnosWeb')" class="text-slate-400 hover:text-blue-600 text-xs">
+                                                <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-slate-300 text-[9px] font-bold">i</span>
+                                            </button>
+                                        </div>
+                                        <p class="text-xs text-slate-500">Portal Web vs. Presencial</p>
+                                    </div>
+                                    <button onclick="window.descargarGraficoImagen('chart-mix-canales', 'mix-canales')" class="text-xs text-slate-600 hover:text-slate-900 border border-slate-200 px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 font-bold transition flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    </button>
+                                </div>
+                                <div class="relative h-64 w-full flex items-center justify-center">
+                                    <canvas id="chart-mix-canales"></canvas>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Grilla Secundaria: Rankings por Especialidad y Mapa de Calor -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            
+                            <!-- Rankings por Especialidad (Barras Horizontales) -->
+                            <div class="bg-white/95 backdrop-blur p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                                <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                                    <div>
+                                        <h4 class="font-bold text-sm text-slate-800">Rankings por Especialidad</h4>
+                                        <p class="text-xs text-slate-500">Comparativa de ausentismo y nivel de ocupación</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="block text-xs font-bold text-slate-600 mb-1">Mayor Ausentismo (%)</span>
+                                    <div class="relative h-44 w-full">
+                                        <canvas id="chart-ranking-ausentismo"></canvas>
+                                    </div>
+                                </div>
+                                <div class="pt-2 border-t border-slate-100">
+                                    <span class="block text-xs font-bold text-slate-600 mb-1">Mayor Ocupación de Agenda (%)</span>
+                                    <div class="relative h-44 w-full">
+                                        <canvas id="chart-ranking-ocupacion"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mapa de Calor (Heatmap) CSS: Demanda Día x Franja Horaria -->
+                            <div class="bg-white/95 backdrop-blur p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-center mb-2 border-b border-slate-100 pb-2">
+                                        <div>
+                                            <h4 class="font-bold text-sm text-slate-800">Mapa de Calor de Demanda</h4>
+                                            <p class="text-xs text-slate-500">Concentración de turnos por día de la semana y franja horaria</p>
+                                        </div>
+                                    </div>
+                                    <div id="heatmap-grid-container" class="mt-3"></div>
+                                </div>
+                                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                                    <span>Menor Demanda</span>
+                                    <div class="flex items-center gap-1">
+                                        <span class="w-3.5 h-3.5 rounded bg-teal-50 border border-teal-100"></span>
+                                        <span class="w-3.5 h-3.5 rounded bg-teal-200"></span>
+                                        <span class="w-3.5 h-3.5 rounded bg-teal-400"></span>
+                                        <span class="w-3.5 h-3.5 rounded bg-teal-600"></span>
+                                        <span class="w-3.5 h-3.5 rounded bg-teal-800"></span>
+                                    </div>
+                                    <span>Pico de Demanda</span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ============================================== -->
+                    <!-- SUB-VISTA 2: POR MÉDICO -->
+                    <!-- ============================================== -->
+                    <div id="panel-subvista-medico" class="subvista-panel-metricas hidden space-y-6">
+                        <div class="bg-white/95 backdrop-blur p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <div>
+                                <span class="text-xs font-bold text-teal-700 uppercase tracking-wider">Desempeño Asistencial Individual</span>
+                                <h3 id="metricas-medico-nombre-titulo" class="text-lg font-bold text-slate-800">Seleccione un Profesional</h3>
+                            </div>
+                            <div class="w-full sm:w-72">
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Filtrar por Profesional</label>
+                                <select id="metricas-filtro-medico" onchange="actualizarVistaMetricas()" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-teal-600 outline-none">
+                                    <option value="">Seleccione profesional</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- KPIs del Médico -->
+                        <div id="metricas-medico-kpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+
+                        <!-- Gráficos del Médico -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            
+                            <!-- Duración Real vs Programada -->
+                            <div class="bg-white/95 backdrop-blur p-5 rounded-xl border border-slate-200 shadow-sm">
+                                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                    <div>
+                                        <h4 class="font-bold text-sm text-slate-800">Duración Real vs. Programada</h4>
+                                        <p class="text-xs text-slate-500">Minutos reales promedio de atención vs. modulación asignada</p>
+                                    </div>
+                                    <button onclick="window.mostrarInfoMetrica('duracionConsulta')" class="text-slate-400 hover:text-blue-600 text-xs">
+                                        <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-slate-300 text-[9px] font-bold">i</span>
+                                    </button>
+                                </div>
+                                <div class="relative h-64 w-full">
+                                    <canvas id="chart-medico-duracion"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Comparativa contra Promedio de Especialidad -->
+                            <div class="bg-white/95 backdrop-blur p-5 rounded-xl border border-slate-200 shadow-sm">
+                                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                    <div>
+                                        <h4 class="font-bold text-sm text-slate-800">Contraste con la Especialidad</h4>
+                                        <p class="text-xs text-slate-500">Rendimiento individual vs. promedio de su especialidad médica</p>
+                                    </div>
+                                </div>
+                                <div class="relative h-64 w-full">
+                                    <canvas id="chart-medico-comparativa"></canvas>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- ============================================== -->
+                    <!-- SUB-VISTA 3: POR RECEPCIÓN Y OPERADORES -->
+                    <!-- ============================================== -->
+                    <div id="panel-subvista-recepcion" class="subvista-panel-metricas hidden space-y-6">
+                        <div class="bg-white/95 backdrop-blur p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <div>
+                                <span class="text-xs font-bold text-teal-700 uppercase tracking-wider">Gestión de Ventanilla y Calidad de Carga</span>
+                                <h3 class="text-lg font-bold text-slate-800">Rendimiento de Admisión y Recepción</h3>
+                            </div>
+                            <div class="w-full sm:w-72">
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Filtrar por Personal</label>
+                                <select id="metricas-filtro-recepcionista" onchange="actualizarVistaMetricas()" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-teal-600 outline-none">
+                                    <option value="">Todo el Personal</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- KPIs de Recepción -->
+                        <div id="metricas-recepcion-kpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+
+                        <!-- Gráficos de Recepción -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            
+                            <!-- Turnos Asignados por Operador -->
+                            <div class="bg-white/95 backdrop-blur p-5 rounded-xl border border-slate-200 shadow-sm">
+                                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                    <div>
+                                        <h4 class="font-bold text-sm text-slate-800">Carga por Personal</h4>
+                                        <p class="text-xs text-slate-500">Cantidad de turnos generados en ventanilla por operador</p>
+                                    </div>
+                                </div>
+                                <div class="relative h-64 w-full">
+                                    <canvas id="chart-recepcion-personas"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Distribución de Cancelaciones por Actor -->
+                            <div class="bg-white/95 backdrop-blur p-5 rounded-xl border border-slate-200 shadow-sm">
+                                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                    <div>
+                                        <h4 class="font-bold text-sm text-slate-800">Distribución de Cancelaciones</h4>
+                                        <p class="text-xs text-slate-500">Quién originó la cancelación del turno</p>
+                                    </div>
+                                </div>
+                                <div class="relative h-64 w-full flex items-center justify-center">
+                                    <canvas id="chart-recepcion-cancelaciones"></canvas>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- ============================================== -->
+                    <!-- SUB-VISTA 4: COMPARADOR DE ENTIDADES -->
+                    <!-- ============================================== -->
+                    <div id="panel-subvista-comparador" class="subvista-panel-metricas hidden space-y-6">
+                        <div class="bg-white/95 backdrop-blur p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 class="text-base font-bold text-slate-800 mb-1">Comparador de Rendimiento Lado a Lado</h3>
+                            <p class="text-xs text-slate-500 mb-4">Seleccioná dos profesionales para contrastar sus indicadores de agenda, ausentismo y atención efectiva en el período seleccionado.</p>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">Profesional A</label>
+                                    <select id="comparador-select-a" onchange="actualizarVistaMetricas()" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-teal-600 outline-none"></select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">Profesional B</label>
+                                    <select id="comparador-select-b" onchange="actualizarVistaMetricas()" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-teal-600 outline-none"></select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto bg-white/95 backdrop-blur rounded-xl border border-slate-200 shadow-sm">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead class="bg-neutral-900 text-white font-bold uppercase text-[11px]">
+                                    <tr>
+                                        <th class="p-3">Indicador Evaluado</th>
+                                        <th class="p-3 text-center">Profesional A</th>
+                                        <th class="p-3 text-center">Profesional B</th>
+                                        <th class="p-3 text-center">Diferencia Neta</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="comparador-tbody" class="text-xs"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- MODAL DE INFORMACIÓN Y FÓRMULA DE MÉTRICAS -->
+            <div id="modal-metrica-info" class="modal fixed inset-0 z-50 items-center justify-center p-4 modal-overlay hidden">
+                <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-fade-in-up border border-slate-200">
+                    <div class="bg-neutral-900 text-white p-4 flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-teal-500 text-neutral-900 font-extrabold text-xs">i</span>
+                            <h3 id="modal-metrica-titulo" class="font-bold text-sm">Información del Indicador</h3>
+                        </div>
+                        <button onclick="cerrarModalInfoMetrica()" class="text-slate-400 hover:text-white transition font-bold text-lg leading-none">✕</button>
+                    </div>
+                    
+                    <div class="p-5 space-y-4 text-xs text-slate-700">
+                        <div>
+                            <span class="block font-bold text-slate-900 uppercase text-[10px] tracking-wider mb-1">¿Qué mide?</span>
+                            <p id="modal-metrica-quemide" class="leading-relaxed"></p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                            <span class="block font-bold text-slate-900 uppercase text-[10px] tracking-wider mb-1">Fórmula de Cálculo</span>
+                            <p id="modal-metrica-formula" class="font-mono text-teal-800 font-semibold"></p>
+                        </div>
+                        <div>
+                            <span class="block font-bold text-slate-900 uppercase text-[10px] tracking-wider mb-1">Criterio de Interpretación</span>
+                            <p id="modal-metrica-comoleer" class="leading-relaxed"></p>
+                        </div>
+                        <div class="bg-teal-50/60 p-3 rounded-lg border border-teal-200 text-teal-900">
+                            <span class="block font-bold uppercase text-[10px] tracking-wider mb-1 text-teal-800">Semáforo de Gestión y Umbrales</span>
+                            <p id="modal-metrica-umbrales" class="font-semibold"></p>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 border-t border-slate-100 flex justify-end">
+                        <button onclick="cerrarModalInfoMetrica()" class="px-4 py-1.5 bg-neutral-900 hover:bg-black text-white font-bold rounded-lg text-xs transition">
+                            Entendido
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -956,7 +1335,8 @@
         </div>
     </div>
 
-    <!-- Script del Panel de Administración y Personal -->
+    <!-- Scripts del Panel de Administración, Métricas y Personal -->
+    <script type="module" src="js/metricas-ui.js"></script>
     <script type="module" src="js/admin.js"></script>
 
 </body>

@@ -40,6 +40,10 @@ import {
     establecerLimitesFecha
 } from "./utils.js";
 
+import {
+    iniciarModuloMetricasUI
+} from "./metricas-ui.js";
+
 // Variables de Estado Interno
 let sesionActual = null;
 let bdMedicosDinamica = {};
@@ -1908,77 +1912,11 @@ export async function ejecutarGuardadoModulacion() {
     }
 }
 
-export async function cargarMetricas() {
-    const tbody = document.getElementById('metricas-tbody');
-    const kpiContainer = document.getElementById('metricas-kpi-container');
-    if (!tbody) return;
-
-    tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-400">Calculando indicadores clínicos...</td></tr>';
-
+export async function cargarMetricas(forzarRecarga = false) {
     try {
-        const snapTurnos = await getDocs(collection(db, "turnos"));
-        let statsPorMedico = {};
-        let totalGeneral = 0;
-        let totalAtendidos = 0;
-        let totalAusentes = 0;
-
-        snapTurnos.forEach(d => {
-            const t = d.data();
-            const med = t.medico || "Sin Asignar";
-            if (!statsPorMedico[med]) {
-                statsPorMedico[med] = { especialidad: t.especialidad || 'N/A', total: 0, atendidos: 0, ausentes: 0 };
-            }
-            statsPorMedico[med].total++;
-            totalGeneral++;
-            if (t.estado === "Atendido") {
-                statsPorMedico[med].atendidos++;
-                totalAtendidos++;
-            }
-            if (t.estado === "Ausente") {
-                statsPorMedico[med].ausentes++;
-                totalAusentes++;
-            }
-        });
-
-        if (kpiContainer) {
-            const tasaGlobal = totalGeneral > 0 ? Math.round((totalAusentes / totalGeneral) * 100) : 0;
-            kpiContainer.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-white/95 p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <p class="text-xs font-bold text-slate-500 uppercase">Volumen Total Turnos</p>
-                        <p class="text-2xl font-bold text-neutral-900 mt-1">${totalGeneral}</p>
-                    </div>
-                    <div class="bg-white/95 p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <p class="text-xs font-bold text-slate-500 uppercase">Turnos Efectivizados</p>
-                        <p class="text-2xl font-bold text-emerald-600 mt-1">${totalAtendidos}</p>
-                    </div>
-                    <div class="bg-white/95 p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <p class="text-xs font-bold text-slate-500 uppercase">Tasa Global Ausentismo</p>
-                        <p class="text-2xl font-bold text-amber-600 mt-1">${tasaGlobal}%</p>
-                    </div>
-                </div>
-            `;
-        }
-
-        let filas = '';
-        for (const [med, st] of Object.entries(statsPorMedico)) {
-            const ausTasa = st.total > 0 ? Math.round((st.ausentes / st.total) * 100) : 0;
-            filas += `
-                <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
-                    <td class="p-3 font-bold text-slate-800">${escaparHTML(med)}</td>
-                    <td class="p-3 text-xs text-slate-600">${escaparHTML(st.especialidad)}</td>
-                    <td class="p-3 text-center font-bold text-slate-700">${st.total}</td>
-                    <td class="p-3 text-center font-bold text-emerald-600">${st.atendidos}</td>
-                    <td class="p-3 text-center">
-                        <span class="px-2 py-0.5 rounded text-xs font-bold ${ausTasa > 30 ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-700'}">${ausTasa}%</span>
-                    </td>
-                </tr>
-            `;
-        }
-        tbody.innerHTML = filas || '<tr><td colspan="5" class="p-6 text-center text-slate-500">No hay datos suficientes para calcular métricas.</td></tr>';
+        await iniciarModuloMetricasUI(forzarRecarga);
     } catch (e) {
-        console.error(e);
-        tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-red-500">Error al calcular métricas.</td></tr>';
+        console.error("Error al inicializar módulo de métricas:", e);
     }
 }
 
@@ -2086,7 +2024,7 @@ export async function limpiarBaseDeDatos() {
 
         cargarUsuariosAdmin('init');
         cargarEspecialistasFirebase();
-        cargarMetricas();
+        cargarMetricas(true);
     } catch (e) {
         console.error(e);
         cerrarModal('modal-progreso');
@@ -2948,7 +2886,7 @@ export async function inyectarDemoCompletaForo() {
 
         await cargarEspecialistasFirebase();
         cargarUsuariosAdmin('init');
-        cargarMetricas();
+        cargarMetricas(true);
         if (fechaRecepcionSeleccionada) generarAgendaRecepcion();
         if (document.body.dataset.view === 'doctor') cargarAgendaMedico();
 
