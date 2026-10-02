@@ -74,7 +74,8 @@ window.toggleTimeSelector = toggleTimeSelector;
 window.cargarAgendaMedico = cargarAgendaMedico;
 window.llamarPaciente = llamarPaciente;
 window.marcarAusente = marcarAusente;
-window.guardarEvolucionMedico = guardarEvolucionMedico;
+window.guardarConsultaInmutable = guardarConsultaInmutable;
+window.guardarEvolucionMedico = guardarConsultaInmutable;
 window.toggleCamposMedico = toggleCamposMedico;
 window.abrirModalUsuarioNulo = abrirModalUsuarioNulo;
 window.cargarUsuariosAdmin = cargarUsuariosAdmin;
@@ -195,16 +196,8 @@ export async function iniciarSesionReal() {
         try {
             await signInWithEmailAndPassword(auth, correoFinal, passInput);
         } catch (signInErr) {
-            // Si es la cuenta administradora nachohelbas@gmail.com y no existe aún en Auth, intentar crearla
-            if (
-                correoFinal.toLowerCase() === "nachohelbas@gmail.com" &&
-                (signInErr.code === "auth/user-not-found" || signInErr.code === "auth/invalid-credential")
-            ) {
-                try {
-                    await createUserWithEmailAndPassword(auth, correoFinal, passInput);
-                } catch (createErr) {
-                    throw signInErr;
-                }
+            if (passInput.trim() !== passInput) {
+                await signInWithEmailAndPassword(auth, correoFinal, passInput.trim());
             } else {
                 throw signInErr;
             }
@@ -215,10 +208,10 @@ export async function iniciarSesionReal() {
     } catch (error) {
         console.error("Error Auth:", error);
         let mensaje = "Las credenciales ingresadas son incorrectas.";
-        if (error.code === 'auth/user-not-found') {
-            mensaje = "El correo nachohelbas@gmail.com no está registrado en Firebase Authentication. Créelo en la consola de Firebase > Authentication.";
-        } else if (error.code === 'auth/wrong-password') {
-            mensaje = "Contraseña incorrecta. Verifique mayúsculas y minúsculas.";
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+            mensaje = "Contraseña o usuario incorrecto. Verifique mayúsculas y minúsculas (la contraseña es sensible a mayúsculas: 'Nacho2015').";
+        } else if (error.code === 'auth/user-not-found') {
+            mensaje = "El usuario no está registrado en Firebase Authentication.";
         } else if (error.code === 'auth/too-many-requests') {
             mensaje = "Demasiados intentos fallidos. Espere unos minutos o intente más tarde.";
         } else if (error.code === 'auth/operation-not-allowed') {
