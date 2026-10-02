@@ -110,7 +110,7 @@ service cloud.firestore {
         && data.canal in ['Presencial', 'Telefónico', 'Web', 'Consultorio', 'Seguimiento', 'Médico']
         && (
           data.estado in ['Confirmado', 'Confirmado Presencial', 'Pendiente de Horario']
-          || (isSuperAdmin() && data.estado in ['En Espera', 'Atendido', 'En Consultorio', 'Ausente'])
+          || (isSuperAdmin() && data.estado in ['En Espera', 'Atendido', 'En Consultorio', 'Ausente', 'Cancelado', 'Cancelado por Paciente'])
         );
     }
 

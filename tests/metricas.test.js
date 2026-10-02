@@ -22,7 +22,8 @@ import {
     calcularMetricasMedico,
     calcularMetricasRecepcion,
     calcularMetricasGenerales,
-    compararEntidades
+    compararEntidades,
+    generarTurnosHistoricosDemo
 } from '../js/metricas.js';
 
 test('Módulo de Métricas - Pruebas Unitarias', async (t) => {
@@ -311,6 +312,85 @@ test('Módulo de Métricas - Pruebas Unitarias', async (t) => {
         assert.equal(comp.nombreA, 'Período A');
         assert.equal(comp.nombreB, 'Período B');
         assert.equal(comp.comparaciones.length, 4);
+    });
+
+    await t.test('8. generarTurnosHistoricosDemo - Cobertura temporal, patrones de pico, marcas temporales y sin PII', () => {
+        const turnosDemo = generarTurnosHistoricosDemo(new Date('2026-10-02T12:00:00Z'));
+        
+        // 1. Volumen y cobertura de 60 días
+        assert.ok(turnosDemo.length >= 250 && turnosDemo.length <= 500, `Volumen generado (${turnosDemo.length}) debe estar entre 250 y 500 turnos`);
+        
+        // 2. Todos marcados como demo y reversibles
+        const todosDemo = turnosDemo.every(t => t.data.demo === true && t.data.esDemo === true);
+        assert.ok(todosDemo, 'Todos los documentos deben contener demo: true y esDemo: true');
+
+        // 3. Sin PII real
+        const sinPii = turnosDemo.every(t => 
+            t.data.pacienteNombre.startsWith('Paciente Simulado') &&
+            t.data.pacienteCelular === '2604000000' &&
+            t.data.pacienteDni.startsWith('2000')
+        );
+        assert.ok(sinPii, 'No debe existir información personal real en los datos sintéticos');
+
+        // 4. No hay fines de semana
+        const sinFinesDeSemana = turnosDemo.every(t => {
+            const [y, m, d] = t.data.fecha.split('-').map(Number);
+            const dt = new Date(y, m - 1, d);
+            return dt.getDay() !== 0 && dt.getDay() !== 6;
+        });
+        assert.ok(sinFinesDeSemana, 'Solo deben programarse turnos de lunes a viernes');
+
+        // 5. Pico de los lunes
+        let turnosLunes = 0;
+        let turnosOtrosDias = 0;
+        let conteoLunesDias = 0;
+        let conteoOtrosDias = 0;
+        const mapaDias = {};
+
+        turnosDemo.forEach(t => {
+            mapaDias[t.data.fecha] = (mapaDias[t.data.fecha] || 0) + 1;
+        });
+
+        Object.entries(mapaDias).forEach(([fStr, cant]) => {
+            const [y, m, d] = fStr.split('-').map(Number);
+            const dt = new Date(y, m - 1, d);
+            if (dt.getDay() === 1) {
+                turnosLunes += cant;
+                conteoLunesDias++;
+            } else {
+                turnosOtrosDias += cant;
+                conteoOtrosDias++;
+            }
+        });
+
+        const promLunes = turnosLunes / conteoLunesDias;
+        const promOtros = turnosOtrosDias / conteoOtrosDias;
+        assert.ok(promLunes > promOtros, `El promedio de los lunes (${promLunes.toFixed(1)}) debe ser superior a otros días (${promOtros.toFixed(1)})`);
+
+        // 6. Marcas de tiempo coherentes en atendidos
+        const atendidos = turnosDemo.filter(t => t.data.estado === 'Atendido');
+        assert.ok(atendidos.length > 0, 'Debe haber turnos atendidos');
+        
+        const tiemposCoherentes = atendidos.every(t => {
+            const llegada = t.data.llegadaEn.getTime();
+            const inicio = t.data.inicioConsultaEn.getTime();
+            const fin = t.data.finConsultaEn.getTime();
+            return llegada <= inicio && inicio < fin;
+        });
+        assert.ok(tiemposCoherentes, 'En atendidos debe cumplirse llegadaEn <= inicioConsultaEn < finConsultaEn');
+
+        // 7. Ausentismo y cancelaciones presentes
+        const ausentes = turnosDemo.filter(t => t.data.estado === 'Ausente');
+        const cancelados = turnosDemo.filter(t => t.data.estado === 'Cancelado');
+        const tasaAus = ausentes.length / turnosDemo.length;
+        const tasaCanc = cancelados.length / turnosDemo.length;
+
+        assert.ok(tasaAus >= 0.08 && tasaAus <= 0.22, `Tasa de ausentismo (${(tasaAus * 100).toFixed(1)}%) debe rondar ~15%`);
+        assert.ok(tasaCanc >= 0.05 && tasaCanc <= 0.18, `Tasa de cancelaciones (${(tasaCanc * 100).toFixed(1)}%) debe ser realista`);
+
+        // 8. Quién cancela registrado
+        const canceladosConActor = cancelados.every(t => ['paciente', 'recepcion', 'medico'].includes(t.data.canceladoPor));
+        assert.ok(canceladosConActor, 'Los cancelados deben detallar canceladoPor');
     });
 
 });

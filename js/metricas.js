@@ -799,3 +799,217 @@ export function compararEntidades(metricasA, metricasB, nombreA = 'Entidad A', n
         ]
     };
 }
+
+// ==========================================
+// 7. GENERADOR DE DATOS DE DEMOSTRACIÓN HISTÓRICA (~2 MESES)
+// ==========================================
+export function generarTurnosHistoricosDemo(hoyDate = new Date()) {
+    const medicosConfig = [
+        {
+            nom: "Dr. Esteban Quiroga",
+            esp: "Clínica Médica",
+            uid: "med_demo_1",
+            durProg: 15,
+            durMin: 13,
+            durMax: 17,
+            esperaMin: 10,
+            esperaMax: 18,
+            tasaAusente: 0.12,
+            tasaCancela: 0.08
+        },
+        {
+            nom: "Dr. Carlos San Martín",
+            esp: "Cardiología",
+            uid: "med_demo_2",
+            durProg: 20,
+            durMin: 23,
+            durMax: 30, // Demora superior a la programada (visible en gráfico comparativo)
+            esperaMin: 18,
+            esperaMax: 32, // Mayor tiempo de espera acumulado
+            tasaAusente: 0.09,
+            tasaCancela: 0.06
+        },
+        {
+            nom: "Dra. María Antonieta",
+            esp: "Pediatría",
+            uid: "med_demo_3",
+            durProg: 15,
+            durMin: 11,
+            durMax: 15, // Consultas ágiles y resolutivas
+            esperaMin: 8,
+            esperaMax: 15, // Espera reducida
+            tasaAusente: 0.18, // Mayor ausentismo pediátrico
+            tasaCancela: 0.12
+        },
+        {
+            nom: "Dra. Sofía Castro",
+            esp: "Neurología",
+            uid: "med_demo_4",
+            durProg: 30,
+            durMin: 27,
+            durMax: 34,
+            esperaMin: 14,
+            esperaMax: 24,
+            tasaAusente: 0.14,
+            tasaCancela: 0.10
+        },
+        {
+            nom: "Dr. Ricardo Silva",
+            esp: "Traumatología y Ortopedia",
+            uid: "med_demo_5",
+            durProg: 20,
+            durMin: 18,
+            durMax: 22,
+            esperaMin: 12,
+            esperaMax: 20,
+            tasaAusente: 0.15,
+            tasaCancela: 0.09
+        }
+    ];
+
+    const slotsManana = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30'];
+    const slotsTarde = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
+    const turnosGenerados = [];
+    let contadorId = 1;
+
+    // Recorrer los últimos 60 días
+    for (let diasAtras = 60; diasAtras >= 1; diasAtras--) {
+        const dia = new Date(hoyDate.getTime() - diasAtras * 86400000);
+        const dayOfWeek = dia.getDay(); // 0=Dom, 1=Lun, ..., 6=Sáb
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue; // Solo lunes a viernes
+
+        const esLunes = (dayOfWeek === 1);
+        const yyyy = dia.getFullYear();
+        const mm = String(dia.getMonth() + 1).padStart(2, '0');
+        const dd = String(dia.getDate()).padStart(2, '0');
+        const fechaStr = `${yyyy}-${mm}-${dd}`;
+
+        // Volumen diario: Lunes tiene pico de demanda (+40% turnos)
+        const baseCantidad = esLunes ? (10 + Math.floor(Math.random() * 5)) : (6 + Math.floor(Math.random() * 4));
+
+        for (let t = 0; t < baseCantidad; t++) {
+            const med = medicosConfig[(t + diasAtras) % medicosConfig.length];
+
+            // Horario: 75% en franja mañana con pico entre 09:00 y 11:30
+            let horario;
+            if (Math.random() < 0.75) {
+                const weights = [0.08, 0.10, 0.18, 0.20, 0.20, 0.12, 0.08, 0.04];
+                let r = Math.random();
+                let chosen = 2;
+                for (let w = 0; w < weights.length; w++) {
+                    if (r < weights[w]) { chosen = w; break; }
+                    r -= weights[w];
+                }
+                horario = slotsManana[chosen] || '09:30';
+            } else {
+                horario = slotsTarde[Math.floor(Math.random() * slotsTarde.length)];
+            }
+
+            // Canal y Responsable de Carga
+            let canal;
+            let creadoPor;
+            const canalRnd = Math.random();
+            if (canalRnd < 0.55) {
+                canal = 'Web';
+                creadoPor = null; // Autogestión por paciente
+            } else if (canalRnd < 0.82) {
+                canal = 'Presencial';
+                creadoPor = (Math.random() < 0.6) ? 'recep_demo_1' : 'recep_demo_2';
+            } else {
+                canal = 'Telefónico';
+                creadoPor = (Math.random() < 0.5) ? 'recep_demo_1' : 'recep_demo_2';
+            }
+
+            const [hh, min] = horario.split(':').map(Number);
+            const fechaHoraTurno = new Date(dia);
+            fechaHoraTurno.setHours(hh, min, 0, 0);
+            const turnoTimeMs = fechaHoraTurno.getTime();
+
+            // Creado entre 3 y 14 días antes del turno
+            const diasPrevios = 3 + Math.floor(Math.random() * 12);
+            const creadoEnMs = turnoTimeMs - (diasPrevios * 86400000) - Math.floor(Math.random() * 3600000);
+
+            // Estado y Marcas de Tiempo
+            const rollEstado = Math.random();
+            let estado;
+            let llegadaEn = null;
+            let inicioConsultaEn = null;
+            let finConsultaEn = null;
+            let canceladoPor = null;
+            let canceladoEn = null;
+
+            if (rollEstado < med.tasaCancela) {
+                estado = 'Cancelado';
+                const rollActor = Math.random();
+                if (rollActor < 0.65) canceladoPor = 'paciente';
+                else if (rollActor < 0.90) canceladoPor = 'recepcion';
+                else canceladoPor = 'medico';
+
+                const cancMs = turnoTimeMs - (1 + Math.floor(Math.random() * 2)) * 86400000;
+                canceladoEn = new Date(cancMs);
+            } else if (rollEstado < (med.tasaCancela + med.tasaAusente)) {
+                estado = 'Ausente';
+            } else {
+                estado = 'Atendido';
+
+                // Llegada: entre 5 y 25 min antes del horario programado
+                const llegadaAnticipacionMin = 5 + Math.floor(Math.random() * 20);
+                const llegadaMs = turnoTimeMs - (llegadaAnticipacionMin * 60000);
+                llegadaEn = new Date(llegadaMs);
+
+                // Espera hasta que el médico llama al paciente
+                const esperaMin = med.esperaMin + Math.floor(Math.random() * (med.esperaMax - med.esperaMin + 1));
+                const inicioMs = llegadaMs + (esperaMin * 60000);
+                inicioConsultaEn = new Date(inicioMs);
+
+                // Duración real de la consulta
+                const duracionMin = med.durMin + Math.floor(Math.random() * (med.durMax - med.durMin + 1));
+                const finMs = inicioMs + (duracionMin * 60000);
+                finConsultaEn = new Date(finMs);
+            }
+
+            // Calidad de datos por operador
+            let email = `paciente${contadorId}@hospital.demo`;
+            if (creadoPor === 'recep_demo_2' && Math.random() < 0.12) {
+                email = ''; // Marcos a veces omite registrar el correo
+            }
+
+            const docId = `TURNO_HIST_${fechaStr.replace(/-/g, '')}_${String(contadorId).padStart(4, '0')}`;
+            const dniNum = 20000000 + contadorId;
+
+            turnosGenerados.push({
+                id: docId,
+                data: {
+                    especialidad: med.esp,
+                    medico: med.nom,
+                    medicoUid: med.uid,
+                    fecha: fechaStr,
+                    horario: horario,
+                    pacienteNombre: `Paciente Simulado ${contadorId}`,
+                    pacienteDni: String(dniNum),
+                    pacienteCelular: "2604000000",
+                    pacienteEmail: email,
+                    codigoConfirmacion: `HIST-${contadorId}`,
+                    canal: canal,
+                    estado: estado,
+                    pacienteId: `PAC_SIM_${dniNum}`,
+                    creadoEn: new Date(creadoEnMs),
+                    creadoPor: creadoPor,
+                    llegadaEn: llegadaEn,
+                    inicioConsultaEn: inicioConsultaEn,
+                    finConsultaEn: finConsultaEn,
+                    canceladoPor: canceladoPor,
+                    canceladoEn: canceladoEn,
+                    reprogramadoDe: null,
+                    demo: true,
+                    esDemo: true,
+                    timestamp: new Date(creadoEnMs)
+                }
+            });
+
+            contadorId++;
+        }
+    }
+
+    return turnosGenerados;
+}

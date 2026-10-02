@@ -78,6 +78,9 @@ test('Matriz de Seguridad de Reglas de Firestore', async (t) => {
         assert.match(turnosBlock, /llegadaEn/, 'Recepción debe tener permitido registrar llegadaEn');
         assert.match(turnosBlock, /inicioConsultaEn/, 'Médico debe tener permitido registrar inicioConsultaEn');
         assert.match(turnosBlock, /finConsultaEn/, 'Médico debe tener permitido registrar finConsultaEn');
+
+        // 11. Turnos: SuperAdmin creación con estados de demostración y auditoría
+        assert.match(rulesContent, /Cancelado por Paciente/, 'SuperAdmin debe poder sembrar turnos en estado cancelado para auditoría y métricas');
     });
 
     // Si está disponible el emulador en vivo, se ejecutan las pruebas de integración

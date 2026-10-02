@@ -44,6 +44,10 @@ import {
     iniciarModuloMetricasUI
 } from "./metricas-ui.js";
 
+import {
+    generarTurnosHistoricosDemo
+} from "./metricas.js";
+
 // Variables de Estado Interno
 let sesionActual = null;
 let bdMedicosDinamica = {};
@@ -118,6 +122,7 @@ window.copiarEnlaceCitacion = copiarEnlaceCitacion;
 window.imprimirComprobanteCitacion = imprimirComprobanteCitacion;
 window.autocompletarNachoDemo = autocompletarNachoDemo;
 window.inyectarDemoCompletaForo = inyectarDemoCompletaForo;
+window.generarTurnosHistoricosDemo = generarTurnosHistoricosDemo;
 
 // ==========================================
 // SESIÓN Y AUTENTICACIÓN
@@ -1993,9 +1998,13 @@ export async function limpiarBaseDeDatos() {
 
     try {
         const turnosSnap = await getDocs(collection(db, "turnos"));
-        const promesasTurnos = turnosSnap.docs.map(d => deleteDoc(doc(db, "turnos", d.id)));
-        await Promise.all(promesasTurnos);
-        if (barra) barra.style.width = '60%';
+        const BATCH_SIZE = 400;
+        for (let i = 0; i < turnosSnap.docs.length; i += BATCH_SIZE) {
+            const batch = writeBatch(db);
+            turnosSnap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
+        if (barra) barra.style.width = '40%';
 
         if (texto) texto.innerText = "Borrando usuarios demostrativos...";
         const usuariosSnap = await getDocs(collection(db, "usuarios"));
@@ -2008,6 +2017,7 @@ export async function limpiarBaseDeDatos() {
             }
         });
         await Promise.all(promesasUsuarios);
+        if (barra) barra.style.width = '60%';
 
         // Limpiar catálogo de médicos públicos y slots de disponibilidad
         const medicosPubSnap = await getDocs(collection(db, "medicos_publicos"));
@@ -2017,6 +2027,19 @@ export async function limpiarBaseDeDatos() {
         const dispSnap = await getDocs(collection(db, "disponibilidad"));
         const promesasDisp = dispSnap.docs.map(d => deleteDoc(doc(db, "disponibilidad", d.id)));
         await Promise.all(promesasDisp);
+
+        // Limpiar pacientes de prueba
+        const pacientesSnap = await getDocs(collection(db, "pacientes"));
+        for (let i = 0; i < pacientesSnap.docs.length; i += BATCH_SIZE) {
+            const batch = writeBatch(db);
+            pacientesSnap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
+
+        // Restablecer entorno demo
+        await deleteDoc(doc(db, "configuracion", "entorno")).catch(() => {});
+        const btnReset = document.getElementById('btn-reset-db');
+        if (btnReset) btnReset.classList.add('hidden');
 
         if (barra) barra.style.width = '100%';
         cerrarModal('modal-progreso');
@@ -2647,6 +2670,8 @@ export function autocompletarNachoDemo() {
     }
 }
 
+export { generarTurnosHistoricosDemo };
+
 export async function inyectarDemoCompletaForo() {
     if (!sesionActual || (sesionActual.rol !== 'Administración' && sesionActual.correo?.toLowerCase() !== 'nachohelbas@gmail.com')) {
         mostrarAlerta("Acceso Denegado", "Solo el Administrador General puede ejecutar la inyección del escenario para el Foro.");
@@ -2655,7 +2680,7 @@ export async function inyectarDemoCompletaForo() {
 
     const confirm = await pedirConfirmacion(
         "Preparar Demostración para el Foro",
-        "Esta acción cargará el escenario completo 100% funcional: médicos especialistas, agenda de pacientes para el día de hoy en Recepción y Sala de Espera médica, con historias clínicas de prueba.",
+        "Esta acción cargará el escenario completo 100% funcional para el Foro: catálogo médico, pacientes de hoy en Recepción y Sala de Espera médica, historias clínicas y ~2 meses de histórico de métricas con indicadores realistas.",
         "Sí, Inyectar Escenario 100%"
     );
     if (!confirm) return;
@@ -2881,6 +2906,47 @@ export async function inyectarDemoCompletaForo() {
             }, { merge: true });
         }
 
+        // 3. Crear perfiles demostrativos de personal de Recepción
+        await setDoc(doc(db, "usuarios", "recep_demo_1"), {
+            nombre: "Ana Morales",
+            correo: "ana.recepcion@hospital.demo",
+            rol: "Recepción",
+            activo: true,
+            esDemo: true
+        }, { merge: true });
+
+        await setDoc(doc(db, "usuarios", "recep_demo_2"), {
+            nombre: "Marcos Véliz",
+            correo: "marcos.recepcion@hospital.demo",
+            rol: "Recepción",
+            activo: true,
+            esDemo: true
+        }, { merge: true });
+
+        // 4. Inyectar ~2 meses de histórico de métricas y turnos realistas
+        if (texto) texto.innerText = "Inyectando ~2 meses de métricas y turnos históricos realistas...";
+        if (barra) barra.style.width = '80%';
+
+        const turnosHistoricos = generarTurnosHistoricosDemo(new Date());
+        const BATCH_SIZE = 400;
+        for (let i = 0; i < turnosHistoricos.length; i += BATCH_SIZE) {
+            const batch = writeBatch(db);
+            const chunk = turnosHistoricos.slice(i, i + BATCH_SIZE);
+            chunk.forEach(t => {
+                batch.set(doc(db, "turnos", t.id), t.data, { merge: true });
+            });
+            await batch.commit();
+        }
+
+        // 5. Configurar entorno demo y visibilidad de reseteo
+        await setDoc(doc(db, "configuracion", "entorno"), {
+            esDemo: true,
+            actualizadoEn: serverTimestamp()
+        }, { merge: true });
+
+        const btnReset = document.getElementById('btn-reset-db');
+        if (btnReset) btnReset.classList.remove('hidden');
+
         if (barra) barra.style.width = '100%';
         cerrarModal('modal-progreso');
 
@@ -2892,7 +2958,7 @@ export async function inyectarDemoCompletaForo() {
 
         mostrarExito(
             "Demostración Preparada",
-            "¡Escenario del Foro cargado al 100%! Especialistas disponibles, pacientes en Recepción y Sala de Espera médica de hoy lista para atender."
+            "¡Escenario del Foro cargado al 100%! Especialistas disponibles, pacientes de hoy en Recepción y Consultorio, y ~2 meses de histórico de métricas listos para exponer."
         );
     } catch (err) {
         console.error("Error al inyectar escenario demo:", err);
