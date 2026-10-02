@@ -1,0 +1,13 @@
+{
+  "name": "sistema-turnos-schestakow",
+  "version": "1.0.0",
+  "description": "Prototipo de Sistema de Turnos y Gestión Hospitalaria - Schestakow",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:emulators": "firebase emulators:exec --only firestore \"npm test\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.3"
+  }
+}

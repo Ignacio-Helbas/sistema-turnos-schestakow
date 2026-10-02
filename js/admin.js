@@ -19,6 +19,8 @@ import {
     orderBy,
     limit,
     startAfter,
+    writeBatch,
+    serverTimestamp,
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
@@ -43,6 +45,7 @@ let duracionTurnoGlobal = 15;
 let modulacionPorMedico = {};
 let fechaRecepcionSeleccionada = '';
 let medicoSeleccionadoRecepcion = '';
+let medicoUidSeleccionadoRecepcion = '';
 let especialidadSeleccionadaRecepcion = '';
 let horaSeleccionadaRecepcion = '';
 let pacienteSeleccionadoMedico = null;
@@ -189,8 +192,8 @@ function aplicarPermisosVisuales(sesion) {
         btnLogout.innerText = `Cerrar Sesión (${sesion.nombre || sesion.correo})`;
     }
 
-    // nachohelbas@gmail.com o rol Administración tienen acceso completo a todos los paneles
-    const esSuperAdmin = (sesion.correo === "nachohelbas@gmail.com" || sesion.rol === "Administración");
+    // Rol Administración tiene acceso completo a todos los paneles
+    const esSuperAdmin = (sesion.rol === "Administración");
 
     if (esSuperAdmin) {
         if (btnAdmin) btnAdmin.classList.remove('hidden');
@@ -198,6 +201,7 @@ function aplicarPermisosVisuales(sesion) {
         if (btnDoc) btnDoc.classList.remove('hidden');
         if (btnDummies) btnDummies.classList.remove('hidden');
         if (btnReset) btnReset.classList.remove('hidden');
+        sincronizarMedicosPublicos();
         switchView('admin');
     } else if (sesion.rol === "Médico") {
         if (btnDoc) btnDoc.classList.remove('hidden');
@@ -251,8 +255,9 @@ async function cargarEspecialistasFirebase() {
             const u = documento.data();
             if (u.especialidad && u.nombre && u.activo !== false) {
                 if (!bdMedicosDinamica[u.especialidad]) bdMedicosDinamica[u.especialidad] = [];
-                if (!bdMedicosDinamica[u.especialidad].includes(u.nombre)) {
-                    bdMedicosDinamica[u.especialidad].push(u.nombre);
+                const yaEsta = bdMedicosDinamica[u.especialidad].some(m => m.uid === documento.id);
+                if (!yaEsta) {
+                    bdMedicosDinamica[u.especialidad].push({ uid: documento.id, nombre: u.nombre });
                     if (selectAlcance) selectAlcance.innerHTML += `<option value="${escaparHTML(u.nombre)}">Solo: ${escaparHTML(u.nombre)}</option>`;
                 }
             }
@@ -268,6 +273,32 @@ async function cargarEspecialistasFirebase() {
         }
     } catch (e) {
         console.warn("Error cargando especialistas:", e);
+    }
+}
+
+export async function sincronizarMedicosPublicos() {
+    try {
+        const snap = await getDocs(query(collection(db, "usuarios"), where("rol", "==", "Médico")));
+        const batch = writeBatch(db);
+        let count = 0;
+        snap.forEach(d => {
+            const u = d.data();
+            if (u.activo !== false && u.nombre && u.especialidad) {
+                const pubRef = doc(db, "medicos_publicos", d.id);
+                batch.set(pubRef, {
+                    medicoUid: d.id,
+                    nombre: u.nombre,
+                    especialidad: u.especialidad,
+                    activo: true
+                });
+                count++;
+            }
+        });
+        if (count > 0) {
+            await batch.commit();
+        }
+    } catch (e) {
+        console.warn("Sincronización de médicos públicos omitida:", e);
     }
 }
 
@@ -309,14 +340,17 @@ export function actualizarMedicosRecepcion() {
     selectMed.classList.remove('bg-slate-50', 'text-slate-500');
     let opts = '<option value="">-- Elija un profesional --</option>';
     medicos.forEach(m => {
-        opts += `<option value="${escaparHTML(m)}">${escaparHTML(m)}</option>`;
+        opts += `<option value="${escaparHTML(m.nombre)}" data-uid="${escaparHTML(m.uid)}">${escaparHTML(m.nombre)}</option>`;
     });
     selectMed.innerHTML = opts;
 }
 
 export function buscarAgendaRecepcion() {
     especialidadSeleccionadaRecepcion = document.getElementById('reception-especialidad')?.value;
-    medicoSeleccionadoRecepcion = document.getElementById('reception-medico')?.value;
+    const selectMed = document.getElementById('reception-medico');
+    medicoSeleccionadoRecepcion = selectMed?.value;
+    const selectedOption = selectMed ? selectMed.options[selectMed.selectedIndex] : null;
+    medicoUidSeleccionadoRecepcion = selectedOption ? (selectedOption.getAttribute('data-uid') || '') : '';
     fechaRecepcionSeleccionada = document.getElementById('input-fecha-recepcion')?.value;
 
     if (!especialidadSeleccionadaRecepcion || !medicoSeleccionadoRecepcion || !fechaRecepcionSeleccionada) {
@@ -462,19 +496,37 @@ export async function confirmarTurnoRecepcionFirebase() {
             return;
         }
 
-        await addDoc(collection(db, "turnos"), {
+        const medUid = medicoUidSeleccionadoRecepcion || 'medico_demo';
+        const slotId = `${medUid}_${fechaRecepcionSeleccionada}_${horaSeleccionadaRecepcion.replace(':', '')}`;
+        const slotRef = doc(db, "disponibilidad", slotId);
+        const turnoRef = doc(collection(db, "turnos"));
+
+        const batch = writeBatch(db);
+        batch.set(slotRef, {
+            medicoUid: medUid,
+            fecha: fechaRecepcionSeleccionada,
+            horario: horaSeleccionadaRecepcion,
+            creadoEn: serverTimestamp()
+        });
+
+        batch.set(turnoRef, {
             especialidad: especialidadSeleccionadaRecepcion,
             medico: medicoSeleccionadoRecepcion,
+            medicoUid: medUid,
             fecha: fechaRecepcionSeleccionada,
             horario: horaSeleccionadaRecepcion,
             pacienteNombre: nombre,
             pacienteDni: dni,
             pacienteCelular: celular,
-            pacienteEmail: email,
+            pacienteEmail: email || "",
             canal: "Presencial",
             estado: "Confirmado Presencial",
-            timestamp: new Date()
+            codigoConfirmacion: turnoRef.id,
+            creadoEn: serverTimestamp(),
+            timestamp: serverTimestamp()
         });
+
+        await batch.commit();
 
         cerrarModal('modal-dar-turno');
         mostrarExito("¡Turno Asignado!", "El turno presencial fue registrado.");
@@ -494,9 +546,18 @@ export async function cancelarTurnoRecepcion(idDoc) {
     if (!confirmado) return;
 
     try {
-        await updateDoc(doc(db, "turnos", idDoc), {
-            estado: "Cancelado en Recepción"
+        const snapT = await getDoc(doc(db, "turnos", idDoc));
+        const batch = writeBatch(db);
+        batch.update(doc(db, "turnos", idDoc), {
+            estado: "Cancelado en Recepción",
+            canceladoEn: serverTimestamp()
         });
+        if (snapT.exists()) {
+            const dataT = snapT.data();
+            const slotId = `${dataT.medicoUid || medicoUidSeleccionadoRecepcion}_${dataT.fecha}_${dataT.horario.replace(':', '')}`;
+            batch.delete(doc(db, "disponibilidad", slotId));
+        }
+        await batch.commit();
         mostrarExito("Turno Cancelado", "El turno fue cancelado.");
         generarAgendaRecepcion();
     } catch (error) {
@@ -874,12 +935,23 @@ export async function guardarUsuarioAdminFirebase() {
     };
 
     try {
+        let uidFinal = id;
         if (id) {
             await updateDoc(doc(db, "usuarios", id), payload);
         } else {
-            await addDoc(collection(db, "usuarios"), {
+            const userRef = await addDoc(collection(db, "usuarios"), {
                 ...payload,
-                creadoEn: new Date()
+                creadoEn: serverTimestamp()
+            });
+            uidFinal = userRef.id;
+        }
+
+        if (rol === 'Médico') {
+            await setDoc(doc(db, "medicos_publicos", uidFinal), {
+                medicoUid: uidFinal,
+                nombre: nom,
+                especialidad: esp,
+                activo: true
             });
         }
 
@@ -903,6 +975,7 @@ export async function eliminarUsuarioAdmin(id) {
 
     try {
         await deleteDoc(doc(db, "usuarios", id));
+        await deleteDoc(doc(db, "medicos_publicos", id)).catch(() => {});
         mostrarExito("Usuario Eliminado", "El perfil fue removido del sistema.");
         cargarUsuariosAdmin('init');
         cargarEspecialistasFirebase();
@@ -1102,15 +1175,24 @@ export async function limpiarBaseDeDatos() {
         usuariosSnap.forEach(d => {
             const u = d.data();
             // Preservar la cuenta maestra del administrador
-            if (u.correo !== "nachohelbas@gmail.com" && d.id !== sesionActual?.uid) {
+            if (u.rol !== "Administración" && d.id !== sesionActual?.uid) {
                 promesasUsuarios.push(deleteDoc(doc(db, "usuarios", d.id)));
             }
         });
         await Promise.all(promesasUsuarios);
 
+        // Limpiar catálogo de médicos públicos y slots de disponibilidad
+        const medicosPubSnap = await getDocs(collection(db, "medicos_publicos"));
+        const promesasMedicosPub = medicosPubSnap.docs.map(d => deleteDoc(doc(db, "medicos_publicos", d.id)));
+        await Promise.all(promesasMedicosPub);
+
+        const dispSnap = await getDocs(collection(db, "disponibilidad"));
+        const promesasDisp = dispSnap.docs.map(d => deleteDoc(doc(db, "disponibilidad", d.id)));
+        await Promise.all(promesasDisp);
+
         if (barra) barra.style.width = '100%';
         cerrarModal('modal-progreso');
-        mostrarExito("Reinicio Exitoso", "El sistema ha sido restaurado a su estado de fábrica. Turnos y usuarios de prueba eliminados.");
+        mostrarExito("Reinicio Exitoso", "El sistema ha sido restaurado a su estado de fábrica. Turnos, disponibilidad y médicos demostrativos eliminados.");
 
         cargarUsuariosAdmin('init');
         cargarEspecialistasFirebase();
@@ -1179,7 +1261,13 @@ export async function inyectarMedicosDePrueba() {
         };
 
         try {
-            await addDoc(collection(db, "usuarios"), payload);
+            const userRef = await addDoc(collection(db, "usuarios"), payload);
+            await setDoc(doc(db, "medicos_publicos", userRef.id), {
+                medicoUid: userRef.id,
+                nombre: med.nom,
+                especialidad: med.esp,
+                activo: true
+            });
         } catch (e) {
             console.error("Fallo inyectando a:", med.nom);
         }

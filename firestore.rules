@@ -8,80 +8,173 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
-    
+
     function isStaff() {
       return isSignedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
 
+    function getUserRol() {
+      return request.auth.token.get('rol', 
+        exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) ?
+          get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get('rol', '') : ''
+      );
+    }
+
     function isSuperAdmin() {
-      return isSignedIn() && (
-        request.auth.token.email == 'nachohelbas@gmail.com' ||
-        (request.auth.token.rol != null && request.auth.token.rol == 'Administración') ||
-        (exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'Administración')
-      );
+      return isStaff() && getUserRol() == 'Administración';
     }
-    
-    function isMedico() {
-      return isStaff() && (
-        request.auth.token.rol == 'Médico' ||
-        (exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'Médico')
-      );
-    }
-    
+
     function isRecepcion() {
       return isStaff() && (
-        request.auth.token.rol in ['Recepción', 'Recepcionista', 'Administrativo'] ||
-        (exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol in ['Recepción', 'Recepcionista', 'Administrativo'])
+        getUserRol() in ['Recepción', 'Recepcionista', 'Administrativo', 'Administración']
       );
     }
 
-    // ==========================================
-    // REGLAS POR COLECCIÓN
-    // ==========================================
+    function isMedico() {
+      return isStaff() && getUserRol() == 'Médico';
+    }
 
-    // ------- Perfiles de usuario / Médicos -------
+    // ==========================================
+    // REGLAS: PERFILES DE USUARIOS
+    // ==========================================
     match /usuarios/{uid} {
-      // Lectura pública permitida para que el selector de especialidades y médicos funcione
-      allow read: if true;
-      // Solo el Administrador general puede crear, editar o eliminar usuarios
+      // Sin lectura pública. Solo el propio usuario autenticado o staff administrativo
+      allow get: if isStaff() && (request.auth.uid == uid || isSuperAdmin() || isRecepcion());
+      allow list: if isSuperAdmin() || isRecepcion();
+      // Solo Administración crea, modifica o desactiva perfiles
       allow write: if isSuperAdmin();
     }
 
-    // ------- Turnos -------
-    match /turnos/{turnoId} {
-      // Lectura permitida para staff y para pacientes consultando turnos
+    // ==========================================
+    // REGLAS: MÉDICOS PÚBLICOS
+    // Catálogo público mínimo sin datos personales ni contactos
+    // ==========================================
+    match /medicos_publicos/{medicoUid} {
       allow read: if true;
-      // Creación permitida para pacientes públicos (canal web) y personal de recepción
-      allow create: if true;
-      // Modificación permitida:
-      // - Administrador y Recepción: control total
-      // - Médico: solo puede modificar evolución clínica, motivo y estado
-      // - Paciente: solo puede cancelar su propio turno
-      allow update: if isSuperAdmin() 
-        || isRecepcion() 
-        || (isMedico() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'evolucionMedica', 'motivoConsulta', 'atendidoEn']))
-        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'canceladoEn']);
-      // Eliminación permitida solo para staff administrativo y recepción
-      allow delete: if isSuperAdmin() || isRecepcion();
+      allow write: if isSuperAdmin();
     }
 
-    // ------- Modulación individual por médico -------
+    // ==========================================
+    // REGLAS: TURNOS
+    // ==========================================
+    function isValidTurnoCreate() {
+      let data = request.resource.data;
+      let allowedKeys = [
+        'especialidad', 'medico', 'medicoUid', 'fecha', 'horario',
+        'pacienteNombre', 'pacienteDni', 'pacienteCelular', 'pacienteEmail',
+        'codigoConfirmacion', 'canal', 'estado', 'timestamp', 'creadoEn'
+      ];
+      return data.keys().hasOnly(allowedKeys)
+        && data.especialidad is string && data.especialidad.size() > 0 && data.especialidad.size() <= 100
+        && data.medico is string && data.medico.size() > 0 && data.medico.size() <= 100
+        && data.medicoUid is string && data.medicoUid.size() > 0 && data.medicoUid.size() <= 128
+        && data.fecha is string && data.fecha.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.horario is string && data.horario.matches('^[0-9]{2}:[0-9]{2}$')
+        && data.pacienteNombre is string && data.pacienteNombre.size() >= 2 && data.pacienteNombre.size() <= 100
+        && data.pacienteDni is string && data.pacienteDni.matches('^[0-9]{6,10}$')
+        && data.pacienteCelular is string && data.pacienteCelular.size() >= 6 && data.pacienteCelular.size() <= 25
+        && data.pacienteEmail is string && data.pacienteEmail.size() <= 100
+        && data.codigoConfirmacion is string && data.codigoConfirmacion.size() >= 6 && data.codigoConfirmacion.size() <= 64
+        && data.canal == 'Web'
+        && data.estado == 'Confirmado'
+        && (
+          ('creadoEn' in data && data.creadoEn == request.time) ||
+          ('timestamp' in data && data.timestamp == request.time)
+        );
+    }
+
+    function isValidTurnoStaffCreate() {
+      let data = request.resource.data;
+      let allowedKeys = [
+        'especialidad', 'medico', 'medicoUid', 'fecha', 'horario',
+        'pacienteNombre', 'pacienteDni', 'pacienteCelular', 'pacienteEmail',
+        'codigoConfirmacion', 'canal', 'estado', 'timestamp', 'creadoEn', 'pacienteId'
+      ];
+      return (isSuperAdmin() || isRecepcion())
+        && data.keys().hasOnly(allowedKeys)
+        && data.especialidad is string && data.especialidad.size() > 0 && data.especialidad.size() <= 100
+        && data.medico is string && data.medico.size() > 0 && data.medico.size() <= 100
+        && data.medicoUid is string && data.medicoUid.size() > 0 && data.medicoUid.size() <= 128
+        && data.fecha is string && data.fecha.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.horario is string && data.horario.matches('^[0-9]{2}:[0-9]{2}$')
+        && data.pacienteNombre is string && data.pacienteNombre.size() >= 2 && data.pacienteNombre.size() <= 100
+        && data.pacienteDni is string && data.pacienteDni.matches('^[0-9]{6,10}$')
+        && data.pacienteCelular is string && data.pacienteCelular.size() >= 6 && data.pacienteCelular.size() <= 25
+        && data.canal in ['Presencial', 'Telefónico', 'Web']
+        && data.estado in ['Confirmado', 'Confirmado Presencial'];
+    }
+
+    match /turnos/{turnoId} {
+      // LECTURA:
+      // - Sin list público. Staff con rol puede listar según su incumbencia.
+      // - Paciente público solo puede acceder con get directo si posee el ID largo e impredecible (>= 16 caracteres).
+      allow get: if isSuperAdmin()
+        || isRecepcion()
+        || (isMedico() && resource.data.medicoUid == request.auth.uid)
+        || (!isSignedIn() && turnoId.size() >= 16);
+
+      allow list: if isSuperAdmin()
+        || isRecepcion()
+        || (isMedico() && resource.data.medicoUid == request.auth.uid);
+
+      // CREACIÓN:
+      // - Pública: sujeta a esquema estricto y ID largo e impredecible (>= 16 caracteres)
+      // - Staff: sujeta a esquema administrativo
+      allow create: if (turnoId.size() >= 16 && isValidTurnoCreate())
+        || isValidTurnoStaffCreate();
+
+      // MODIFICACIÓN:
+      // - SuperAdmin y Recepción: gestión administrativa y asignación de pacienteId
+      // - Médico: solo en sus propios turnos para actualización de estado operativo ('En Consultorio', 'Atendido', 'Ausente')
+      // - Paciente: solo puede cancelar su propio turno pasando de 'Confirmado' a 'Cancelado por Paciente'
+      allow update: if isSuperAdmin()
+        || isRecepcion()
+        || (
+          isMedico()
+          && resource.data.medicoUid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'atendidoEn'])
+        )
+        || (
+          !isSignedIn()
+          && turnoId.size() >= 16
+          && resource.data.estado == 'Confirmado'
+          && request.resource.data.estado == 'Cancelado por Paciente'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'canceladoEn'])
+          && request.resource.data.canceladoEn == request.time
+        );
+
+      // ELIMINACIÓN:
+      // - Exclusiva para Administración
+      allow delete: if isSuperAdmin();
+    }
+
+    // ==========================================
+    // REGLAS: DISPONIBILIDAD (Slots deterministas anti doble-reserva)
+    // ==========================================
+    match /disponibilidad/{slotId} {
+      allow read: if true;
+      allow create: if !exists(/databases/$(database)/documents/disponibilidad/$(slotId))
+        && request.resource.data.keys().hasOnly(['medicoUid', 'fecha', 'horario', 'creadoEn'])
+        && request.resource.data.creadoEn == request.time;
+      allow delete: if isSuperAdmin() || isRecepcion()
+        || (!isSignedIn() && request.time != null);
+    }
+
+    // ==========================================
+    // REGLAS: CONFIGURACIÓN Y MODULACIÓN
+    // ==========================================
     match /modulacion_medicos/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
 
-    // ------- Configuración / Modulación General -------
     match /configuracion/{docId} {
-      allow read: if true; 
+      allow read: if true;
       allow write: if isSuperAdmin();
     }
 
     // ==========================================
-    // CIERRE POR DEFECTO
+    // CIERRE POR DEFECTO TOTAL
     // ==========================================
     match /{document=**} {
       allow read, write: if false;

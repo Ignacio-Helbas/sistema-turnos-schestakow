@@ -1,6 +1,6 @@
 // ==========================================
 // MÓDULO PÚBLICO: RESERVA Y GESTIÓN DE PACIENTES
-// Operación directa en Firestore (Plan Gratuito Spark)
+// Operación segura y directa en Firestore (Plan Spark)
 // ==========================================
 
 import {
@@ -11,8 +11,10 @@ import {
     getDocs,
     doc,
     getDoc,
-    addDoc,
-    updateDoc
+    setDoc,
+    deleteDoc,
+    writeBatch,
+    serverTimestamp
 } from "./firebase-config.js";
 
 import {
@@ -34,7 +36,7 @@ let duracionTurnoGlobal = 15;
 let modulacionPorMedico = {};
 let turnoEncontradoActivo = null;
 
-// Exponer funciones necesarias a window
+// Exponer funciones necesarias para interacción del DOM
 window.abrirModal = abrirModal;
 window.cerrarModal = cerrarModal;
 window.validarDiaHabil = validarDiaHabil;
@@ -45,26 +47,48 @@ window.confirmarTurnoFirebase = confirmarTurnoFirebase;
 window.buscarTurnosPaciente = buscarTurnosPaciente;
 window.cancelarTurnoFirebase = cancelarTurnoFirebase;
 
-function generarCodigoConfirmacion() {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let code = "";
-    for (let i = 0; i < 8; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
+/**
+ * Genera un identificador largo criptográficamente impredecible (>= 20 caracteres)
+ * para acceso por token-bearer seguro de los pacientes sin requerir listado de colección.
+ */
+function generarIdLargoCripto(longitud = 20) {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+    const array = new Uint8Array(longitud);
+    window.crypto.getRandomValues(array);
+    let resultado = "";
+    for (let i = 0; i < longitud; i++) {
+        resultado += chars[array[i] % chars.length];
     }
-    return code;
+    return resultado;
 }
 
+/**
+ * Carga el catálogo público de profesionales desde medicos_publicos
+ * Si la colección aún no tiene registros (primera ejecución), consulta usuarios como fallback.
+ */
 export async function cargarEspecialistasPublico() {
     try {
-        const snap = await getDocs(query(collection(db, "usuarios"), where("rol", "==", "Médico")));
+        let snap = await getDocs(query(collection(db, "medicos_publicos"), where("activo", "==", true)));
+        
+        // Fallback defensivo si la proyección pública aún no fue sincronizada
+        if (snap.empty) {
+            try {
+                snap = await getDocs(query(collection(db, "usuarios"), where("rol", "==", "Médico")));
+            } catch (errFallback) {
+                // usuarios cerrado por reglas: comportamiento esperado en producción
+            }
+        }
+
         bdMedicosDinamica = {};
 
         snap.forEach((documento) => {
             const u = documento.data();
+            const uid = u.medicoUid || documento.id;
             if (u.especialidad && u.nombre && u.activo !== false) {
                 if (!bdMedicosDinamica[u.especialidad]) bdMedicosDinamica[u.especialidad] = [];
-                if (!bdMedicosDinamica[u.especialidad].includes(u.nombre)) {
-                    bdMedicosDinamica[u.especialidad].push(u.nombre);
+                const yaEsta = bdMedicosDinamica[u.especialidad].some(m => m.uid === uid);
+                if (!yaEsta) {
+                    bdMedicosDinamica[u.especialidad].push({ uid, nombre: u.nombre });
                 }
             }
         });
@@ -81,8 +105,9 @@ export async function cargarEspecialistasPublico() {
         for (const [categoria, subespecialidades] of Object.entries(categoriasBase)) {
             opcionesHtml += `<optgroup label="${categoria}">`;
             subespecialidades.forEach(esp => {
-                const tieneMedicos = bdMedicosDinamica[esp] && bdMedicosDinamica[esp].length > 0;
-                opcionesHtml += `<option value="${esp}">${esp} ${tieneMedicos ? `(${bdMedicosDinamica[esp].length})` : '(Sin agenda)'}</option>`;
+                const medicosList = bdMedicosDinamica[esp] || [];
+                const tieneMedicos = medicosList.length > 0;
+                opcionesHtml += `<option value="${esp}">${esp} ${tieneMedicos ? `(${medicosList.length})` : '(Sin agenda)'}</option>`;
             });
             opcionesHtml += `</optgroup>`;
         }
@@ -137,15 +162,16 @@ export function actualizarMedicosPublico() {
     selectMed.classList.remove('bg-slate-50', 'text-slate-500');
     let opts = '<option value="">-- Elija un médico --</option>';
     medicos.forEach(m => {
-        opts += `<option value="${escaparHTML(m)}">${escaparHTML(m)}</option>`;
+        opts += `<option value="${escaparHTML(m.nombre)}" data-uid="${escaparHTML(m.uid)}">${escaparHTML(m.nombre)}</option>`;
     });
     selectMed.innerHTML = opts;
     generarHorariosPublicos();
 }
 
 export async function generarHorariosPublicos() {
-    const med = document.getElementById('select-medico').value;
-    const fec = document.getElementById('input-fecha-paciente').value;
+    const selectMed = document.getElementById('select-medico');
+    const med = selectMed?.value;
+    const fec = document.getElementById('input-fecha-paciente')?.value;
     const container = document.getElementById('horarios-publicos');
 
     if (!container) return;
@@ -155,24 +181,28 @@ export async function generarHorariosPublicos() {
         return;
     }
 
+    const selectedOption = selectMed.options[selectMed.selectedIndex];
+    const medicoUid = selectedOption ? selectedOption.getAttribute('data-uid') : '';
+
     container.innerHTML = '<p class="text-sm text-slate-400 col-span-2 sm:col-span-3 text-center">Consultando disponibilidad en vivo...</p>';
 
     let turnosOcupados = {};
     try {
-        const q = query(
-            collection(db, "turnos"),
-            where("medico", "==", med),
-            where("fecha", "==", fec)
-        );
-        const snap = await getDocs(q);
-        snap.forEach(d => {
-            const data = d.data();
-            if (!data.estado || !data.estado.toLowerCase().includes("cancelado")) {
-                turnosOcupados[data.horario] = true;
-            }
-        });
+        // Consultar la colección pública y anónima de slots ocupados
+        if (medicoUid) {
+            const qDisp = query(
+                collection(db, "disponibilidad"),
+                where("medicoUid", "==", medicoUid),
+                where("fecha", "==", fec)
+            );
+            const snapDisp = await getDocs(qDisp);
+            snapDisp.forEach(d => {
+                const data = d.data();
+                if (data.horario) turnosOcupados[data.horario] = true;
+            });
+        }
     } catch (e) {
-        console.warn("Fallo lectura de turnos en vivo:", e);
+        console.warn("Fallo lectura de disponibilidad:", e);
     }
 
     const duracionActual = modulacionPorMedico[med] || duracionTurnoGlobal;
@@ -219,7 +249,8 @@ export function seleccionarHorario(btnClickeado) {
 
 export async function confirmarTurnoFirebase() {
     const esp = document.getElementById('select-especialidad').value;
-    const med = document.getElementById('select-medico').value;
+    const selectMed = document.getElementById('select-medico');
+    const med = selectMed ? selectMed.value : '';
     const fec = document.getElementById('input-fecha-paciente').value;
     const btn = document.querySelector('.btn-horario.bg-blue-800');
     const hor = btn ? btn.innerText.replace(' (Ocupado)', '').replace(' (Cerrado)', '').trim() : '';
@@ -249,49 +280,59 @@ export async function confirmarTurnoFirebase() {
         return;
     }
 
-    try {
-        // Chequeo de duplicados en tiempo real antes de guardar
-        const qExistente = query(
-            collection(db, "turnos"),
-            where("medico", "==", med),
-            where("fecha", "==", fec),
-            where("horario", "==", hor)
-        );
-        const snapExistente = await getDocs(qExistente);
-        const yaOcupado = snapExistente.docs.some(d => {
-            const st = d.data().estado;
-            return !st || !st.toLowerCase().includes("cancelado");
-        });
+    const selectedOption = selectMed.options[selectMed.selectedIndex];
+    const medicoUid = selectedOption ? (selectedOption.getAttribute('data-uid') || 'medico_demo') : 'medico_demo';
 
-        if (yaOcupado) {
+    try {
+        const slotId = `${medicoUid}_${fec}_${hor.replace(':', '')}`;
+        const slotRef = doc(db, "disponibilidad", slotId);
+
+        // Verificación previa del slot determinista
+        const slotSnap = await getDoc(slotRef);
+        if (slotSnap.exists()) {
             mostrarAlerta("Horario No Disponible", "El horario seleccionado ya fue reservado. Por favor elija otro.");
             generarHorariosPublicos();
             return;
         }
 
-        const codigo = generarCodigoConfirmacion();
+        // Generar identificador de documento impredecible (20 caracteres criptográficos)
+        const turnoId = generarIdLargoCripto(20);
+        const turnoRef = doc(db, "turnos", turnoId);
 
-        await addDoc(collection(db, "turnos"), {
+        // Escritura atómica en lote: Slot determinista + Turno detallado
+        const batch = writeBatch(db);
+
+        batch.set(slotRef, {
+            medicoUid: medicoUid,
+            fecha: fec,
+            horario: hor,
+            creadoEn: serverTimestamp()
+        });
+
+        batch.set(turnoRef, {
             especialidad: esp,
             medico: med,
+            medicoUid: medicoUid,
             fecha: fec,
             horario: hor,
             pacienteNombre: nom,
             pacienteDni: dni,
             pacienteCelular: cel,
             pacienteEmail: email || "",
-            codigoConfirmacion: codigo,
+            codigoConfirmacion: turnoId,
             canal: "Web",
             estado: "Confirmado",
-            timestamp: new Date()
+            creadoEn: serverTimestamp()
         });
+
+        await batch.commit();
 
         enviarCorreoNotificacion(EMAILJS_TEMPLATE_CONFIRMACION, {
             nombre_paciente: nom, medico: med, especialidad: esp, fecha: fec, hora: hor,
-            email_destino: email, codigo_confirmacion: codigo
+            email_destino: email, codigo_confirmacion: turnoId
         });
 
-        mostrarExito("¡Turno Confirmado!", `Tu código de confirmación es ${codigo}. Guardalo: lo vas a necesitar para cancelar o consultar este turno. También te lo enviamos por email.`);
+        mostrarExito("¡Turno Confirmado!", `Tu código secreto de consulta y cancelación es: ${turnoId}. Guardalo para gestionar tu turno.`);
 
         document.getElementById('paciente-nombre').value = '';
         document.getElementById('paciente-dni').value = '';
@@ -309,39 +350,59 @@ export async function confirmarTurnoFirebase() {
     }
 }
 
+/**
+ * Consulta un turno mediante get directo por su ID de documento impredecible,
+ * evitando enumeraciones o queries públicas de listado en Firestore.
+ */
 export async function buscarTurnosPaciente() {
     const dni = document.getElementById('input-buscar-dni').value.trim();
-    const codigo = document.getElementById('input-buscar-codigo').value.trim().toUpperCase();
+    const codigo = document.getElementById('input-buscar-codigo').value.trim();
     const res = document.getElementById('resultado-turnos-paciente');
 
     if (!dni || !codigo) {
-        mostrarAlerta("Dato Faltante", "Ingresá tu DNI y el código de confirmación.");
+        mostrarAlerta("Dato Faltante", "Ingresá tu DNI y el código de confirmación del turno.");
         return;
     }
 
     try {
-        const q = query(
-            collection(db, "turnos"),
-            where("pacienteDni", "==", dni),
-            where("codigoConfirmacion", "==", codigo)
-        );
-        const snap = await getDocs(q);
+        const snap = await getDoc(doc(db, "turnos", codigo));
 
-        if (snap.empty) {
-            res.innerHTML = '<p class="text-sm text-red-600 font-semibold text-center mt-4">No encontramos ningún turno con ese DNI y código.</p>';
+        if (!snap.exists()) {
+            res.innerHTML = '<p class="text-sm text-red-600 font-semibold text-center mt-4">No encontramos ningún turno con ese identificador.</p>';
             res.classList.remove('hidden');
             return;
         }
 
-        const docTurno = snap.docs[0];
-        const t = docTurno.data();
-        turnoEncontradoActivo = { id: docTurno.id, ...t };
+        const t = snap.data();
+        if (t.pacienteDni !== dni) {
+            res.innerHTML = '<p class="text-sm text-red-600 font-semibold text-center mt-4">El DNI ingresado no coincide con el turno registrado.</p>';
+            res.classList.remove('hidden');
+            return;
+        }
+
+        turnoEncontradoActivo = { id: snap.id, ...t };
 
         const cancelado = t.estado && t.estado.includes("Cancelado");
         const badge = cancelado ? `<span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${escaparHTML(t.estado)}</span>` : '';
-        const btn = cancelado || t.estado === "Atendido" || t.estado === "Ausente" ? '' : `<button onclick="cancelarTurnoFirebase('${docTurno.id}')" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>`;
-        res.innerHTML = `<div class="bg-slate-50 border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2"><div class="w-full"><p class="font-bold text-sm text-blue-900">${escaparHTML(t.especialidad)} - ${escaparHTML(t.medico)}</p><p class="text-xs text-slate-600 mt-1">${escaparHTML(t.fecha)} - ${escaparHTML(t.horario)} hs ${badge}</p></div>${btn}</div>`;
+        const btnHtml = cancelado || t.estado === "Atendido" || t.estado === "Ausente" ? '' : `<button id="btn-cancelar-turno-paciente" class="text-xs bg-white text-red-700 px-3 py-2 rounded font-bold border hover:bg-red-50 transition">Cancelar</button>`;
+
+        res.innerHTML = `
+            <div class="bg-slate-50 border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
+                <div class="w-full">
+                    <p class="font-bold text-sm text-blue-900">${escaparHTML(t.especialidad)} - ${escaparHTML(t.medico)}</p>
+                    <p class="text-xs text-slate-600 mt-1">${escaparHTML(t.fecha)} - ${escaparHTML(t.horario)} hs ${badge}</p>
+                </div>
+                ${btnHtml}
+            </div>
+        `;
         res.classList.remove('hidden');
+
+        const btnCancelar = document.getElementById('btn-cancelar-turno-paciente');
+        if (btnCancelar) {
+            btnCancelar.addEventListener('click', () => {
+                cancelarTurnoFirebase(snap.id);
+            });
+        }
     } catch (error) {
         console.error(error);
         res.innerHTML = '<p class="text-sm text-red-600 font-semibold text-center mt-4">Error al buscar el turno.</p>';
@@ -354,9 +415,20 @@ export async function cancelarTurnoFirebase(id) {
     if (!confirmado) return;
 
     try {
-        await updateDoc(doc(db, "turnos", id), {
-            estado: "Cancelado por Paciente"
+        const batch = writeBatch(db);
+        const turnoRef = doc(db, "turnos", id);
+
+        batch.update(turnoRef, {
+            estado: "Cancelado por Paciente",
+            canceladoEn: serverTimestamp()
         });
+
+        if (turnoEncontradoActivo && turnoEncontradoActivo.medicoUid && turnoEncontradoActivo.fecha && turnoEncontradoActivo.horario) {
+            const slotId = `${turnoEncontradoActivo.medicoUid}_${turnoEncontradoActivo.fecha}_${turnoEncontradoActivo.horario.replace(':', '')}`;
+            batch.delete(doc(db, "disponibilidad", slotId));
+        }
+
+        await batch.commit();
 
         if (turnoEncontradoActivo) {
             enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
@@ -378,7 +450,7 @@ export async function cancelarTurnoFirebase(id) {
     }
 }
 
-// Inicialización automática
+// Inicialización automática al cargar el DOM
 document.addEventListener("DOMContentLoaded", async () => {
     establecerLimitesFecha(['input-fecha-paciente']);
     await cargarEspecialistasPublico();
