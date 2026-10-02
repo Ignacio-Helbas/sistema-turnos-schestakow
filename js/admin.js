@@ -68,6 +68,7 @@ window.generarAgendaRecepcion = generarAgendaRecepcion;
 window.abrirModalDarTurno = abrirModalDarTurno;
 window.confirmarTurnoRecepcionFirebase = confirmarTurnoRecepcionFirebase;
 window.cancelarTurnoRecepcion = cancelarTurnoRecepcion;
+window.registrarLlegadaRecepcion = registrarLlegadaRecepcion;
 window.ejecutarAusenciaEmergencia = ejecutarAusenciaEmergencia;
 window.descargarExcelRecepcion = descargarExcelRecepcion;
 window.simularAutocompletado = simularAutocompletado;
@@ -541,6 +542,7 @@ export async function generarAgendaRecepcion() {
         if (turno) {
             let badgeColor = "bg-blue-100 text-blue-800";
             if (turno.estado === "Atendido") badgeColor = "bg-emerald-100 text-emerald-800";
+            else if (turno.estado === "En Espera") badgeColor = "bg-teal-100 text-teal-800";
             else if (turno.estado && turno.estado.includes("Cancelado")) badgeColor = "bg-red-100 text-red-800";
             else if (turno.estado === "Ausente") badgeColor = "bg-amber-100 text-amber-800";
 
@@ -555,8 +557,12 @@ export async function generarAgendaRecepcion() {
                     <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${badgeColor}">${escaparHTML(turno.estado)}</span></td>
                     <td class="p-3">
                         ${turno.estado === "Confirmado" || turno.estado === "Confirmado Presencial" ? `
+                            <button onclick="registrarLlegadaRecepcion('${turno.idDoc}')" class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded hover:bg-emerald-100 font-bold transition mr-1">Registrar llegada</button>
                             <button onclick="cancelarTurnoRecepcion('${turno.idDoc}')" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded hover:bg-red-100 font-bold transition">Liberar</button>
-                        ` : ''}
+                        ` : (turno.estado === "En Espera" ? `
+                            <span class="text-[11px] font-bold text-teal-700 bg-teal-50 px-2 py-1 rounded border border-teal-200 inline-block mr-1">En Sala</span>
+                            <button onclick="cancelarTurnoRecepcion('${turno.idDoc}')" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded hover:bg-red-100 font-bold transition">Liberar</button>
+                        ` : '')}
                     </td>
                 </tr>
             `;
@@ -579,6 +585,20 @@ export async function generarAgendaRecepcion() {
     }
 
     tbody.innerHTML = filas;
+}
+
+export async function registrarLlegadaRecepcion(idDoc) {
+    try {
+        await updateDoc(doc(db, "turnos", idDoc), {
+            estado: "En Espera",
+            llegadaEn: serverTimestamp()
+        });
+        mostrarExito("Llegada Registrada", "El paciente fue ingresado en la Sala de Espera.");
+        generarAgendaRecepcion();
+    } catch (e) {
+        console.error("Error al registrar llegada:", e);
+        mostrarAlerta("Error", "No se pudo registrar la llegada del paciente.");
+    }
 }
 
 export function abrirModalDarTurno(hora) {
@@ -657,6 +677,13 @@ export async function confirmarTurnoRecepcionFirebase() {
             estado: "Confirmado Presencial",
             codigoConfirmacion: turnoRef.id,
             creadoEn: serverTimestamp(),
+            creadoPor: sesionActual?.uid || null,
+            llegadaEn: null,
+            inicioConsultaEn: null,
+            finConsultaEn: null,
+            canceladoPor: null,
+            canceladoEn: null,
+            reprogramadoDe: null,
             timestamp: serverTimestamp()
         });
 
@@ -684,7 +711,8 @@ export async function cancelarTurnoRecepcion(idDoc) {
         const batch = writeBatch(db);
         batch.update(doc(db, "turnos", idDoc), {
             estado: "Cancelado en Recepción",
-            canceladoEn: serverTimestamp()
+            canceladoEn: serverTimestamp(),
+            canceladoPor: "recepcion"
         });
         if (snapT.exists()) {
             const dataT = snapT.data();
@@ -724,7 +752,11 @@ export async function ejecutarAusenciaEmergencia() {
             if (t.medico === medicoSeleccionadoRecepcion && (!t.estado || !t.estado.includes("Cancelado"))) {
                 let cancelar = (alcance === 'todo_dia') || (alcance === 'desde_hora' && t.horario >= horaDesde);
                 if (cancelar) {
-                    promesas.push(updateDoc(doc(db, "turnos", documento.id), { estado: "Cancelado: " + motivo }));
+                    promesas.push(updateDoc(doc(db, "turnos", documento.id), {
+                        estado: "Cancelado: " + motivo,
+                        canceladoEn: serverTimestamp(),
+                        canceladoPor: "recepcion"
+                    }));
                     turnosCancelados++;
                 }
             }
@@ -1227,6 +1259,7 @@ export async function guardarConsultaInmutable() {
             batch.update(turnoRef, {
                 estado: "Atendido",
                 atendidoEn: serverTimestamp(),
+                finConsultaEn: serverTimestamp(),
                 pacienteId: pacienteActivoHC.id
             });
         }
@@ -1539,10 +1572,14 @@ export async function llamarPaciente(idDoc) {
 
             await updateDoc(doc(db, "turnos", idDoc), {
                 estado: "En Consultorio",
+                inicioConsultaEn: serverTimestamp(),
                 pacienteId: pacienteId
             });
         } else {
-            await updateDoc(doc(db, "turnos", idDoc), { estado: "En Consultorio" });
+            await updateDoc(doc(db, "turnos", idDoc), {
+                estado: "En Consultorio",
+                inicioConsultaEn: serverTimestamp()
+            });
         }
 
         if (sesionActual && pacienteId) {
@@ -1569,7 +1606,11 @@ export async function marcarAusente(idDoc) {
     if (!ok) return;
 
     try {
-        await updateDoc(doc(db, "turnos", idDoc), { estado: "Ausente" });
+        await updateDoc(doc(db, "turnos", idDoc), {
+            estado: "Ausente",
+            canceladoPor: "medico",
+            canceladoEn: serverTimestamp()
+        });
         cargarAgendaMedico();
     } catch (e) {
         console.error(e);
@@ -2487,6 +2528,13 @@ export async function guardarProximaConsultaMedico() {
             motivoCitacion: motivo,
             modoHorario: esExacto ? "exacto" : "paciente",
             creadoEn: serverTimestamp(),
+            creadoPor: sesionActual?.uid || null,
+            llegadaEn: null,
+            inicioConsultaEn: null,
+            finConsultaEn: null,
+            canceladoPor: null,
+            canceladoEn: null,
+            reprogramadoDe: null,
             timestamp: serverTimestamp()
         };
 
@@ -2856,6 +2904,18 @@ export async function inyectarDemoCompletaForo() {
                 }, { merge: true });
             }
 
+            // Timestamps para el flujo del foro
+            let llegadaEn = null;
+            let inicioConsultaEn = null;
+            let finConsultaEn = null;
+            if (p.estado === "En Espera") {
+                llegadaEn = serverTimestamp();
+            } else if (p.estado === "Atendido") {
+                llegadaEn = serverTimestamp();
+                inicioConsultaEn = serverTimestamp();
+                finConsultaEn = serverTimestamp();
+            }
+
             // Turno del Día
             await setDoc(doc(db, "turnos", turnoId), {
                 especialidad: p.especialidad,
@@ -2872,6 +2932,13 @@ export async function inyectarDemoCompletaForo() {
                 estado: p.estado,
                 pacienteId: pacienteId,
                 creadoEn: serverTimestamp(),
+                creadoPor: sesionActual?.uid || "admin",
+                llegadaEn: llegadaEn,
+                inicioConsultaEn: inicioConsultaEn,
+                finConsultaEn: finConsultaEn,
+                canceladoPor: null,
+                canceladoEn: null,
+                reprogramadoDe: null,
                 timestamp: serverTimestamp()
             }, { merge: true });
         }

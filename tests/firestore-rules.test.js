@@ -66,6 +66,18 @@ test('Matriz de Seguridad de Reglas de Firestore', async (t) => {
             'Solo SuperAdmin debe poder listar /usuarios');
         assert.match(usuariosBlock, /allow write:\s*if\s*isSuperAdmin\(\);/,
             'Solo SuperAdmin debe poder escribir /usuarios');
+
+        // 9. Turnos: Inmutabilidad estricta de creadoEn y creadoPor en actualización
+        assert.match(rulesContent, /!request\.resource\.data\.diff\(resource\.data\)\.affectedKeys\(\)\.hasAny\(\['creadoEn',\s*'creadoPor'\]\)/,
+            'Nadie debe poder modificar creadoEn ni creadoPor después de creado el turno');
+
+        // 10. Turnos: Recepción solo puede escribir llegadaEn / canceladoPor / estado / agenda
+        const turnosBlockMatch = rulesContent.match(/match \/turnos\/\{turnoId\}\s*\{([\s\S]+?)\n\s*allow delete:/);
+        assert.ok(turnosBlockMatch, 'Debe existir la regla match /turnos/{turnoId}');
+        const turnosBlock = turnosBlockMatch[1];
+        assert.match(turnosBlock, /llegadaEn/, 'Recepción debe tener permitido registrar llegadaEn');
+        assert.match(turnosBlock, /inicioConsultaEn/, 'Médico debe tener permitido registrar inicioConsultaEn');
+        assert.match(turnosBlock, /finConsultaEn/, 'Médico debe tener permitido registrar finConsultaEn');
     });
 
     // Si está disponible el emulador en vivo, se ejecutan las pruebas de integración

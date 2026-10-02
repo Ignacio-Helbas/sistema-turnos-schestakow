@@ -325,7 +325,14 @@ export async function confirmarTurnoFirebase() {
             codigoConfirmacion: turnoId,
             canal: "Web",
             estado: "Confirmado",
-            creadoEn: serverTimestamp()
+            creadoEn: serverTimestamp(),
+            creadoPor: null,
+            llegadaEn: null,
+            inicioConsultaEn: null,
+            finConsultaEn: null,
+            canceladoPor: null,
+            canceladoEn: null,
+            reprogramadoDe: null
         });
 
         await batch.commit();
@@ -647,7 +654,8 @@ export async function cancelarTurnoFirebase(id) {
 
         batch.update(turnoRef, {
             estado: "Cancelado por Paciente",
-            canceladoEn: serverTimestamp()
+            canceladoEn: serverTimestamp(),
+            canceladoPor: "paciente"
         });
 
         if (turnoEncontradoActivo && turnoEncontradoActivo.medicoUid && turnoEncontradoActivo.fecha && turnoEncontradoActivo.horario) {

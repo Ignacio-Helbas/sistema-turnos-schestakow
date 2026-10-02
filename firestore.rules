@@ -64,7 +64,9 @@ service cloud.firestore {
       let allowedKeys = [
         'especialidad', 'medico', 'medicoUid', 'fecha', 'horario',
         'pacienteNombre', 'pacienteDni', 'pacienteCelular', 'pacienteEmail',
-        'codigoConfirmacion', 'canal', 'estado', 'timestamp', 'creadoEn'
+        'codigoConfirmacion', 'canal', 'estado', 'timestamp', 'creadoEn',
+        'creadoPor', 'llegadaEn', 'inicioConsultaEn', 'finConsultaEn',
+        'canceladoPor', 'canceladoEn', 'reprogramadoDe'
       ];
       return data.keys().hasOnly(allowedKeys)
         && data.especialidad is string && data.especialidad.size() > 0 && data.especialidad.size() <= 100
@@ -79,6 +81,7 @@ service cloud.firestore {
         && data.codigoConfirmacion is string && data.codigoConfirmacion.size() >= 6 && data.codigoConfirmacion.size() <= 64
         && data.canal == 'Web'
         && data.estado == 'Confirmado'
+        && (!('creadoPor' in data) || data.creadoPor == null)
         && (
           ('creadoEn' in data && data.creadoEn == request.time) ||
           ('timestamp' in data && data.timestamp == request.time)
@@ -91,7 +94,8 @@ service cloud.firestore {
         'especialidad', 'medico', 'medicoUid', 'fecha', 'horario',
         'pacienteNombre', 'pacienteDni', 'pacienteCelular', 'pacienteEmail',
         'codigoConfirmacion', 'canal', 'estado', 'timestamp', 'creadoEn', 'pacienteId',
-        'motivoCitacion', 'modoHorario'
+        'motivoCitacion', 'modoHorario', 'creadoPor', 'llegadaEn', 'inicioConsultaEn',
+        'finConsultaEn', 'canceladoPor', 'canceladoEn', 'reprogramadoDe', 'esDemo', 'demo'
       ];
       return (isSuperAdmin() || isRecepcion() || isMedico())
         && data.keys().hasOnly(allowedKeys)
@@ -125,28 +129,42 @@ service cloud.firestore {
 
       // En turnos solo se gestionan estados operativos y vinculación a pacienteId.
       // Toda evolución médica fue desacoplada a pacientes/{pacienteId}/consultas/
-      allow update: if isSuperAdmin()
-        || isRecepcion()
-        || (
-          isMedico()
-          && resource.data.medicoUid == request.auth.uid
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'atendidoEn', 'pacienteId', 'horario', 'fecha'])
-        )
-        || (
-          !isSignedIn()
-          && turnoId.size() >= 16
-          && resource.data.estado == 'Pendiente de Horario'
-          && request.resource.data.estado == 'Confirmado'
-          && request.resource.data.horario.matches('^[0-9]{2}:[0-9]{2}$')
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['horario', 'estado', 'confirmadoEn', 'codigoConfirmacion', 'timestamp'])
-        )
-        || (
-          !isSignedIn()
-          && turnoId.size() >= 16
-          && resource.data.estado in ['Confirmado', 'Pendiente de Horario']
-          && request.resource.data.estado == 'Cancelado por Paciente'
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'canceladoEn'])
-          && request.resource.data.canceladoEn == request.time
+      // Regla Fase 1: Nadie puede modificar creadoEn ni creadoPor después de creado.
+      allow update: if !request.resource.data.diff(resource.data).affectedKeys().hasAny(['creadoEn', 'creadoPor'])
+        && (
+          isSuperAdmin()
+          || (
+            isRecepcion()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'estado', 'horario', 'fecha', 'pacienteId', 'llegadaEn', 'canceladoPor', 'canceladoEn', 'reprogramadoDe'
+            ])
+            && (!('canceladoPor' in request.resource.data) || request.resource.data.canceladoPor in ['recepcion', 'paciente', null])
+          )
+          || (
+            isMedico()
+            && resource.data.medicoUid == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'estado', 'atendidoEn', 'pacienteId', 'horario', 'fecha', 'inicioConsultaEn', 'finConsultaEn', 'canceladoPor', 'canceladoEn'
+            ])
+            && (!('canceladoPor' in request.resource.data) || request.resource.data.canceladoPor in ['medico', null])
+          )
+          || (
+            !isSignedIn()
+            && turnoId.size() >= 16
+            && resource.data.estado == 'Pendiente de Horario'
+            && request.resource.data.estado == 'Confirmado'
+            && request.resource.data.horario.matches('^[0-9]{2}:[0-9]{2}$')
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['horario', 'estado', 'confirmadoEn', 'codigoConfirmacion', 'timestamp'])
+          )
+          || (
+            !isSignedIn()
+            && turnoId.size() >= 16
+            && resource.data.estado in ['Confirmado', 'Pendiente de Horario']
+            && request.resource.data.estado == 'Cancelado por Paciente'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'canceladoEn', 'canceladoPor'])
+            && request.resource.data.canceladoEn == request.time
+            && request.resource.data.canceladoPor == 'paciente'
+          )
         );
 
       allow delete: if isSuperAdmin();
