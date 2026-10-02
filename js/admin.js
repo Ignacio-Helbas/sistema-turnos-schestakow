@@ -2063,6 +2063,32 @@ function inicializarEventosHC() {
     if (btnConfirmarRect) {
         btnConfirmarRect.addEventListener('click', () => guardarRectificacionInmutable());
     }
+
+    // Soporte para inicio de sesión en panel.html
+    const inputLoginUser = document.getElementById('login-user');
+    if (inputLoginUser) {
+        inputLoginUser.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                iniciarSesionReal();
+            }
+        });
+    }
+
+    const inputLoginPass = document.getElementById('login-pass');
+    if (inputLoginPass) {
+        inputLoginPass.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                iniciarSesionReal();
+            }
+        });
+    }
+
+    const btnLogin = document.getElementById('btn-login');
+    if (btnLogin) {
+        btnLogin.addEventListener('click', () => iniciarSesionReal());
+    }
 }
 
 if (document.readyState === 'loading') {
