@@ -254,7 +254,6 @@ function aplicarPermisosVisuales(sesion) {
     } else if (sesion.rol === "Administración") {
         if (btnAdmin) btnAdmin.classList.remove('hidden');
         if (btnDummies) btnDummies.classList.remove('hidden');
-        if (btnDemoForo) btnDemoForo.classList.remove('hidden');
 
         verificarEntornoDemo().then(esDemo => {
             if (btnReset) {
