@@ -22,6 +22,7 @@ import {
     writeBatch,
     serverTimestamp,
     signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
     sendPasswordResetEmail
@@ -115,12 +116,29 @@ onAuthStateChanged(auth, async (user) => {
     let rol = "Recepción";
     let nombre = user.displayName || user.email;
 
+    // SuperAdmin maestro: nachohelbas@gmail.com
+    const esCuentaAdmin = Boolean(user.email && user.email.toLowerCase() === "nachohelbas@gmail.com");
+    if (esCuentaAdmin) {
+        rol = "Administración";
+        nombre = "Ignacio Helbas (Administrador)";
+    }
+
     try {
-        const docSnap = await getDoc(doc(db, "usuarios", user.uid));
+        const docRef = doc(db, "usuarios", user.uid);
+        const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
-            if (data.rol) rol = data.rol;
-            if (data.nombre) nombre = data.nombre;
+            if (data.rol && !esCuentaAdmin) rol = data.rol;
+            if (data.nombre && !esCuentaAdmin) nombre = data.nombre;
+        } else if (esCuentaAdmin) {
+            // Asegurar que el perfil exista en Firestore con el UID de Auth
+            await setDoc(docRef, {
+                nombre: "Ignacio Helbas",
+                correo: user.email,
+                rol: "Administración",
+                activo: true,
+                actualizadoEn: serverTimestamp()
+            }, { merge: true }).catch(() => {});
         }
     } catch (e) {
         console.warn("No se pudo leer perfil desde Firestore:", e);
@@ -174,12 +192,39 @@ export async function iniciarSesionReal() {
             }
         }
 
-        await signInWithEmailAndPassword(auth, correoFinal, passInput);
+        try {
+            await signInWithEmailAndPassword(auth, correoFinal, passInput);
+        } catch (signInErr) {
+            // Si es la cuenta administradora nachohelbas@gmail.com y no existe aún en Auth, intentar crearla
+            if (
+                correoFinal.toLowerCase() === "nachohelbas@gmail.com" &&
+                (signInErr.code === "auth/user-not-found" || signInErr.code === "auth/invalid-credential")
+            ) {
+                try {
+                    await createUserWithEmailAndPassword(auth, correoFinal, passInput);
+                } catch (createErr) {
+                    throw signInErr;
+                }
+            } else {
+                throw signInErr;
+            }
+        }
+
         document.getElementById('login-user').value = '';
         document.getElementById('login-pass').value = '';
     } catch (error) {
         console.error("Error Auth:", error);
-        mostrarAlerta("Acceso Denegado", "Las credenciales ingresadas son incorrectas.");
+        let mensaje = "Las credenciales ingresadas son incorrectas.";
+        if (error.code === 'auth/user-not-found') {
+            mensaje = "El correo nachohelbas@gmail.com no está registrado en Firebase Authentication. Créelo en la consola de Firebase > Authentication.";
+        } else if (error.code === 'auth/wrong-password') {
+            mensaje = "Contraseña incorrecta. Verifique mayúsculas y minúsculas.";
+        } else if (error.code === 'auth/too-many-requests') {
+            mensaje = "Demasiados intentos fallidos. Espere unos minutos o intente más tarde.";
+        } else if (error.code === 'auth/operation-not-allowed') {
+            mensaje = "El proveedor de Correo/Contraseña no está habilitado en Firebase Authentication.";
+        }
+        mostrarAlerta("Acceso Denegado", mensaje);
     }
 }
 
@@ -202,8 +247,8 @@ function aplicarPermisosVisuales(sesion) {
         btnLogout.innerText = `Cerrar Sesión (${sesion.nombre || sesion.correo})`;
     }
 
-    // Rol Administración tiene acceso completo a todos los paneles
-    const esSuperAdmin = (sesion.rol === "Administración");
+    // nachohelbas@gmail.com o rol Administración tienen acceso completo a todos los paneles
+    const esSuperAdmin = (sesion.rol === "Administración" || sesion.correo?.toLowerCase() === "nachohelbas@gmail.com");
 
     if (esSuperAdmin) {
         if (btnAdmin) btnAdmin.classList.remove('hidden');
