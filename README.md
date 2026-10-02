@@ -1,19 +1,29 @@
-# Sistema de Gestión y Turnos Online - Hospital Teodoro J. Schestakow
+# Sistema Hospitalario y Gestión de Turnos Online - Hospital Teodoro J. Schestakow
 
-Sistema web integral para la reserva de turnos de pacientes y gestión clínica-administrativa del Hospital Teodoro J. Schestakow (San Rafael, Mendoza). Desarrollado en conjunto como proyecto académico para la UTN - Facultad Regional San Rafael.
+Sistema integral de reserva de turnos para pacientes, gestión administrativa y **Historia Clínica Electrónica (HCE)** inmutable y trazable (conforme a la Ley 26.529 de Derechos del Paciente) del **Hospital Teodoro J. Schestakow** (San Rafael, Mendoza).
+
+Desarrollado como prototipo para el **Foro Tecnológico de Ingeniería, Innovación y Desarrollo** (UTN - Facultad Regional San Rafael), optimizado al 100% para operar con servicios gratuitos en **Firebase Spark**.
 
 ---
 
 ## 🛠️ Stack Tecnológico
 
 - **Frontend**: HTML5 semántico, Tailwind CSS (vía CDN), Vanilla JavaScript modular (ES Modules).
-- **Backend / BaaS**: Firebase Suite (Proyecto: `sistema-turnos-utn`).
-  - **Firebase Authentication**: Inicio de sesión de personal con contraseñas hasheadas y autenticación anónima para pacientes.
-  - **Cloud Firestore**: Base de datos NoSQL documental en tiempo real protegida por `firestore.rules` con Custom Claims.
-  - **Cloud Functions for Firebase** (Node.js 18): Backend serverless para operaciones críticas (reserva transaccional de turnos, consulta por código, cancelación segura, gestión de usuarios de staff y herramientas de administración).
-- **Servicios Adicionales**:
+- **Base de Datos y Seguridad**: **Firebase Cloud Firestore** (Spark Plan).
+  - Reglas de seguridad estrictas `firestore.rules` con modelo *Deny by Default*.
+  - Colección de disponibilidad sin colisiones (`disponibilidad/{slotId}`).
+  - Catálogo público desacoplado (`medicos_publicos/{uid}`).
+- **Autenticación**: **Firebase Authentication**.
+  - Personal institucional con email/contraseña y control de roles por perfil verificado (`usuarios/{uid}`).
+  - Cierre automático de sesión tras 15 minutos de inactividad médica.
+- **Historia Clínica e Interoperabilidad**:
+  - Almacenamiento desacoplado e inmutable en `pacientes/{pacienteId}/consultas/{consultaId}`.
+  - Esquema de rectificación firmado sin mutación histórica.
+  - Mapeo semántico al estándar internacional **HL7® FHIR® R4** ([ver especificación](docs/FHIR.md)).
+  - Documentación de arquitectura clínica y legal ([ver arquitectura](docs/HISTORIA_CLINICA.md)).
+- **Servicios Adicionales Gratuitos**:
   - **EmailJS**: Notificaciones automáticas por correo de confirmación y cancelación.
-  - **SheetJS (xlsx)**: Exportación de agendas de turnos a planillas Excel.
+  - **SheetJS (xlsx)**: Exportación de planillas de turnos para recepción.
 
 ---
 
@@ -21,126 +31,79 @@ Sistema web integral para la reserva de turnos de pacientes y gestión clínica-
 
 ```text
 ├── index.html                   # Portal público para pacientes (reserva online, consulta y cancelación)
-├── login.html                   # Portal de acceso seguro para el personal institucional
-├── panel.html                   # Panel interno unificado (Recepción, Consultorio, Administración)
-├── firestore.rules              # Reglas de seguridad de Firestore basadas en Custom Claims
-├── firebase.json                # Configuración de Hosting, Functions y Firestore
-├── PLAN.md                      # Plan de auditoría y seguimiento de problemas priorizados
-├── README.md                    # Documentación técnica y guía de despliegue
+├── panel.html                   # Portal institucional con login y vistas por rol (Recepción, Consultorio, Admin)
+├── firestore.rules              # Reglas de seguridad declarativas con RBAC e inmutabilidad estricta
+├── firebase.json                # Configuración de Hosting con cabeceras de seguridad CSP y lista de exclusión
+├── PLAN.md                      # Plan de auditoría y seguimiento de tareas
+├── README.md                    # Documentación técnica general
+├── package.json                 # Dependencias y suites de testing local (Node.js test runner)
 ├── css/
-│   └── estilos.css              # Estilos complementarios y animaciones UI
-├── img/                         # Isologotipos y fondos de la institución
+│   └── estilos.css              # Animaciones, estilos de interfaz y reglas @media print para HCE
+├── img/                         # Isologotipos y recursos visuales
 ├── js/
-│   ├── firebase-config.js       # Inicialización del SDK de Firebase, Auth, DB y Functions
-│   ├── utils.js                 # Modales, alertas, sanitización HTML y notificaciones EmailJS
-│   ├── publico.js               # Lógica del portal público y llamadas a Cloud Functions
-│   └── admin.js                 # Lógica de Recepción, Consultorio, Administración y Auth Guard
-├── functions/
-│   ├── package.json             # Dependencias del backend (firebase-admin, firebase-functions)
-│   └── index.js                 # Implementación de Cloud Functions callables seguras
+│   ├── firebase-config.js       # Inicialización del SDK de Firebase, Auth y Firestore
+│   ├── utils.js                 # Modales, alertas, sanitización y notificaciones
+│   ├── publico.js               # Lógica del portal de turnos para pacientes
+│   └── admin.js                 # Lógica médica, Historia Clínica inmutable, Recepción y Administración
+├── docs/
+│   ├── HISTORIA_CLINICA.md      # Arquitectura de datos clínicos, diagrama Mermaid y matriz RBAC
+│   └── FHIR.md                  # Mapeo a recursos estándar HL7 FHIR Release 4
+├── scripts/
+│   ├── migrar-historias.js      # Script idempotente para migrar evoluciones históricas de turnos a HCE
+│   └── seed-demo-pacientes.js   # Generador de 10 pacientes ficticios con consultas y rectificaciones
+├── tests/
+│   └── firestore-rules.test.js  # Pruebas automatizadas de reglas de seguridad Firestore
 └── .github/workflows/
-    └── firebase-deploy.yml      # CI/CD automático para despliegue en Firebase
+    ├── test-rules.yml           # CI en GitHub Actions con Firebase Firestore Emulator (Java 17)
+    └── firebase-deploy.yml      # CD automático en Firebase Hosting
 ```
 
 ---
 
-## 🔒 Arquitectura de Seguridad e Integridad de Datos
+## 🔒 Arquitectura de Seguridad y Confidencialidad Médica
 
-1. **Sin credenciales en código cliente**: Todas las contraseñas residen hasheadas en Firebase Auth.
-2. **Roles con Custom Claims**:
-   - Los roles (`Administración`, `Médico`, `Recepción`) se validan directamente en el token criptográfico mediante `request.auth.token.rol` en `firestore.rules`.
-   - Cierre estricto por defecto: Cualquier ruta no especificada en Firestore es denegada (`allow read, write: if false;`).
-3. **Aislamiento de Pacientes**:
-   - Los pacientes interactúan mediante sesiones anónimas (`signInAnonymously`).
-   - Las reservas, búsquedas y cancelaciones se realizan exclusivamente mediante Cloud Functions (`crearTurnoPublico`, `buscarTurnoPorCodigo`, `cancelarTurnoConCodigo`), impidiendo el acceso directo a la colección `turnos`.
-4. **Prevención de Duplicados (Race Conditions)**:
-   - `crearTurnoPublico` ejecuta una **Transacción de Firestore** que garantiza que no se puedan reservar dos turnos para el mismo médico, fecha y horario simultáneamente.
-5. **Funciones Administrativas Protegidas**:
-   - `guardarUsuarioAdmin`, `limpiarBaseDeDatos` e `inyectarMedicosDePrueba` operan únicamente como Cloud Functions y verifican el claim `rol === 'Administración'` antes de cualquier modificación.
-6. **Desacoplamiento Arquitectónico**:
-   - `index.html` expone únicamente la interfaz de pacientes.
-   - `panel.html` cuenta con un Auth Guard que redirige automáticamente a `login.html` si no hay una sesión activa y verificada.
+1. **Denegar por Defecto (`firestore.rules`)**:
+   - Todo documento o subcolección no autorizada expresamente tiene `allow read, write: if false;`.
+2. **Acceso de Pacientes Impredecible**:
+   - No hay listado público de turnos. El paciente accede a su comprobante únicamente si conoce el ID largo criptográfico (`crypto.getRandomValues`, 20+ caracteres).
+3. **Reserva sin Colisiones**:
+   - Los turnos se asocian a un slot determinista `disponibilidad/{medicoUid_fecha_hora}` mediante transacciones atómicas `writeBatch`.
+4. **Intangibilidad de la Historia Clínica (Ley 26.529)**:
+   - Las consultas médicas en `pacientes/{pacienteId}/consultas/{consultaId}` tienen `allow update: if false;` y `allow delete: if false;`.
+   - Las enmiendas o correcciones se asientan como nuevas consultas con `corrige: idOriginal`.
+5. **Acceso de Emergencia ("Romper el Vidrio")**:
+   - Un médico puede habilitar el acceso a un paciente no agendado justificando el motivo en el modal de emergencia. Dicha acción genera automáticamente un pase de acceso y un registro inmutable en `auditoria/{id}`.
+6. **Desconexión por Inactividad**:
+   - Cierre automático de sesión médica tras 15 minutos sin interacción del usuario.
 
 ---
 
-## 🚀 Despliegue en Firebase
+## 🧪 Pruebas Automatizadas y Simulación
 
-### Requisitos Previos
+### 1. Ejecutar Pruebas Estáticas de Reglas
+```bash
+npm test
+```
 
-1. [Node.js](https://nodejs.org/) (versión 18 recomendada).
-2. [Firebase CLI](https://firebase.google.com/docs/cli) instalado globalmente:
+### 2. Simular Siembra de Pacientes Ficticios (Dry-Run)
+```bash
+node scripts/seed-demo-pacientes.js --dry-run
+```
+
+### 3. Verificar Script de Migración Histórica
+```bash
+node scripts/migrar-historias.js --dry-run
+```
+
+---
+
+## 🚀 Despliegue en Firebase Hosting (Spark Plan)
+
+1. Autenticarse en Firebase CLI:
    ```bash
-   npm install -g firebase-tools
+   npx firebase login
    ```
-3. Plan **Blaze (Pay as you go)** habilitado en el proyecto de Firebase (requerido por Google Cloud para la ejecución de Cloud Functions con Node.js 18+).
-
-### Paso 1: Autenticación en Firebase CLI
-
-```bash
-firebase login
-```
-
-### Paso 2: Instalar Dependencias de Backend
-
-```bash
-cd functions
-npm install
-cd ..
-```
-
-### Paso 3: Desplegar Reglas de Seguridad y Funciones
-
-```bash
-# Desplegar solo reglas de Firestore
-firebase deploy --only firestore:rules
-
-# Desplegar backend (Cloud Functions)
-firebase deploy --only functions
-
-# Desplegar frontend (Hosting)
-firebase deploy --only hosting
-```
-
-O desplegar todo simultáneamente:
-```bash
-firebase deploy
-```
-
----
-
-## ⚙️ Configuración y Restricciones de APIs (Acción Manual Requerida)
-
-### 1. Restricción de Dominio para la API Key de Firebase
-1. Ingresá a [Google Cloud Console > Credenciales](https://console.cloud.google.com/apis/credentials?project=sistema-turnos-utn).
-2. Seleccioná la clave pública del navegador (`Browser key` / `AIzaSyAghXQKrYy6EJGD5IqEdO4c_E-ntozUmz8`).
-3. En **Restricciones de aplicaciones**, seleccioná **Referenciadores HTTP (sitios web)**.
-4. Agregá tus dominios autorizados:
-   - `https://sistema-turnos-utn.web.app/*`
-   - `https://sistema-turnos-utn.firebaseapp.com/*`
-   - `http://localhost:*` (para pruebas locales)
-5. Guardá los cambios.
-
-### 2. Restricción de Dominio para EmailJS
-1. Ingresá al dashboard de [EmailJS](https://dashboard.emailjs.com/) > **Account** > **Security**.
-2. Marcá la opción **Allow EmailJS API calls only from these domains**.
-3. Agregá tu dominio de producción de Firebase Hosting y tu entorno local.
-
-### 3. Asignación del Primer Administrador (SuperAdmin)
-Para inicializar el primer usuario con rol de administración:
-1. Creá tu cuenta en Firebase Authentication mediante `login.html` o la consola de Firebase.
-2. Asegurate de que exista el documento correspondiente en `/usuarios/{uid}` con `rol: "Administración"`.
-3. Al iniciar sesión en el portal, el sistema invocará automáticamente la Cloud Function `asignarRolAdminInicial` para emitir el Custom Claim `rol: "Administración"` en tu token de autenticación.
-
----
-
-## 💻 Ejecución Local
-
-Para probar el sitio localmente con cualquier servidor estático:
-```bash
-# Con extensión Live Server en VSCode o mediante npx:
-npx serve .
-```
-Accedé a:
-- Portal público: `http://localhost:3000/index.html`
-- Acceso staff: `http://localhost:3000/login.html`
-- Panel interno: `http://localhost:3000/panel.html`
+2. Desplegar reglas y portal estático:
+   ```bash
+   npx firebase deploy --only firestore:rules,hosting
+   ```
