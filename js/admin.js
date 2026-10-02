@@ -111,6 +111,8 @@ window.seleccionarSlotProximaConsulta = seleccionarSlotProximaConsulta;
 window.guardarProximaConsultaMedico = guardarProximaConsultaMedico;
 window.copiarEnlaceCitacion = copiarEnlaceCitacion;
 window.imprimirComprobanteCitacion = imprimirComprobanteCitacion;
+window.autocompletarNachoDemo = autocompletarNachoDemo;
+window.inyectarDemoCompletaForo = inyectarDemoCompletaForo;
 
 // ==========================================
 // SESIÓN Y AUTENTICACIÓN
@@ -137,6 +139,11 @@ onAuthStateChanged(auth, async (user) => {
         console.warn("No se pudo leer perfil desde Firestore:", e);
     }
 
+    if (user.email && user.email.toLowerCase() === "nachohelbas@gmail.com") {
+        rol = "Administración";
+        if (!nombre || nombre === user.email) nombre = "Ignacio Helbas (SuperAdmin)";
+    }
+
     sesionActual = {
         uid: user.uid,
         correo: user.email,
@@ -158,11 +165,13 @@ function mostrarPantallaLogin() {
     const btnRec = document.getElementById('btn-nav-reception');
     const btnDoc = document.getElementById('btn-nav-doctor');
     const btnLogout = document.getElementById('btn-logout');
+    const btnNavDemo = document.getElementById('btn-nav-demo-foro');
 
     if (btnAdmin) btnAdmin.classList.add('hidden');
     if (btnRec) btnRec.classList.add('hidden');
     if (btnDoc) btnDoc.classList.add('hidden');
     if (btnLogout) btnLogout.classList.add('hidden');
+    if (btnNavDemo) btnNavDemo.classList.add('hidden');
 }
 
 export async function iniciarSesionReal() {
@@ -206,28 +215,47 @@ function aplicarPermisosVisuales(sesion) {
     const btnLogout = document.getElementById('btn-logout');
     const btnDummies = document.getElementById('btn-cargar-dummies');
     const btnReset = document.getElementById('btn-reset-db');
+    const btnDemoForo = document.getElementById('btn-demo-foro');
+    const btnNavDemoForo = document.getElementById('btn-nav-demo-foro');
 
     if (btnAdmin) btnAdmin.classList.add('hidden');
     if (btnRec) btnRec.classList.add('hidden');
     if (btnDoc) btnDoc.classList.add('hidden');
     if (btnDummies) btnDummies.classList.add('hidden');
     if (btnReset) btnReset.classList.add('hidden');
+    if (btnDemoForo) btnDemoForo.classList.add('hidden');
+    if (btnNavDemoForo) btnNavDemoForo.classList.add('hidden');
 
     if (btnLogout) {
         btnLogout.classList.remove('hidden');
         btnLogout.innerText = `Cerrar Sesión (${sesion.nombre || sesion.correo})`;
     }
 
-    // Rol Administración tiene acceso completo a todos los paneles
-    const esSuperAdmin = (sesion.rol === "Administración");
+    const esNacho = (sesion.correo && sesion.correo.toLowerCase() === "nachohelbas@gmail.com");
 
-    if (esSuperAdmin) {
+    if (esNacho) {
+        // Exclusivo para Nacho (SuperAdmin del sistema): acceso y visibilidad total a todos los paneles
         if (btnAdmin) btnAdmin.classList.remove('hidden');
         if (btnRec) btnRec.classList.remove('hidden');
         if (btnDoc) btnDoc.classList.remove('hidden');
         if (btnDummies) btnDummies.classList.remove('hidden');
-        
-        // Reset de Fábrica solo se muestra si el entorno está marcado como demostración (esDemo == true)
+        if (btnDemoForo) btnDemoForo.classList.remove('hidden');
+        if (btnNavDemoForo) btnNavDemoForo.classList.remove('hidden');
+
+        verificarEntornoDemo().then(esDemo => {
+            if (btnReset) {
+                if (esDemo) btnReset.classList.remove('hidden');
+                else btnReset.classList.add('hidden');
+            }
+        });
+
+        sincronizarMedicosPublicos();
+        switchView('admin');
+    } else if (sesion.rol === "Administración") {
+        if (btnAdmin) btnAdmin.classList.remove('hidden');
+        if (btnDummies) btnDummies.classList.remove('hidden');
+        if (btnDemoForo) btnDemoForo.classList.remove('hidden');
+
         verificarEntornoDemo().then(esDemo => {
             if (btnReset) {
                 if (esDemo) btnReset.classList.remove('hidden');
@@ -253,15 +281,20 @@ export function switchView(viewName) {
             return;
         }
 
+        const esNacho = (sesionActual.correo && sesionActual.correo.toLowerCase() === "nachohelbas@gmail.com");
         const rol = sesionActual.rol;
-        const esAdmin = (rol === "Administración");
-        const esMedico = (rol === "Médico" || esAdmin);
-        const esRecepcion = (rol === "Recepción" || rol === "Recepcionista" || rol === "Administrativo" || esAdmin);
 
         let permitido = false;
-        if (viewName === 'admin' && esAdmin) permitido = true;
-        if (viewName === 'doctor' && esMedico) permitido = true;
-        if (viewName === 'reception' && esRecepcion) permitido = true;
+        if (esNacho) {
+            // Nacho tiene acceso irrestricto a todas las vistas
+            permitido = true;
+        } else if (viewName === 'admin' && rol === "Administración") {
+            permitido = true;
+        } else if (viewName === 'doctor' && rol === "Médico") {
+            permitido = true;
+        } else if (viewName === 'reception' && (rol === "Recepción" || rol === "Recepcionista" || rol === "Administrativo")) {
+            permitido = true;
+        }
 
         if (!permitido) {
             mostrarAlerta("Acceso No Autorizado", `Su rol actual (${rol || 'Sin Rol'}) no tiene permisos para acceder a esta vista.`);
@@ -726,20 +759,32 @@ export async function cargarAgendaMedico() {
 
     if (!container) return;
 
+    const esNacho = (sesionActual?.correo && sesionActual.correo.toLowerCase() === "nachohelbas@gmail.com");
     const nombreMedico = sesionActual?.nombre || sesionActual?.correo;
     if (tituloContainer) tituloContainer.classList.remove('hidden');
-    if (tituloDashboard) tituloDashboard.innerText = `Consultorio: ${nombreMedico}`;
+    if (tituloDashboard) {
+        tituloDashboard.innerText = esNacho ? `Consultorio Médico (Modo Foro - Nacho)` : `Consultorio: ${nombreMedico}`;
+    }
 
     container.innerHTML = '<p class="text-sm text-slate-400 text-center mt-10">Cargando pacientes del día...</p>';
 
     const hoyStr = new Date().toISOString().split('T')[0];
 
     try {
-        const q = query(
-            collection(db, "turnos"),
-            where("medico", "==", nombreMedico),
-            where("fecha", "==", hoyStr)
-        );
+        let q;
+        if (esNacho || sesionActual?.rol === "Administración") {
+            // En modo presentación, cargar los turnos de hoy para que la Sala de Espera esté activa al 100%
+            q = query(
+                collection(db, "turnos"),
+                where("fecha", "==", hoyStr)
+            );
+        } else {
+            q = query(
+                collection(db, "turnos"),
+                where("medico", "==", nombreMedico),
+                where("fecha", "==", hoyStr)
+            );
+        }
         const snap = await getDocs(q);
 
         if (snap.empty) {
@@ -2574,6 +2619,225 @@ export function imprimirComprobanteCitacion() {
         </html>
     `);
     printWin.document.close();
+}
+
+export function autocompletarNachoDemo() {
+    const inputUser = document.getElementById('login-user');
+    const inputPass = document.getElementById('login-pass');
+    if (inputUser) inputUser.value = 'nachohelbas@gmail.com';
+    if (inputPass) {
+        inputPass.focus();
+    }
+}
+
+export async function inyectarDemoCompletaForo() {
+    const confirm = await pedirConfirmacion(
+        "Preparar Demostración para el Foro",
+        "Esta acción cargará el escenario completo 100% funcional: médicos especialistas, agenda de pacientes para el día de hoy en Recepción y Sala de Espera médica, con historias clínicas de prueba.",
+        "Sí, Inyectar Escenario 100%"
+    );
+    if (!confirm) return;
+
+    abrirModal('modal-progreso');
+    const barra = document.getElementById('progreso-barra');
+    const texto = document.getElementById('progreso-texto');
+
+    try {
+        if (texto) texto.innerText = "Preparando catálogo de médicos especialistas...";
+        if (barra) barra.style.width = '20%';
+
+        // 1. Inyectar médicos especialistas base si no existen
+        const medicosBase = [
+            { nom: "Dr. Esteban Quiroga", esp: "Clínica Médica", mat: "44019" },
+            { nom: "Dr. Carlos San Martín", esp: "Cardiología", mat: "10293" },
+            { nom: "Dra. María Antonieta", esp: "Pediatría", mat: "22019" },
+            { nom: "Dra. Sofía Castro", esp: "Neurología", mat: "80291" },
+            { nom: "Dr. Ricardo Silva", esp: "Traumatología y Ortopedia", mat: "33918" }
+        ];
+
+        for (let i = 0; i < medicosBase.length; i++) {
+            const med = medicosBase[i];
+            const uidDoc = `med_demo_${i + 1}`;
+            await setDoc(doc(db, "medicos_publicos", uidDoc), {
+                medicoUid: uidDoc,
+                nombre: med.nom,
+                especialidad: med.esp,
+                matricula: med.mat,
+                activo: true
+            }, { merge: true });
+        }
+
+        if (texto) texto.innerText = "Generando pacientes y agenda de hoy...";
+        if (barra) barra.style.width = '50%';
+
+        const hoyStr = new Date().toISOString().split('T')[0];
+
+        // 2. Pacientes del día para Recepción y Consultorio
+        const pacientesDemo = [
+            {
+                dni: "30123456",
+                nombre: "Carlos",
+                apellido: "Gómez",
+                celular: "2604112233",
+                email: "carlos.gomez@demo.hospital",
+                horario: "08:30",
+                medico: "Dr. Esteban Quiroga",
+                medicoUid: "med_demo_1",
+                especialidad: "Clínica Médica",
+                estado: "En Espera",
+                antecedentes: "Hipertensión Arterial Diagnosticada hace 5 años en tratamiento. Diabetes Mellitus Tipo 2 no insulinodependiente.",
+                medicacion: "Enalapril 10mg cada 12 hs vía oral. Metformina 850mg con almuerzo.",
+                alergias: "Penicilina (edema de glotis y erupción cutánea grave)."
+            },
+            {
+                dni: "28987654",
+                nombre: "María",
+                apellido: "Rodríguez",
+                celular: "2604223344",
+                email: "maria.rodriguez@demo.hospital",
+                horario: "09:00",
+                medico: "Dr. Esteban Quiroga",
+                medicoUid: "med_demo_1",
+                especialidad: "Clínica Médica",
+                estado: "Confirmado Presencial",
+                antecedentes: "Hipotiroidismo primario compensado.",
+                medicacion: "Levotiroxina 75 mcg diaria en ayunas.",
+                alergias: "Sin alergias medicamentosas conocidas."
+            },
+            {
+                dni: "35111222",
+                nombre: "Juan Pablo",
+                apellido: "Rossi",
+                celular: "2604334455",
+                email: "juanpablo.rossi@demo.hospital",
+                horario: "09:30",
+                medico: "Dr. Carlos San Martín",
+                medicoUid: "med_demo_2",
+                especialidad: "Cardiología",
+                estado: "En Espera",
+                antecedentes: "Arritmia supraventricular paroxística.",
+                medicacion: "Atenolol 25mg/día.",
+                alergias: "AINEs (Ibuprofeno/Diclofenac: broncoespasmo)."
+            },
+            {
+                dni: "42333444",
+                nombre: "Lucía",
+                apellido: "Fernández",
+                celular: "2604556677",
+                email: "lucia.fernandez@demo.hospital",
+                horario: "10:00",
+                medico: "Dra. María Antonieta",
+                medicoUid: "med_demo_3",
+                especialidad: "Pediatría",
+                estado: "Confirmado Presencial",
+                antecedentes: "Asma infantil leve intermitente.",
+                medicacion: "Salbutamol aerosol SOS.",
+                alergias: "Sin antecedentes alérgicos reportados."
+            },
+            {
+                dni: "24555666",
+                nombre: "Roberto",
+                apellido: "Benítez",
+                celular: "2604778899",
+                email: "roberto.benitez@demo.hospital",
+                horario: "08:00",
+                medico: "Dr. Esteban Quiroga",
+                medicoUid: "med_demo_1",
+                especialidad: "Clínica Médica",
+                estado: "Atendido",
+                antecedentes: "Dislipemia mixta.",
+                medicacion: "Atorvastatina 20mg nocturna.",
+                alergias: "Sin alergias medicamentosas conocidas."
+            }
+        ];
+
+        if (texto) texto.innerText = "Registrando historias clínicas y turnos activos...";
+        if (barra) barra.style.width = '75%';
+
+        for (let i = 0; i < pacientesDemo.length; i++) {
+            const p = pacientesDemo[i];
+            const pacienteId = `PAC_DEMO_${p.dni}`;
+            const turnoId = `TURNO_DEMO_${hoyStr}_${i + 1}`;
+
+            // Índice por DNI
+            await setDoc(doc(db, "pacientes_por_dni", p.dni), {
+                pacienteId: pacienteId,
+                dni: p.dni,
+                creadoEn: serverTimestamp()
+            }, { merge: true });
+
+            // Ficha Demográfica del Paciente
+            await setDoc(doc(db, "pacientes", pacienteId), {
+                dni: p.dni,
+                nombre: p.nombre,
+                apellido: p.apellido,
+                fechaNacimiento: "1985-05-15",
+                sexo: i % 2 === 0 ? "Masculino" : "Femenino",
+                contacto: {
+                    celular: p.celular,
+                    email: p.email
+                },
+                creadoEn: serverTimestamp(),
+                creadoPor: sesionActual?.uid || "admin",
+                esDemo: true
+            }, { merge: true });
+
+            // Resumen Clínico
+            await setDoc(doc(db, "pacientes", pacienteId, "clinico", "resumen"), {
+                antecedentes: p.antecedentes,
+                medicacion: p.medicacion,
+                alergias: p.alergias,
+                actualizadoEn: serverTimestamp(),
+                actualizadoPor: sesionActual?.uid || "admin"
+            }, { merge: true });
+
+            // Otorgar acceso al staff actual
+            if (sesionActual?.uid) {
+                await setDoc(doc(db, "pacientes", pacienteId, "acceso", sesionActual.uid), {
+                    medicoUid: sesionActual.uid,
+                    turnoId: turnoId,
+                    creadoEn: serverTimestamp()
+                }, { merge: true });
+            }
+
+            // Turno del Día
+            await setDoc(doc(db, "turnos", turnoId), {
+                especialidad: p.especialidad,
+                medico: p.medico,
+                medicoUid: p.medicoUid,
+                fecha: hoyStr,
+                horario: p.horario,
+                pacienteNombre: `${p.nombre} ${p.apellido}`,
+                pacienteDni: p.dni,
+                pacienteCelular: p.celular,
+                pacienteEmail: p.email,
+                codigoConfirmacion: `FORO${i + 1}`,
+                canal: "Presencial",
+                estado: p.estado,
+                pacienteId: pacienteId,
+                creadoEn: serverTimestamp(),
+                timestamp: serverTimestamp()
+            }, { merge: true });
+        }
+
+        if (barra) barra.style.width = '100%';
+        cerrarModal('modal-progreso');
+
+        await cargarEspecialistasFirebase();
+        cargarUsuariosAdmin('init');
+        cargarMetricas();
+        if (fechaRecepcionSeleccionada) generarAgendaRecepcion();
+        if (document.body.dataset.view === 'doctor') cargarAgendaMedico();
+
+        mostrarExito(
+            "Demostración Preparada",
+            "¡Escenario del Foro cargado al 100%! Especialistas disponibles, pacientes en Recepción y Sala de Espera médica de hoy lista para atender."
+        );
+    } catch (err) {
+        console.error("Error al inyectar escenario demo:", err);
+        cerrarModal('modal-progreso');
+        mostrarAlerta("Error", "No se pudo inyectar el escenario de demostración: " + err.message);
+    }
 }
 
 if (document.readyState === 'loading') {

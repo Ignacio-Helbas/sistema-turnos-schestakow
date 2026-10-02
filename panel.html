@@ -55,6 +55,7 @@
                     <button id="btn-nav-reception" onclick="switchView('reception')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Recepción</button>
                     <button id="btn-nav-doctor" onclick="switchView('doctor')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Consultorio</button>
                     <button id="btn-nav-admin" onclick="switchView('admin')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Administración</button>
+                    <button id="btn-nav-demo-foro" onclick="inyectarDemoCompletaForo()" class="hidden bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 rounded-lg transition flex items-center gap-1 shadow-sm" title="Preparar datos 100% funcionales para la presentación"><span>🎯</span> <span>Demo Foro</span></button>
                     
                     <button id="btn-logout" onclick="cerrarSesionReal()" class="bg-slate-800 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-md font-bold text-xs hover:bg-slate-700 shadow transition max-w-[200px] sm:max-w-none truncate">Cerrar Sesión</button>
                     
@@ -100,6 +101,13 @@
                     <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-2">
                         <a href="index.html" class="text-sm text-slate-500 hover:text-slate-800 transition order-2 sm:order-1">Volver a turnos</a>
                         <button id="btn-login" onclick="iniciarSesionReal()" class="w-full sm:w-auto bg-slate-800 text-white font-bold py-2 px-6 rounded-lg hover:bg-slate-900 shadow transition order-1 sm:order-2">Ingresar</button>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-slate-200">
+                        <button type="button" onclick="autocompletarNachoDemo()" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-amber-950 font-bold py-2.5 px-4 rounded-lg shadow-sm transition text-xs border border-amber-600/30">
+                            <span>🎯</span>
+                            <span>Presentación Foro: Cargar Cuenta Nacho (SuperAdmin)</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -407,10 +415,13 @@
                 <div class="lg:col-span-3">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 bg-white/90 p-4 rounded-xl shadow-sm gap-4">
                         <h3 class="text-lg font-bold text-slate-800">Gestión de Usuarios Activos</h3>
-                        <div class="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
-                            <!-- Botones Protegidos de SuperAdmin vía Cloud Functions -->
+                            <!-- Botones Protegidos de SuperAdmin -->
+                            <button id="btn-demo-foro" onclick="inyectarDemoCompletaForo()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white px-4 py-2 rounded font-bold shadow transition hidden text-sm flex items-center justify-center gap-1.5">
+                                <span>🎯</span>
+                                <span>Cargar Demo 100% Funcional</span>
+                            </button>
                             <button id="btn-reset-db" onclick="limpiarBaseDeDatos()" class="w-full sm:w-auto bg-red-600 text-white px-4 py-2 rounded font-bold hover:bg-red-700 shadow transition hidden text-sm">Reset de Fábrica</button>
-                            <button id="btn-cargar-dummies" onclick="inyectarMedicosDePrueba()" class="w-full sm:w-auto bg-neutral-700 text-white px-4 py-2 rounded font-bold hover:bg-neutral-800 shadow transition hidden text-sm">Inyectar Datos</button>
+                            <button id="btn-cargar-dummies" onclick="inyectarMedicosDePrueba()" class="w-full sm:w-auto bg-neutral-700 text-white px-4 py-2 rounded font-bold hover:bg-neutral-800 shadow transition hidden text-sm">Inyectar Médicos</button>
                             
                             <button onclick="abrirModalUsuarioNulo()" class="w-full sm:w-auto bg-neutral-900 text-white px-4 py-2 rounded font-bold hover:bg-black shadow transition text-sm">+ Nuevo Usuario</button>
                         </div>
