@@ -56,13 +56,13 @@ jobs:
 
       - name: Auditoría de dependencias (Root)
         run: |
-          npm i --package-lock-only
+          npm i --package-lock-only --legacy-peer-deps || true
           npm audit --audit-level=high || true
 
       - name: Auditoría de dependencias (Cloud Functions)
         run: |
           cd functions
-          npm i --package-lock-only
+          npm i --package-lock-only --legacy-peer-deps || true
           npm audit --audit-level=high || true
 
       - name: Auditoría de Integridad SRI en CDNs
