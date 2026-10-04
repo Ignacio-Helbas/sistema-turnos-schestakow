@@ -128,10 +128,104 @@ export function establecerLimitesFecha(inputIds = ['input-fecha-paciente', 'inpu
     });
 }
 
+/**
+ * Formatea una fecha a formato institucional argentino dd/mm/aaaa
+ * Soporta cadenas YYYY-MM-DD, objetos Date y Timestamps de Firestore
+ */
+export function formatearFechaAR(fechaVal) {
+    if (!fechaVal) return '';
+    if (fechaVal instanceof Date) {
+        if (isNaN(fechaVal.getTime())) return '';
+        const d = String(fechaVal.getDate()).padStart(2, '0');
+        const m = String(fechaVal.getMonth() + 1).padStart(2, '0');
+        const a = fechaVal.getFullYear();
+        return `${d}/${m}/${a}`;
+    }
+    if (typeof fechaVal === 'object' && typeof fechaVal.toDate === 'function') {
+        const dObj = fechaVal.toDate();
+        const d = String(dObj.getDate()).padStart(2, '0');
+        const m = String(dObj.getMonth() + 1).padStart(2, '0');
+        const a = dObj.getFullYear();
+        return `${d}/${m}/${a}`;
+    }
+    const str = String(fechaVal).trim();
+    const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+        return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
+    }
+    return str;
+}
+
+/**
+ * Normaliza horarios agregando sufijo institucional "hs" (ej: "08:30 hs")
+ */
+export function formatearHoraAR(horaVal) {
+    if (!horaVal) return '';
+    const str = String(horaVal).trim();
+    if (str.toLowerCase().endsWith('hs')) return str;
+    return `${str} hs`;
+}
+
+/**
+ * Notificación Toast flotante, accesible y discreta para operaciones rutinarias
+ */
+export function mostrarToast(mensaje, tipo = 'info', duracionMs = 3500) {
+    if (typeof document === 'undefined') return;
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.setAttribute('aria-live', 'polite');
+        container.setAttribute('aria-atomic', 'true');
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast-his toast-his-${tipo}`;
+    toast.setAttribute('role', 'status');
+
+    let iconoSvg = '';
+    if (tipo === 'success') {
+        iconoSvg = `<svg class="w-4 h-4 text-teal-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>`;
+    } else if (tipo === 'error') {
+        iconoSvg = `<svg class="w-4 h-4 text-red-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+    } else if (tipo === 'warning') {
+        iconoSvg = `<svg class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`;
+    } else {
+        iconoSvg = `<svg class="w-4 h-4 text-[#002845] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+    }
+
+    toast.innerHTML = `
+        ${iconoSvg}
+        <div class="flex-1 font-medium text-slate-800 text-xs">${escaparHTML(mensaje)}</div>
+        <button type="button" aria-label="Cerrar notificación" class="text-slate-400 hover:text-slate-700 ml-1 text-sm leading-none font-bold">&times;</button>
+    `;
+
+    const closeBtn = toast.querySelector('button');
+    const remover = () => {
+        toast.classList.add('toast-salida');
+        setTimeout(() => {
+            if (toast.parentElement) toast.remove();
+        }, 220);
+    };
+    if (closeBtn) closeBtn.onclick = remover;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        remover();
+    }, duracionMs);
+}
+
 // Exponer en window para manejadores inline del DOM
-window.abrirModal = abrirModal;
-window.cerrarModal = cerrarModal;
-window.validarDiaHabil = validarDiaHabil;
-window.mostrarAlerta = mostrarAlerta;
-window.mostrarExito = mostrarExito;
-window.pedirConfirmacion = pedirConfirmacion;
+if (typeof window !== 'undefined') {
+    window.abrirModal = abrirModal;
+    window.cerrarModal = cerrarModal;
+    window.validarDiaHabil = validarDiaHabil;
+    window.mostrarAlerta = mostrarAlerta;
+    window.mostrarExito = mostrarExito;
+    window.pedirConfirmacion = pedirConfirmacion;
+    window.formatearFechaAR = formatearFechaAR;
+    window.formatearHoraAR = formatearHoraAR;
+    window.mostrarToast = mostrarToast;
+}
