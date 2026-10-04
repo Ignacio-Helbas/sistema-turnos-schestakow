@@ -15,7 +15,7 @@ import {
     deleteDoc,
     writeBatch,
     serverTimestamp
-} from "./firebase-config.js";
+} from "./firebase.js";
 
 import {
     mostrarAlerta,
@@ -29,7 +29,7 @@ import {
     enviarCorreoNotificacion,
     EMAILJS_TEMPLATE_CONFIRMACION,
     EMAILJS_TEMPLATE_CANCELACION
-} from "./utils.js";
+} from "./ui.js";
 
 let bdMedicosDinamica = {};
 let duracionTurnoGlobal = 15;
