@@ -132,3 +132,6 @@ export function establecerLimitesFecha(inputIds = ['input-fecha-paciente', 'inpu
 window.abrirModal = abrirModal;
 window.cerrarModal = cerrarModal;
 window.validarDiaHabil = validarDiaHabil;
+window.mostrarAlerta = mostrarAlerta;
+window.mostrarExito = mostrarExito;
+window.pedirConfirmacion = pedirConfirmacion;
