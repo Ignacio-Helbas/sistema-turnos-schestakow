@@ -471,7 +471,36 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
 }
 
 /* --------------------------------------------------------------------------
-   4. IMPRESIÓN OFICIAL (HISTORIA CLÍNICA Y COMPROBANTES)
+   4. ACCESIBILIDAD Y FOCO VISIBLE (WCAG 2.1 AA)
+   -------------------------------------------------------------------------- */
+:focus-visible {
+    outline: 2px solid var(--his-secondary) !important;
+    outline-offset: 2px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* --------------------------------------------------------------------------
+   5. IMPRESIÓN OFICIAL (HISTORIA CLÍNICA Y COMPROBANTES INSTITUCIONALES)
    -------------------------------------------------------------------------- */
 @media print {
     body {
@@ -479,9 +508,43 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
         background-image: none !important;
         color: #000000 !important;
     }
-    nav, header, footer, #titulo-medico-dashboard-container, #columna-agenda-medico, .btn-no-print, .modal, .modal-overlay {
+    
+    /* Ocultar elementos de navegación, cabeceras web, pies y controles no imprimibles */
+    nav, header, footer, #titulo-medico-dashboard-container, #columna-agenda-medico, .btn-no-print, #panel-breadcrumbs, #usuario-sesion-info {
         display: none !important;
     }
+    
+    /* Manejo inteligente de modales: ocultar modales inactivos y overlays oscuros */
+    .modal {
+        display: none !important;
+    }
+    .modal-overlay {
+        background: transparent !important;
+    }
+    
+    /* Comprobante activo en modal (Recepción, Paciente o Citación): imprimir limpio como documento */
+    .modal.active {
+        display: block !important;
+        position: static !important;
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .modal.active button, 
+    .modal.active .btn-his-primary, 
+    .modal.active .btn-his-secondary, 
+    .modal.active .btn-his-text {
+        display: none !important;
+    }
+    .modal.active .card-his, 
+    .modal.active .modal-box-his {
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        margin: 0 auto !important;
+        max-width: 100% !important;
+    }
+
+    /* Impresión de Historia Clínica */
     .view, #view-doctor {
         display: block !important;
     }
