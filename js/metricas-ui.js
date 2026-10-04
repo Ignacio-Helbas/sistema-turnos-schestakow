@@ -26,13 +26,14 @@ import {
     getDocs,
     limit,
     orderBy
-} from './firebase-config.js';
+} from './firebase.js';
 
 import {
     mostrarAlerta,
     mostrarExito,
+    mostrarToast,
     escaparHTML
-} from './utils.js';
+} from './ui.js';
 
 // ==========================================
 // ESTADO INTERNO Y CACHÉ EN MEMORIA (Plan Spark)
@@ -110,9 +111,30 @@ export const DICCIONARIO_METRICAS_INFO = {
 };
 
 // ==========================================
+// CONFIGURACIÓN INSTITUCIONAL DE CHART.JS
+// ==========================================
+function configurarDefaultsChartJS() {
+    if (!window.Chart) return;
+    try {
+        window.Chart.defaults.font.family = "'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        window.Chart.defaults.color = '#475569'; // Slate 600
+        if (window.Chart.defaults.plugins && window.Chart.defaults.plugins.tooltip) {
+            window.Chart.defaults.plugins.tooltip.backgroundColor = '#0f172a'; // Slate 900
+            window.Chart.defaults.plugins.tooltip.titleColor = '#ffffff';
+            window.Chart.defaults.plugins.tooltip.bodyColor = '#f1f5f9';
+            window.Chart.defaults.plugins.tooltip.borderColor = '#334155';
+            window.Chart.defaults.plugins.tooltip.borderWidth = 1;
+            window.Chart.defaults.plugins.tooltip.padding = 10;
+            window.Chart.defaults.plugins.tooltip.cornerRadius = 6;
+        }
+    } catch (_) {}
+}
+
+// ==========================================
 // FUNCIÓN PRINCIPAL DE INICIALIZACIÓN
 // ==========================================
 export async function iniciarModuloMetricasUI(forzarLectura = false) {
+    configurarDefaultsChartJS();
     establecerFechasFiltroPorDefecto();
     await cargarDatosMetricasFirestore(forzarLectura);
     actualizarVistaMetricas();
@@ -362,13 +384,13 @@ export function actualizarVistaMetricas() {
 export function cambiarSubvistaMetricas(vista) {
     subvistaActiva = vista;
     document.querySelectorAll('.btn-subvista-metricas').forEach(b => {
-        b.classList.remove('active', 'bg-neutral-900', 'text-white');
+        b.classList.remove('active', 'bg-slate-900', 'bg-neutral-900', 'text-white', 'shadow-xs');
         b.classList.add('bg-white', 'text-slate-600', 'hover:bg-slate-100');
     });
 
     const btn = document.getElementById(`btn-subvista-${vista}`);
     if (btn) {
-        btn.classList.add('active', 'bg-neutral-900', 'text-white');
+        btn.classList.add('active', 'bg-slate-900', 'text-white', 'shadow-xs');
         btn.classList.remove('bg-white', 'text-slate-600', 'hover:bg-slate-100');
     }
 
@@ -391,13 +413,13 @@ export function aplicarFiltroAtajoFecha(tipo) {
     const hoyStr = hoy.toISOString().split('T')[0];
 
     document.querySelectorAll('.btn-atajo-fecha').forEach(b => {
-        b.classList.remove('bg-teal-700', 'text-white', 'border-teal-800');
+        b.classList.remove('bg-slate-900', 'bg-teal-700', 'text-white', 'border-slate-900', 'border-teal-800');
         b.classList.add('bg-white', 'text-slate-700', 'border-slate-300');
     });
 
     const btn = document.getElementById(`btn-atajo-${tipo}`);
     if (btn) {
-        btn.classList.add('bg-teal-700', 'text-white', 'border-teal-800');
+        btn.classList.add('bg-slate-900', 'text-white', 'border-slate-900');
         btn.classList.remove('bg-white', 'text-slate-700', 'border-slate-300');
     }
 
@@ -469,7 +491,7 @@ function renderizarTarjetasKPIGeneral(mg) {
             unidad: '%',
             variacion: mg.kpis.ocupacion.variacion,
             semaforo: mg.kpis.ocupacion.semaforo,
-            icono: `<svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>`
+            icono: `<svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>`
         },
         {
             clave: 'ausentismo',
@@ -478,7 +500,7 @@ function renderizarTarjetasKPIGeneral(mg) {
             unidad: '%',
             variacion: mg.kpis.ausentismo.variacion,
             semaforo: mg.kpis.ausentismo.semaforo,
-            icono: `<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>`
+            icono: `<svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>`
         },
         {
             clave: 'esperaMinutos',
@@ -487,7 +509,7 @@ function renderizarTarjetasKPIGeneral(mg) {
             unidad: ' min',
             variacion: mg.kpis.esperaMinutos.variacion,
             semaforo: mg.kpis.esperaMinutos.semaforo,
-            icono: `<svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
+            icono: `<svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
         },
         {
             clave: 'tasaAtencion',
@@ -496,7 +518,7 @@ function renderizarTarjetasKPIGeneral(mg) {
             unidad: '%',
             variacion: mg.kpis.tasaAtencion.variacion,
             semaforo: mg.kpis.tasaAtencion.semaforo,
-            icono: `<svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
+            icono: `<svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
         },
         {
             clave: 'turnosWeb',
@@ -505,7 +527,7 @@ function renderizarTarjetasKPIGeneral(mg) {
             unidad: '%',
             variacion: mg.kpis.turnosWeb.variacion,
             semaforo: mg.kpis.turnosWeb.semaforo,
-            icono: `<svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>`
+            icono: `<svg class="w-4 h-4 text-sky-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>`
         }
     ];
 
@@ -515,37 +537,37 @@ function renderizarTarjetasKPIGeneral(mg) {
     container.innerHTML = kpis.map(k => {
         const valStr = k.valor !== null ? `${k.valor.toFixed(1)}${k.unidad}` : 'Sin datos';
         
-        let variacionHtml = '<span class="text-xs text-slate-400">Sin período previo</span>';
+        let variacionHtml = '<span class="text-[11px] text-slate-400">Sin período previo</span>';
         if (k.variacion !== null) {
             const esMejora = (k.clave === 'ausentismo' || k.clave === 'esperaMinutos') 
                 ? k.variacion < 0 
                 : k.variacion > 0;
             const flecha = k.variacion > 0 ? '▲' : '▼';
-            const colorVar = esMejora ? 'text-emerald-700 bg-emerald-50' : 'text-rose-700 bg-rose-50';
-            variacionHtml = `<span class="inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded ${colorVar}">
+            const colorVar = esMejora ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : 'text-rose-800 bg-rose-50 border-rose-200';
+            variacionHtml = `<span class="inline-flex items-center gap-0.5 text-[11px] font-bold font-mono px-1.5 py-0.5 rounded border ${colorVar}">
                 ${flecha} ${Math.abs(k.variacion)} pts
-            </span> <span class="text-[11px] text-slate-500">vs período ant.</span>`;
+            </span> <span class="text-[11px] text-slate-500 ml-1">vs ant.</span>`;
         }
 
         return `
-            <div class="bg-white/95 backdrop-blur p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+            <div class="card-his bg-white/95 backdrop-blur p-4 shadow-xs flex flex-col justify-between hover:shadow-sm transition">
                 <div>
                     <div class="flex items-center justify-between gap-2 mb-2">
                         <div class="flex items-center gap-1.5">
-                            <span class="p-1.5 bg-slate-100 rounded-lg">${k.icono}</span>
+                            <span class="p-1.5 bg-slate-100 rounded-md">${k.icono}</span>
                             <span class="text-xs font-bold uppercase tracking-wider text-slate-600">${k.titulo}</span>
                         </div>
-                        <button onclick="window.mostrarInfoMetrica('${k.clave}')" class="text-slate-400 hover:text-blue-600 transition p-1 text-xs" title="Ver explicación y fórmula">
+                        <button onclick="window.mostrarInfoMetrica('${k.clave}')" class="text-slate-400 hover:text-slate-800 transition p-0.5" title="Ver explicación y fórmula">
                             <span class="inline-flex items-center justify-center w-4 h-4 rounded-full border border-slate-300 font-bold text-[10px]">i</span>
                         </button>
                     </div>
 
                     <div class="flex items-baseline justify-between mt-2">
-                        <span class="text-2xl sm:text-3xl font-extrabold text-slate-900">${valStr}</span>
+                        <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono tracking-tight">${valStr}</span>
                     </div>
 
-                    <div class="mt-2">
-                        <span class="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full ${k.semaforo.claseBadge}" title="${k.semaforo.textoAccesible}">
+                    <div class="mt-2.5">
+                        <span class="badge-his text-[11px] ${k.semaforo.claseBadge}" title="${k.semaforo.textoAccesible}">
                             ${k.semaforo.etiqueta} • ${k.semaforo.textoAccesible}
                         </span>
                     </div>
@@ -584,50 +606,62 @@ function renderizarGraficoEvolucionDiaria(seriePorDia = []) {
                     label: 'Asignados',
                     data: datosAsignados,
                     borderColor: '#0284c7', // Sky 600
-                    backgroundColor: 'rgba(2, 132, 199, 0.08)',
+                    backgroundColor: 'rgba(2, 132, 199, 0.06)',
                     fill: true,
                     tension: 0.3,
                     borderWidth: 2,
-                    pointRadius: 3
+                    pointRadius: 2.5,
+                    pointHoverRadius: 5
                 },
                 {
                     label: 'Atendidos',
                     data: datosAtendidos,
-                    borderColor: '#059669', // Emerald 600
-                    backgroundColor: 'transparent',
+                    borderColor: '#0f766e', // Teal 700
+                    backgroundColor: 'rgba(15, 118, 110, 0.04)',
                     borderWidth: 2,
                     tension: 0.3,
-                    pointRadius: 3
+                    pointRadius: 2.5,
+                    pointHoverRadius: 5
                 },
                 {
                     label: 'Ausentes',
                     data: datosAusentes,
-                    borderColor: '#d97706', // Amber 600
+                    borderColor: '#b45309', // Amber 700
                     backgroundColor: 'transparent',
                     borderWidth: 2,
                     borderDash: [4, 4],
                     tension: 0.3,
-                    pointRadius: 3
+                    pointRadius: 2.5,
+                    pointHoverRadius: 5
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
             plugins: {
                 legend: {
                     position: 'top',
-                    labels: { font: { weight: 'bold', size: 11 } }
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false
+                    labels: {
+                        boxWidth: 12,
+                        padding: 14,
+                        font: { weight: 'bold', size: 11 }
+                    }
                 }
             },
             scales: {
+                x: {
+                    grid: { color: '#f1f5f9' },
+                    ticks: { color: '#64748b', font: { size: 10 } }
+                },
                 y: {
                     beginAtZero: true,
-                    ticks: { precision: 0 }
+                    grid: { color: '#f1f5f9' },
+                    ticks: { precision: 0, color: '#64748b', font: { size: 10 } }
                 }
             }
         }
@@ -654,7 +688,9 @@ function renderizarGraficoMixCanales(mixCanal) {
             labels,
             datasets: [{
                 data: valores,
-                backgroundColor: ['#0d9488', '#0284c7', '#6366f1'],
+                backgroundColor: ['#0f766e', '#1e3a8a', '#475569'], // Teal 700, Blue 900, Slate 600
+                borderColor: '#ffffff',
+                borderWidth: 2,
                 hoverOffset: 4
             }]
         },
@@ -664,10 +700,14 @@ function renderizarGraficoMixCanales(mixCanal) {
             plugins: {
                 legend: {
                     position: 'bottom',
-                    labels: { font: { weight: 'bold', size: 11 } }
+                    labels: {
+                        boxWidth: 12,
+                        padding: 12,
+                        font: { weight: 'bold', size: 11 }
+                    }
                 }
             },
-            cutout: '65%'
+            cutout: '70%'
         }
     });
 }
@@ -690,7 +730,7 @@ function renderizarGraficoRankings(rankings) {
                 datasets: [{
                     label: 'Ausentismo %',
                     data: topAus.map(r => r.ausentismoPct),
-                    backgroundColor: '#f59e0b',
+                    backgroundColor: '#b45309', // Amber 700
                     borderRadius: 4
                 }]
             },
@@ -700,7 +740,16 @@ function renderizarGraficoRankings(rankings) {
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: { beginAtZero: true, max: 100, ticks: { callback: v => `${v}%` } }
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { callback: v => `${v}%`, color: '#64748b', font: { size: 10 } }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: '#334155', font: { size: 11, weight: 'bold' } }
+                    }
                 }
             }
         });
@@ -716,7 +765,7 @@ function renderizarGraficoRankings(rankings) {
                 datasets: [{
                     label: 'Ocupación %',
                     data: topOcup.map(r => r.ocupacionPct),
-                    backgroundColor: '#0d9488',
+                    backgroundColor: '#0f766e', // Teal 700
                     borderRadius: 4
                 }]
             },
@@ -726,7 +775,16 @@ function renderizarGraficoRankings(rankings) {
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: { beginAtZero: true, max: 100, ticks: { callback: v => `${v}%` } }
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { callback: v => `${v}%`, color: '#64748b', font: { size: 10 } }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: '#334155', font: { size: 11, weight: 'bold' } }
+                    }
                 }
             }
         });
@@ -775,7 +833,7 @@ function renderizarMapaCalorCSS(mapaCalor) {
 
             html += `
                 <td class="p-2 border border-slate-100 transition hover:scale-105 cursor-default relative group" style="${bgEstilo}" title="${nombresDias[d - 1]} ${f} hs: ${count} turno(s)">
-                    <span>${count}</span>
+                    <span class="font-mono">${count}</span>
                 </td>
             `;
         });
@@ -825,32 +883,42 @@ function renderizarSubvistaMedico(turnosFiltrados, medicoUidFiltro) {
     // Render de KPIs propios del médico
     const kpisMedContainer = document.getElementById('metricas-medico-kpis');
     if (kpisMedContainer) {
+        const semOcup = evaluarSemaforo(mm.ocupacionPct, 'ocupacion');
+        const semAus = evaluarSemaforo(mm.ausentismoPct, 'ausentismo');
+        const semEsp = evaluarSemaforo(mm.tiempoEsperaPromedioMin, 'esperaMinutos');
+
         kpisMedContainer.innerHTML = `
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <span class="text-xs font-bold uppercase text-slate-500">Ocupación Agenda</span>
-                <p class="text-2xl font-bold text-slate-900 mt-1">${mm.ocupacionPct !== null ? mm.ocupacionPct.toFixed(1) + '%' : 'Sin datos'}</p>
-                <span class="text-[11px] font-bold ${evaluarSemaforo(mm.ocupacionPct, 'ocupacion').claseBadge} px-2 py-0.5 rounded-full inline-block mt-2">
-                    ${evaluarSemaforo(mm.ocupacionPct, 'ocupacion').textoAccesible}
-                </span>
+            <div class="card-his bg-white/95 backdrop-blur p-4 shadow-xs">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Ocupación Agenda</span>
+                <p class="text-2xl font-extrabold text-slate-900 mt-1 font-mono tracking-tight">${mm.ocupacionPct !== null ? mm.ocupacionPct.toFixed(1) + '%' : 'Sin datos'}</p>
+                <div class="mt-2">
+                    <span class="badge-his text-[11px] ${semOcup.claseBadge}" title="${semOcup.textoAccesible}">
+                        ${semOcup.etiqueta} • ${semOcup.textoAccesible}
+                    </span>
+                </div>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <span class="text-xs font-bold uppercase text-slate-500">Tasa Ausentismo</span>
-                <p class="text-2xl font-bold text-slate-900 mt-1">${mm.ausentismoPct !== null ? mm.ausentismoPct.toFixed(1) + '%' : 'Sin datos'}</p>
-                <span class="text-[11px] font-bold ${evaluarSemaforo(mm.ausentismoPct, 'ausentismo').claseBadge} px-2 py-0.5 rounded-full inline-block mt-2">
-                    ${evaluarSemaforo(mm.ausentismoPct, 'ausentismo').textoAccesible}
-                </span>
+            <div class="card-his bg-white/95 backdrop-blur p-4 shadow-xs">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Tasa Ausentismo</span>
+                <p class="text-2xl font-extrabold text-slate-900 mt-1 font-mono tracking-tight">${mm.ausentismoPct !== null ? mm.ausentismoPct.toFixed(1) + '%' : 'Sin datos'}</p>
+                <div class="mt-2">
+                    <span class="badge-his text-[11px] ${semAus.claseBadge}" title="${semAus.textoAccesible}">
+                        ${semAus.etiqueta} • ${semAus.textoAccesible}
+                    </span>
+                </div>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <span class="text-xs font-bold uppercase text-slate-500">Espera Promedio</span>
-                <p class="text-2xl font-bold text-slate-900 mt-1">${mm.tiempoEsperaPromedioMin !== null ? mm.tiempoEsperaPromedioMin.toFixed(0) + ' min' : 'Sin datos'}</p>
-                <span class="text-[11px] font-bold ${evaluarSemaforo(mm.tiempoEsperaPromedioMin, 'esperaMinutos').claseBadge} px-2 py-0.5 rounded-full inline-block mt-2">
-                    ${evaluarSemaforo(mm.tiempoEsperaPromedioMin, 'esperaMinutos').textoAccesible}
-                </span>
+            <div class="card-his bg-white/95 backdrop-blur p-4 shadow-xs">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Espera Promedio</span>
+                <p class="text-2xl font-extrabold text-slate-900 mt-1 font-mono tracking-tight">${mm.tiempoEsperaPromedioMin !== null ? mm.tiempoEsperaPromedioMin.toFixed(0) + ' min' : 'Sin datos'}</p>
+                <div class="mt-2">
+                    <span class="badge-his text-[11px] ${semEsp.claseBadge}" title="${semEsp.textoAccesible}">
+                        ${semEsp.etiqueta} • ${semEsp.textoAccesible}
+                    </span>
+                </div>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <span class="text-xs font-bold uppercase text-slate-500">Consultas Cerradas</span>
-                <p class="text-2xl font-bold text-slate-900 mt-1">${mm.porcentajeEvolucionCerrada !== null ? mm.porcentajeEvolucionCerrada.toFixed(1) + '%' : 'Sin datos'}</p>
-                <span class="text-[11px] text-slate-500 inline-block mt-2 font-semibold">${mm.atendidos} pacientes atendidos</span>
+            <div class="card-his bg-white/95 backdrop-blur p-4 shadow-xs">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Consultas Cerradas</span>
+                <p class="text-2xl font-extrabold text-slate-900 mt-1 font-mono tracking-tight">${mm.porcentajeEvolucionCerrada !== null ? mm.porcentajeEvolucionCerrada.toFixed(1) + '%' : 'Sin datos'}</p>
+                <span class="text-[11px] text-slate-500 inline-block mt-2 font-medium">${mm.atendidos} pacientes atendidos</span>
             </div>
         `;
     }
@@ -867,22 +935,37 @@ function renderizarSubvistaMedico(turnosFiltrados, medicoUidFiltro) {
                     {
                         label: 'Duración Real Promedio',
                         data: [mm.duracionRealPromedioMin || 0],
-                        backgroundColor: '#0d9488',
-                        borderRadius: 6
+                        backgroundColor: '#0f766e',
+                        borderRadius: 4
                     },
                     {
                         label: 'Duración Programada (Modulación)',
                         data: [mm.duracionProgramadaMin || 15],
                         backgroundColor: '#94a3b8',
-                        borderRadius: 6
+                        borderRadius: 4
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } },
-                scales: { y: { beginAtZero: true, ticks: { callback: v => `${v} min` } } }
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, padding: 12, font: { weight: 'bold', size: 11 } }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#334155', font: { weight: 'bold' } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { callback: v => `${v} min`, color: '#64748b', font: { size: 10 } }
+                    }
+                }
             }
         });
     }
@@ -913,8 +996,24 @@ function renderizarSubvistaMedico(turnosFiltrados, medicoUidFiltro) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } },
-                scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => `${v}%` } } }
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, padding: 12, font: { weight: 'bold', size: 11 } }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#334155', font: { weight: 'bold' } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { callback: v => `${v}%`, color: '#64748b', font: { size: 10 } }
+                    }
+                }
             }
         });
     }
@@ -929,25 +1028,25 @@ function renderizarSubvistaRecepcion(turnosFiltrados, operadorUidFiltro) {
     const kpisRecepContainer = document.getElementById('metricas-recepcion-kpis');
     if (kpisRecepContainer) {
         kpisRecepContainer.innerHTML = `
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <span class="text-xs font-bold uppercase text-slate-500">Puntaje Calidad de Carga</span>
-                <p class="text-2xl font-bold text-slate-900 mt-1">${mr.calidadCarga.puntajeCalidadPct !== null ? mr.calidadCarga.puntajeCalidadPct.toFixed(0) + ' / 100' : 'Sin datos'}</p>
-                <span class="text-[11px] text-slate-500 font-semibold inline-block mt-2">DNI duplicados: ${mr.calidadCarga.dnisDuplicados}</span>
+            <div class="card-his bg-white/95 backdrop-blur p-4 shadow-xs">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Puntaje Calidad de Carga</span>
+                <p class="text-2xl font-extrabold text-slate-900 mt-1 font-mono tracking-tight">${mr.calidadCarga.puntajeCalidadPct !== null ? mr.calidadCarga.puntajeCalidadPct.toFixed(0) + ' / 100' : 'Sin datos'}</p>
+                <span class="text-[11px] text-slate-500 font-medium inline-block mt-2">DNI duplicados: ${mr.calidadCarga.dnisDuplicados}</span>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <span class="text-xs font-bold uppercase text-slate-500">Sin Correo Electrónico</span>
-                <p class="text-2xl font-bold text-slate-900 mt-1">${mr.calidadCarga.sinEmailPct !== null ? mr.calidadCarga.sinEmailPct.toFixed(1) + '%' : '0%'}</p>
-                <span class="text-[11px] text-slate-500 font-semibold inline-block mt-2">${mr.calidadCarga.sinEmail} turnos presenciales</span>
+            <div class="card-his bg-white/95 backdrop-blur p-4 shadow-xs">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Sin Correo Electrónico</span>
+                <p class="text-2xl font-extrabold text-slate-900 mt-1 font-mono tracking-tight">${mr.calidadCarga.sinEmailPct !== null ? mr.calidadCarga.sinEmailPct.toFixed(1) + '%' : '0%'}</p>
+                <span class="text-[11px] text-slate-500 font-medium inline-block mt-2">${mr.calidadCarga.sinEmail} turnos presenciales</span>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <span class="text-xs font-bold uppercase text-slate-500">Tasa de Cancelación</span>
-                <p class="text-2xl font-bold text-slate-900 mt-1">${mr.tasaCancelacionPct !== null ? mr.tasaCancelacionPct.toFixed(1) + '%' : '0%'}</p>
-                <span class="text-[11px] text-slate-500 font-semibold inline-block mt-2">Total cancelados: ${mr.cancelacionesPorActor.total}</span>
+            <div class="card-his bg-white/95 backdrop-blur p-4 shadow-xs">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Tasa de Cancelación</span>
+                <p class="text-2xl font-extrabold text-slate-900 mt-1 font-mono tracking-tight">${mr.tasaCancelacionPct !== null ? mr.tasaCancelacionPct.toFixed(1) + '%' : '0%'}</p>
+                <span class="text-[11px] text-slate-500 font-medium inline-block mt-2">Total cancelados: ${mr.cancelacionesPorActor.total}</span>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <span class="text-xs font-bold uppercase text-slate-500">Puntualidad Check-In</span>
-                <p class="text-2xl font-bold text-slate-900 mt-1">${mr.tiempoCheckInPromedioMin !== null ? Math.abs(mr.tiempoCheckInPromedioMin).toFixed(0) + ' min ' + (mr.tiempoCheckInPromedioMin >= 0 ? 'antes' : 'tarde') : 'En horario'}</p>
-                <span class="text-[11px] text-slate-500 font-semibold inline-block mt-2">Anticipación media</span>
+            <div class="card-his bg-white/95 backdrop-blur p-4 shadow-xs">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Puntualidad Check-In</span>
+                <p class="text-2xl font-extrabold text-slate-900 mt-1 font-mono tracking-tight">${mr.tiempoCheckInPromedioMin !== null ? Math.abs(mr.tiempoCheckInPromedioMin).toFixed(0) + ' min ' + (mr.tiempoCheckInPromedioMin >= 0 ? 'antes' : 'tarde') : 'En horario'}</p>
+                <span class="text-[11px] text-slate-500 font-medium inline-block mt-2">Anticipación media</span>
             </div>
         `;
     }
@@ -963,7 +1062,7 @@ function renderizarSubvistaRecepcion(turnosFiltrados, operadorUidFiltro) {
                 datasets: [{
                     label: 'Turnos Asignados',
                     data: mr.turnosPorPersona.map(p => p.cantidad),
-                    backgroundColor: '#0d9488',
+                    backgroundColor: '#0f766e',
                     borderRadius: 4
                 }]
             },
@@ -971,7 +1070,17 @@ function renderizarSubvistaRecepcion(turnosFiltrados, operadorUidFiltro) {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#334155', font: { size: 10, weight: 'bold' } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { precision: 0, color: '#64748b', font: { size: 10 } }
+                    }
+                }
             }
         });
     }
@@ -991,13 +1100,20 @@ function renderizarSubvistaRecepcion(turnosFiltrados, operadorUidFiltro) {
                         mr.cancelacionesPorActor.medico,
                         mr.cancelacionesPorActor.sinEspecificar
                     ],
-                    backgroundColor: ['#38bdf8', '#f43f5e', '#f59e0b', '#cbd5e1']
+                    backgroundColor: ['#0284c7', '#e11d48', '#d97706', '#94a3b8'], // Sky 600, Rose 600, Amber 600, Slate 400
+                    borderColor: '#ffffff',
+                    borderWidth: 2
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } }
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, padding: 12, font: { weight: 'bold', size: 11 } }
+                    }
+                }
             }
         });
     }
@@ -1028,15 +1144,15 @@ function renderizarSubvistaComparador(turnosFiltrados) {
 
     if (tablaTbody && comparativa) {
         tablaTbody.innerHTML = comparativa.comparaciones.map(c => `
-            <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+            <tr class="hover:bg-slate-50/80 transition border-b border-slate-100">
                 <td class="p-3 font-bold text-slate-800">${escaparHTML(c.indicador)}</td>
                 <td class="p-3 text-center">
-                    <span class="font-extrabold text-slate-900">${c.valorA}</span>
-                    <span class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full ${c.semaforoA.claseBadge} ml-2">${c.semaforoA.etiqueta}</span>
+                    <span class="font-extrabold text-slate-900 font-mono">${c.valorA}</span>
+                    <span class="badge-his text-[10px] ${c.semaforoA.claseBadge} ml-2">${c.semaforoA.etiqueta}</span>
                 </td>
                 <td class="p-3 text-center">
-                    <span class="font-extrabold text-slate-900">${c.valorB}</span>
-                    <span class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full ${c.semaforoB.claseBadge} ml-2">${c.semaforoB.etiqueta}</span>
+                    <span class="font-extrabold text-slate-900 font-mono">${c.valorB}</span>
+                    <span class="badge-his text-[10px] ${c.semaforoB.claseBadge} ml-2">${c.semaforoB.etiqueta}</span>
                 </td>
                 <td class="p-3 text-center font-mono font-bold ${c.diferencia !== null && c.diferencia > 0 ? 'text-teal-700' : 'text-slate-600'}">
                     ${c.diferencia !== null ? (c.diferencia > 0 ? `+${c.diferencia}` : c.diferencia) : 'N/D'}
@@ -1114,6 +1230,7 @@ export function descargarGraficoImagen(canvasId, nombreArchivo = 'grafico-schest
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            mostrarToast("El gráfico se descargó en alta resolución.", "exito");
             mostrarExito("Imagen Descargada", "El gráfico se descargó en alta resolución.");
         }, 'image/png', 1.0);
     } catch (e) {
@@ -1198,6 +1315,7 @@ export function exportarMetricasAExcel() {
     window.XLSX.utils.book_append_sheet(wb, wsPersonal, "Personal Recepción");
 
     window.XLSX.writeFile(wb, `Reporte-Metricas-Schestakow-${fHasta || 'Hoy'}.xlsx`);
+    mostrarToast("Informe de métricas exportado exitosamente a Excel.", "exito");
     mostrarExito("Excel Exportado", "El informe con todas las métricas agregadas fue generado exitosamente.");
 }
 
