@@ -1,30 +1,102 @@
-/* ==========================================
-   ESTILOS PERSONALIZADOS - HOSPITAL SCHESTAKOW
-   ========================================== */
+/* ==========================================================================
+   SISTEMA DE DISEÑO HOSPITALARIO (HIS) - HOSPITAL TEODORO J. SCHESTAKOW
+   Inspirado en estándares de software clínico, accesibilidad AA y sobriedad.
+   ========================================================================== */
 
-/* 1. Estructura Base */
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+/* --------------------------------------------------------------------------
+   1. VARIABLES DE SISTEMA Y PALETA INSTITUCIONAL (Derivada del Logo)
+   -------------------------------------------------------------------------- */
+:root {
+    /* Color Primario Institucional: Azul Marino / Petróleo Profundo (Logo y Tipografía) */
+    --his-primary: #002845;
+    --his-primary-hover: #001c31;
+    --his-primary-light: #e6eff5;
+    --his-primary-contrast: #ffffff;
+
+    /* Color Secundario Sanitario: Verde Quirúrgico / Cruz Médica (Logo) */
+    --his-secondary: #007a78;
+    --his-secondary-hover: #005f5d;
+    --his-secondary-light: #e6f5f4;
+    --his-secondary-contrast: #ffffff;
+
+    /* Acento de Administración / Gestión Hospitalaria: Grafito Pizarra */
+    --his-admin: #0f172a;
+    --his-admin-hover: #1e293b;
+    --his-admin-light: #f1f5f9;
+
+    /* Superficies y Neutros Clínicos */
+    --his-bg: #f8fafc;
+    --his-surface: #ffffff;
+    --his-surface-translucent: rgba(255, 255, 255, 0.98);
+    --his-border: #cbd5e1;
+    --his-border-subtle: #e2e8f0;
+    --his-border-strong: #94a3b8;
+    
+    /* Tipografía y Textos */
+    --his-text: #0f172a;
+    --his-text-secondary: #334155;
+    --his-text-muted: #64748b;
+    --his-text-inverse: #ffffff;
+    --his-font: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+    /* Estados Operativos y Clínicos (Semáforo Hospitalario) */
+    --his-status-espera: #0369a1;       /* En Espera / Consulta: Azul Clínico */
+    --his-status-espera-bg: #f0f9ff;
+    --his-status-espera-border: #bae6fd;
+
+    --his-status-atendido: #047857;     /* Atendido / Concluido: Verde */
+    --his-status-atendido-bg: #ecfdf5;
+    --his-status-atendido-border: #a7f3d0;
+
+    --his-status-pendiente: #b45309;    /* Pendiente de Horario: Ámbar */
+    --his-status-pendiente-bg: #fffbeb;
+    --his-status-pendiente-border: #fde68a;
+
+    --his-status-ausente: #b91c1c;      /* Ausente / Cancelado: Rojo */
+    --his-status-ausente-bg: #fef2f2;
+    --his-status-ausente-border: #fecaca;
+
+    /* Radios y Sombras Estrictamente Controlados (Sin burbujas rounded-xl ni blur artificial) */
+    --his-radius-sm: 4px;
+    --his-radius: 6px;
+    --his-radius-md: 6px;
+    --his-shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+    --his-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.08);
+}
+
+/* --------------------------------------------------------------------------
+   2. ESTRUCTURA BASE Y REGLAS DE NAVEGACIÓN EXISTENTES (PRESERVADAS)
+   -------------------------------------------------------------------------- */
 body { 
     display: flex; 
     flex-direction: column; 
     min-height: 100vh; 
-    background-color: #f8fafc; 
+    font-family: var(--his-font);
+    color: var(--his-text);
 }
 
-/* 2. Control de Vistas (Navegación del Sistema) */
+/* Números tabulares para fechas, DNI, teléfonos, códigos y tablas médicas */
+.tabular-nums, .font-mono, table, time {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Control de Vistas del Sistema (Preservado para panel.js y publico.js) */
 .view { 
     display: none; 
 }
 .view.active { 
     display: block; 
-    animation: fadeIn 0.4s ease-out; 
+    animation: fadeIn 0.3s ease-out; 
 }
 
-/* 3. Animaciones Generales */
+/* Animaciones sobrias */
 .animate-fade-in-up { 
-    animation: fadeInUp 0.4s ease-out forwards; 
+    animation: fadeInUp 0.3s ease-out forwards; 
 }
 .animate-fade-in-up-fast { 
-    animation: fadeInUp 0.2s ease-out forwards; 
+    animation: fadeInUp 0.15s ease-out forwards; 
     opacity: 0; 
 }
 
@@ -34,44 +106,44 @@ body {
 }
 
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(15px); }
+    from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* 4. Modales (Ventanas Emergentes) */
+/* Modales y Capas */
 .modal-overlay { 
-    background-color: rgba(15, 23, 42, 0.7); 
-    backdrop-filter: blur(4px); 
+    background-color: rgba(15, 23, 42, 0.65); 
 }
 .modal { 
     display: none; 
 }
 .modal.active { 
     display: flex; 
-    animation: fadeIn 0.2s ease-out; 
+    animation: fadeIn 0.15s ease-out; 
 }
 
-/* 5. Acento de Cabecera y Navegación según Vista Activa */
+/* Acentos de Navegación por Área Funcional */
 header { 
     border-bottom: 3px solid transparent !important; 
-    transition: border-color .3s; 
+    transition: border-color .2s; 
 }
-body[data-view="reception"] header { border-bottom-color: #1e40af !important; }
-body[data-view="doctor"] header { border-bottom-color: #047857 !important; }
-body[data-view="admin"] header { border-bottom-color: #0a0a0a !important; }
+body[data-view="reception"] header { border-bottom-color: var(--his-primary) !important; }
+body[data-view="doctor"] header { border-bottom-color: var(--his-secondary) !important; }
+body[data-view="admin"] header { border-bottom-color: var(--his-admin) !important; }
 
-body[data-view="reception"] #btn-nav-reception { box-shadow: inset 0 -2px 0 #1e40af; }
-body[data-view="doctor"] #btn-nav-doctor { box-shadow: inset 0 -2px 0 #047857; }
-body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 #0a0a0a; }
+body[data-view="reception"] #btn-nav-reception { box-shadow: inset 0 -2px 0 var(--his-primary); }
+body[data-view="doctor"] #btn-nav-doctor { box-shadow: inset 0 -2px 0 var(--his-secondary); }
+body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-admin); }
 
-/* 6. Pestañas Fluidas de Administración (Animación de línea grafito/negro) */
+/* Pestañas Fluidas de Administración */
 .admin-tab { 
     position: relative; 
-    transition: color 0.3s ease-in-out; 
+    transition: color 0.2s ease-in-out; 
     outline: none; 
+    font-weight: 600;
 }
 .admin-tab.active {
-    color: #171717 !important;
+    color: var(--his-primary) !important;
 }
 .admin-tab::after {
     content: ''; 
@@ -80,20 +152,331 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 #0a0a0a; }
     left: 0; 
     width: 100%; 
     height: 3px;
-    background-color: #0a0a0a; 
+    background-color: var(--his-primary); 
     transform: scaleX(0); 
     transform-origin: right;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .admin-tab.active::after { 
     transform: scaleX(1); 
     transform-origin: left; 
 }
 
-/* 6. Hoja de Estilos de Impresión para Historia Clínica */
+/* --------------------------------------------------------------------------
+   3. COMPONENTES CLÍNICOS E INSTITUCIONALES (HIS)
+   -------------------------------------------------------------------------- */
+
+/* Tarjetas Planas con Borde 1px (Alta legibilidad sobre el fondo fotográfico) */
+.card-his {
+    background-color: var(--his-surface-translucent);
+    border: 1px solid var(--his-border);
+    border-radius: var(--his-radius);
+    box-shadow: var(--his-shadow-sm);
+    transition: border-color 0.15s ease;
+}
+
+/* Botones Base */
+.btn-his-primary {
+    background-color: var(--his-primary);
+    color: var(--his-primary-contrast);
+    border: 1px solid var(--his-primary);
+    border-radius: var(--his-radius-sm);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    cursor: pointer;
+}
+.btn-his-primary:hover {
+    background-color: var(--his-primary-hover);
+    border-color: var(--his-primary-hover);
+}
+.btn-his-primary:focus-visible {
+    outline: 2px solid var(--his-primary);
+    outline-offset: 2px;
+}
+
+.btn-his-secondary {
+    background-color: var(--his-surface);
+    color: var(--his-text-secondary);
+    border: 1px solid var(--his-border);
+    border-radius: var(--his-radius-sm);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    cursor: pointer;
+}
+.btn-his-secondary:hover {
+    background-color: var(--his-bg);
+    border-color: var(--his-border-strong);
+    color: var(--his-text);
+}
+
+.btn-his-success {
+    background-color: var(--his-secondary);
+    color: var(--his-secondary-contrast);
+    border: 1px solid var(--his-secondary);
+    border-radius: var(--his-radius-sm);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: background-color 0.15s ease;
+    cursor: pointer;
+}
+.btn-his-success:hover {
+    background-color: var(--his-secondary-hover);
+    border-color: var(--his-secondary-hover);
+}
+
+.btn-his-danger {
+    background-color: var(--his-surface);
+    color: var(--his-status-ausente);
+    border: 1px solid var(--his-status-ausente-border);
+    border-radius: var(--his-radius-sm);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    cursor: pointer;
+}
+.btn-his-danger:hover {
+    background-color: var(--his-status-ausente-bg);
+    border-color: var(--his-status-ausente);
+}
+
+.btn-his-text {
+    background: transparent;
+    border: none;
+    color: var(--his-text-secondary);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--his-radius-sm);
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+.btn-his-text:hover {
+    color: var(--his-primary);
+    background-color: var(--his-primary-light);
+}
+
+/* Campos de Formulario (Inputs y Selects) */
+.input-his, .select-his {
+    width: 100%;
+    background-color: var(--his-surface);
+    border: 1px solid var(--his-border);
+    border-radius: var(--his-radius-sm);
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--his-text);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    outline: none;
+}
+.input-his:focus, .select-his:focus {
+    border-color: var(--his-primary);
+    box-shadow: 0 0 0 2px var(--his-primary-light);
+}
+.input-his:disabled, .select-his:disabled {
+    background-color: var(--his-bg);
+    color: var(--his-text-muted);
+    cursor: not-allowed;
+    border-color: var(--his-border-subtle);
+}
+.label-his {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--his-text-secondary);
+    margin-bottom: 0.375rem;
+}
+
+/* Chips / Badges de Estado Operativo */
+.badge-his {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--his-radius-sm);
+    border: 1px solid transparent;
+    line-height: 1.25;
+}
+.badge-his-espera {
+    background-color: var(--his-status-espera-bg);
+    color: var(--his-status-espera);
+    border-color: var(--his-status-espera-border);
+}
+.badge-his-atendido {
+    background-color: var(--his-status-atendido-bg);
+    color: var(--his-status-atendido);
+    border-color: var(--his-status-atendido-border);
+}
+.badge-his-pendiente {
+    background-color: var(--his-status-pendiente-bg);
+    color: var(--his-status-pendiente);
+    border-color: var(--his-status-pendiente-border);
+}
+.badge-his-ausente {
+    background-color: var(--his-status-ausente-bg);
+    color: var(--his-status-ausente);
+    border-color: var(--his-status-ausente-border);
+}
+.badge-his-cancelado {
+    background-color: var(--his-status-ausente-bg);
+    color: var(--his-status-ausente);
+    border-color: var(--his-status-ausente-border);
+}
+
+/* Tablas Clínicas Densas (Estilo HIS) */
+.table-his-container {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--his-border-subtle);
+    border-radius: var(--his-radius);
+    background-color: var(--his-surface);
+}
+.table-his {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    text-align: left;
+}
+.table-his th {
+    background-color: var(--his-bg);
+    color: var(--his-text-secondary);
+    font-weight: 600;
+    padding: 0.625rem 0.875rem;
+    border-bottom: 1px solid var(--his-border);
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+}
+.table-his td {
+    padding: 0.625rem 0.875rem;
+    border-bottom: 1px solid var(--his-border-subtle);
+    color: var(--his-text);
+}
+.table-his tr:hover td {
+    background-color: rgba(248, 250, 252, 0.8);
+}
+
+/* Cajas Modales Sobrias */
+.modal-box-his {
+    background-color: var(--his-surface);
+    border: 1px solid var(--his-border);
+    border-radius: var(--his-radius);
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25);
+    width: 100%;
+    overflow: hidden;
+}
+
+/* Estados Vacíos */
+.empty-state-his {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--his-text-muted);
+    font-size: 0.875rem;
+}
+
+/* Loader Esqueleto */
+.skeleton-his {
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: skeletonLoading 1.5s infinite;
+    border-radius: var(--his-radius-sm);
+}
+@keyframes skeletonLoading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* --------------------------------------------------------------------------
+   SISTEMA DE NOTIFICACIONES TOAST (CONFIRMACIONES DISCRETAS NO BLOQUEANTES)
+   -------------------------------------------------------------------------- */
+#toast-container {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 24rem;
+    width: calc(100% - 3rem);
+    pointer-events: none;
+}
+
+.toast-his {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background-color: var(--his-surface);
+    color: var(--his-text);
+    border: 1px solid var(--his-border);
+    border-radius: var(--his-radius);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    animation: toastSlideIn 0.25s ease-out forwards;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast-his.toast-salida {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.toast-his-success {
+    border-left: 4px solid var(--his-secondary);
+}
+.toast-his-warning {
+    border-left: 4px solid var(--his-status-espera-border);
+}
+.toast-his-error {
+    border-left: 4px solid var(--his-status-ausente);
+}
+.toast-his-info {
+    border-left: 4px solid var(--his-primary);
+}
+
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   4. IMPRESIÓN OFICIAL (HISTORIA CLÍNICA Y COMPROBANTES)
+   -------------------------------------------------------------------------- */
 @media print {
     body {
         background-color: #ffffff !important;
+        background-image: none !important;
         color: #000000 !important;
     }
     nav, header, footer, #titulo-medico-dashboard-container, #columna-agenda-medico, .btn-no-print, .modal, .modal-overlay {
@@ -119,4 +502,3 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 #0a0a0a; }
 .impresion-solo-print {
     display: none;
 }
-
