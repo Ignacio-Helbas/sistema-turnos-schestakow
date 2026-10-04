@@ -49,26 +49,50 @@
         <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between min-h-[5rem] py-2 md:py-0 items-center gap-2 md:gap-0">
                 
-                <div class="flex items-center py-1 md:py-2 select-none">
-                    <img src="img/LogoHospital.png" alt="Hospital Teodoro J. Schestakow" class="h-10 md:h-14 w-auto object-contain">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center py-1 md:py-2 select-none">
+                        <img src="img/LogoHospital.png" alt="Hospital Teodoro J. Schestakow" class="h-10 md:h-14 w-auto object-contain">
+                    </div>
+
+                    <div class="hidden sm:flex flex-col justify-center border-l border-slate-200 pl-3 md:pl-4">
+                        <div id="panel-breadcrumbs" class="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                            <span>Portal Hospitalario</span>
+                            <span class="text-slate-300">/</span>
+                            <span id="breadcrumb-current-view" class="font-bold text-slate-800">Acceso Institucional</span>
+                        </div>
+                        <div id="reloj-hospitalario" class="font-mono text-[11px] text-slate-600 mt-0.5 tabular-nums" title="Hora Oficial del Sistema Schestakow">--/--/---- - --:--:-- hs</div>
+                    </div>
                 </div>
 
                 <!-- Botones de Navegación del Staff -->
                 <nav class="flex flex-wrap justify-center gap-x-2 gap-y-2 items-center w-full md:w-auto pb-2 md:pb-0">
-                    <button id="btn-nav-reception" onclick="switchView('reception')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Recepción</button>
-                    <button id="btn-nav-doctor" onclick="switchView('doctor')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Consultorio</button>
-                    <button id="btn-nav-admin" onclick="switchView('admin')" class="hidden text-slate-600 hover:text-blue-800 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Administración</button>
-                    <button id="btn-nav-demo-foro" onclick="inyectarDemoCompletaForo()" class="hidden bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 rounded-lg transition flex items-center gap-1 shadow-sm" title="Preparar datos 100% funcionales para la presentación">Demo Foro</button>
+                    <button id="btn-nav-reception" onclick="switchView('reception')" class="hidden text-slate-600 hover:text-blue-900 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Recepción</button>
+                    <button id="btn-nav-doctor" onclick="switchView('doctor')" class="hidden text-slate-600 hover:text-blue-900 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Consultorio</button>
+                    <button id="btn-nav-admin" onclick="switchView('admin')" class="hidden text-slate-600 hover:text-blue-900 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Administración</button>
+                    <button id="btn-nav-demo-foro" onclick="inyectarDemoCompletaForo()" class="hidden bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 rounded-lg transition flex items-center gap-1 shadow-sm" title="Preparar datos funcionales para la presentación">Demo Foro</button>
                     
-                    <button id="btn-logout" onclick="cerrarSesionReal()" class="hidden bg-slate-800 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-md font-bold text-xs hover:bg-slate-700 shadow transition max-w-[200px] sm:max-w-none truncate">Cerrar Sesión</button>
-                    
+                    <!-- Usuario en Sesión y Botón Cerrar Sesión -->
+                    <div class="flex items-center gap-2.5 sm:gap-4 w-full md:w-auto justify-end">
+                        <div id="usuario-sesion-info" class="hidden flex flex-col text-right">
+                            <span id="usuario-sesion-nombre" class="text-xs font-bold text-slate-900 truncate max-w-[190px]">Personal</span>
+                            <div class="flex items-center justify-end gap-1 mt-0.5">
+                                <span id="usuario-sesion-rol" class="badge-his badge-his-espera text-[10px]">Staff</span>
+                            </div>
+                        </div>
+
+                        <button id="btn-logout" onclick="cerrarSesionReal()" class="hidden btn-his-danger text-xs px-3 py-1.5 flex items-center gap-1.5 shadow-xs" title="Finalizar sesión activa">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                            <span class="hidden sm:inline">Cerrar Sesión</span>
+                        </button>
+                    </div>
+
                     <!-- Indicador de Sistema En Vivo -->
-                    <div id="indicador-vivo" class="flex items-center gap-1.5 ml-1 md:ml-4">
-                        <span class="relative flex h-2.5 w-2.5 md:h-3 md:w-3">
+                    <div id="indicador-vivo" class="flex items-center gap-1.5 ml-1 md:ml-2">
+                        <span class="relative flex h-2.5 w-2.5">
                           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span class="relative inline-flex rounded-full h-2.5 w-2.5 md:h-3 md:w-3 bg-emerald-500"></span>
+                          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                         </span>
-                        <span class="text-emerald-500 font-bold text-[10px] md:text-sm uppercase md:capitalize">En Vivo</span>
+                        <span class="text-emerald-600 font-bold text-[10px] uppercase">En Vivo</span>
                     </div>
                 </nav>
 
@@ -83,27 +107,29 @@
 
         <!-- 0. VISTA LOGIN INTERNO -->
         <div id="view-login" class="view active">
-            <div class="max-w-md mx-auto bg-white/95 backdrop-blur p-6 sm:p-8 rounded-xl shadow-xl border border-slate-200 mt-4 sm:mt-10">
+            <div class="max-w-md mx-auto card-his bg-white/95 backdrop-blur p-6 sm:p-8 mt-4 sm:mt-10 shadow-xl">
                 <div class="text-center mb-6">
                     <div class="inline-block bg-slate-100 p-4 rounded-full mb-3">
-                        <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        <svg class="w-8 h-8 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7a4 4 0 00-8 0v4h8z"></path></svg>
                     </div>
-                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Acceso Institucional</h2>
-                    <p class="text-sm text-slate-500 mt-1">Portal exclusivo para Staff y Administración</p>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Acceso Institucional</h2>
+                    <p class="text-xs text-slate-500 mt-1">Portal exclusivo para Staff y Personal Autorizado</p>
                 </div>
 
-                <div class="space-y-5">
+                <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Correo Electrónico</label>
-                        <input type="email" id="login-user" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="usuario@hospital.com" autocomplete="email">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Correo Electrónico</label>
+                        <input type="email" id="login-user" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-600 outline-none transition" placeholder="usuario@hospital.com" autocomplete="email">
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Contraseña</label>
-                        <input type="password" id="login-pass" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="••••••••••••" autocomplete="current-password">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Contraseña</label>
+                        <input type="password" id="login-pass" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-600 outline-none transition" placeholder="••••••••••••" autocomplete="current-password">
                     </div>
-                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-2">
-                        <a href="index.html" class="text-sm text-slate-500 hover:text-slate-800 transition order-2 sm:order-1">Volver a turnos</a>
-                        <button id="btn-login" onclick="iniciarSesionReal()" class="w-full sm:w-auto bg-slate-800 text-white font-bold py-2 px-6 rounded-lg hover:bg-slate-900 shadow transition order-1 sm:order-2">Ingresar</button>
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2">
+                        <a href="index.html" class="text-xs text-slate-500 hover:text-slate-800 transition order-2 sm:order-1 flex items-center gap-1">
+                            <span>&larr; Volver a reserva pública</span>
+                        </a>
+                        <button id="btn-login" onclick="iniciarSesionReal()" class="btn-his-primary w-full sm:w-auto px-6 py-2.5 text-xs font-bold shadow-xs order-1 sm:order-2">Ingresar al Sistema</button>
                     </div>
                 </div>
             </div>
@@ -111,45 +137,67 @@
 
         <!-- 1. VISTA RECEPCIÓN -->
         <div id="view-reception" class="view hidden">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 border-b pb-4 bg-white/90 px-4 pt-4 rounded-t-lg gap-4">
-                <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Panel de Recepción</h2>
-                <button onclick="abrirModal('modal-ausencia-emergencia')" class="w-full sm:w-auto bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg font-bold hover:bg-red-100 transition text-sm text-center">Reportar Ausencia Médica</button>
+            <div class="card-his bg-white/95 backdrop-blur p-4 mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                    <h2 class="text-lg sm:text-xl font-bold text-slate-900">Panel de Admisión y Recepción</h2>
+                    <p class="text-xs text-slate-500">Acreditación presencial de pacientes, asignación de turnos y derivación a sala</p>
+                </div>
+                <button onclick="abrirModal('modal-ausencia-emergencia')" class="btn-his-danger text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-xs">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <span>Reportar Ausencia Médica</span>
+                </button>
             </div>
 
-            <div class="bg-white/95 backdrop-blur p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+            <div class="card-his bg-white/95 backdrop-blur p-4 sm:p-5 mb-6">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Especialidad</label>
-                        <select id="reception-especialidad" onchange="actualizarMedicosRecepcion()" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"></select>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Especialidad</label>
+                        <select id="reception-especialidad" onchange="actualizarMedicosRecepcion()" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-600 outline-none"></select>
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Médico</label>
-                        <select id="reception-medico" disabled class="w-full border border-slate-300 rounded-lg p-2.5 bg-slate-50 text-slate-500 outline-none"></select>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Médico Asignado</label>
+                        <select id="reception-medico" disabled class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50 text-slate-500 outline-none"></select>
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Fecha</label>
-                        <input type="date" id="input-fecha-recepcion" onchange="validarDiaHabil(this)" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Fecha de Atención</label>
+                        <input type="date" id="input-fecha-recepcion" onchange="validarDiaHabil(this)" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-600 outline-none">
                     </div>
-                    <button onclick="buscarAgendaRecepcion()" class="w-full bg-blue-800 text-white font-bold py-2.5 rounded-lg hover:bg-blue-900 shadow transition">Cargar Agenda</button>
+                    <button onclick="buscarAgendaRecepcion()" class="btn-his-primary w-full py-2.5 text-xs font-bold shadow-xs">Cargar Agenda</button>
                 </div>
             </div>
 
-            <div id="contenedor-grilla-recepcion" class="hidden bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="bg-slate-50 border-b border-slate-200 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <h3 id="titulo-agenda-recepcion" class="font-bold text-slate-800 text-lg">Agenda:</h3>
-                    <button onclick="descargarExcelRecepcion()" class="w-full sm:w-auto justify-center bg-emerald-600 text-white text-sm px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 shadow transition flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> Exportar a Excel
-                    </button>
+            <div id="contenedor-grilla-recepcion" class="hidden card-his bg-white/95 backdrop-blur overflow-hidden mb-6">
+                <div class="bg-slate-50/90 border-b border-slate-200 p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-blue-600"></div>
+                        <h3 id="titulo-agenda-recepcion" class="font-bold text-slate-800 text-sm sm:text-base">Agenda:</h3>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                        <div class="relative flex-grow sm:flex-grow-0 sm:w-56">
+                            <input type="text" id="reception-filtro-texto" oninput="filtrarAgendaRecepcionPorDni(this.value)" placeholder="Filtrar por paciente/DNI..." class="w-full pl-8 pr-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-600 outline-none">
+                            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 text-xs">
+                            <button type="button" onclick="filtrarAgendaPorEstado('todos')" class="px-2 py-1 rounded text-[11px] font-bold text-slate-700 hover:bg-slate-100 transition">Todos</button>
+                            <button type="button" onclick="filtrarAgendaPorEstado('en_sala')" class="px-2 py-1 rounded text-[11px] font-bold text-teal-800 hover:bg-teal-50 transition">En Sala</button>
+                            <button type="button" onclick="filtrarAgendaPorEstado('pendientes')" class="px-2 py-1 rounded text-[11px] font-bold text-blue-800 hover:bg-blue-50 transition">Confirmados</button>
+                            <button type="button" onclick="filtrarAgendaPorEstado('atendidos')" class="px-2 py-1 rounded text-[11px] font-bold text-emerald-800 hover:bg-emerald-50 transition">Atendidos</button>
+                        </div>
+                        <button onclick="descargarExcelRecepcion()" class="btn-his-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 shadow-xs">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span>Excel</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[600px]">
-                        <thead class="bg-slate-100 text-slate-600 text-xs uppercase font-bold">
+                    <table class="table-his w-full min-w-[720px]">
+                        <thead>
                             <tr>
-                                <th class="p-3 border-b border-slate-200 w-24">Hora</th>
-                                <th class="p-3 border-b border-slate-200 w-24">Canal</th>
-                                <th class="p-3 border-b border-slate-200">Paciente</th>
-                                <th class="p-3 border-b border-slate-200 w-32">Estado</th>
-                                <th class="p-3 border-b border-slate-200 w-32">Acción</th>
+                                <th class="w-24">Hora</th>
+                                <th class="w-24">Canal</th>
+                                <th>Paciente / Identificación</th>
+                                <th class="w-32">Estado</th>
+                                <th class="w-64">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="reception-tbody" class="text-sm"></tbody>
@@ -259,8 +307,13 @@
                 <!-- Columna Izquierda: Sala de Espera del Día -->
                 <div id="columna-agenda-medico" class="lg:col-span-1 bg-white/95 backdrop-blur rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[500px] lg:h-[750px]">
                     <div class="bg-emerald-950 text-white p-4 flex justify-between items-center">
-                        <h3 class="font-bold text-base">Sala de Espera (Hoy)</h3>
-                        <span id="badge-total-espera" class="text-xs bg-emerald-900 px-2 py-0.5 rounded font-mono font-bold">0</span>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-sm sm:text-base">Sala de Espera (Hoy)</h3>
+                            <span id="badge-total-espera" class="badge-his bg-emerald-900 text-emerald-100 border-emerald-800 text-xs">0</span>
+                        </div>
+                        <button id="btn-llamar-siguiente-paciente" onclick="llamarSiguientePaciente()" class="btn-his-secondary text-xs px-2.5 py-1 bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-600 shadow-xs flex items-center gap-1" title="Llamar al siguiente paciente en espera o confirmado">
+                            <span>Llamar siguiente</span>
+                        </button>
                     </div>
                     <div id="medico-agenda-container" class="p-4 flex-grow overflow-y-auto space-y-3 bg-slate-50">
                         <p class="text-sm text-slate-500 text-center mt-10">Cargando pacientes...</p>
@@ -293,7 +346,19 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 mb-1">Diagnóstico (Presuntivo / Definitivo) *</label>
-                                    <input type="text" id="input-diagnostico-consulta" placeholder="Ej: Hipertensión arterial esencial..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <input type="text" id="input-diagnostico-consulta" list="lista-cie10" placeholder="Ej: I10 - Hipertensión arterial..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <datalist id="lista-cie10">
+                                        <option value="I10 - Hipertensión esencial (primaria)"></option>
+                                        <option value="E11 - Diabetes mellitus no insulinodependiente"></option>
+                                        <option value="J00 - Rinofaringitis aguda (resfriado común)"></option>
+                                        <option value="M54 - Dorsalgia / Lumbago"></option>
+                                        <option value="K21 - Enfermedad por reflujo gastroesofágico"></option>
+                                        <option value="J20 - Bronquitis aguda"></option>
+                                        <option value="R51 - Cefalea"></option>
+                                        <option value="N39.0 - Infección de vías urinarias"></option>
+                                        <option value="E78 - Trastornos del metabolismo de lipoproteínas"></option>
+                                        <option value="F41 - Trastornos de ansiedad"></option>
+                                    </datalist>
                                 </div>
                             </div>
 
@@ -328,6 +393,28 @@
                                 </div>
                             </div>
 
+                            <!-- Asistente de Redacción Clínica Estructurada -->
+                            <details class="bg-slate-50 border border-slate-200 rounded-lg p-3 group">
+                                <summary class="text-xs font-bold text-slate-700 cursor-pointer select-none flex items-center justify-between">
+                                    <span>Asistente de Redacción Clínica (Anamnesis / Examen Físico / Hallazgos)</span>
+                                    <span class="text-slate-400 group-open:rotate-180 transition-transform text-xs">▼</span>
+                                </summary>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-3 pt-2 border-t border-slate-200">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-600 mb-0.5">Anamnesis / Antecedentes</label>
+                                        <textarea id="input-antecedentes-consulta" oninput="sincronizarEvolucionCampos()" rows="2" placeholder="Motivo ampliado, antecedentes inmediatos..." class="w-full border border-slate-300 rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500"></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-600 mb-0.5">Examen Físico</label>
+                                        <textarea id="input-examen-fisico" oninput="sincronizarEvolucionCampos()" rows="2" placeholder="Inspección, auscultación, palpación..." class="w-full border border-slate-300 rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500"></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-600 mb-0.5">Hallazgos y Conducta</label>
+                                        <textarea id="input-hallazgos-consulta" oninput="sincronizarEvolucionCampos()" rows="2" placeholder="Juicio clínico y decisiones tomadas..." class="w-full border border-slate-300 rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500"></textarea>
+                                    </div>
+                                </div>
+                            </details>
+
                             <!-- Evolución Clínica -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">Evolución Médica, Examen Físico y Hallazgos *</label>
@@ -342,13 +429,13 @@
 
                             <!-- Botones de Envío y Citación -->
                             <div class="pt-2 flex flex-col sm:flex-row gap-3">
-                                <button id="btn-guardar-consulta-hc" class="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 px-4 rounded-lg shadow transition flex items-center justify-center gap-2 text-sm sm:text-base">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                                    Registrar Consulta Inmutable
+                                <button id="btn-guardar-consulta-hc" class="btn-his-primary flex-1 py-3 px-4 text-sm font-bold shadow-xs flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                    <span>Registrar Consulta Inmutable</span>
                                 </button>
-                                <button type="button" onclick="abrirModalProximaConsulta()" class="bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold py-3 px-4 rounded-lg border border-teal-300 transition flex items-center justify-center gap-2 text-sm shadow-sm">
-                                    <svg class="w-4 h-4 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                    Citar Próxima Consulta
+                                <button type="button" onclick="abrirModalProximaConsulta()" class="btn-his-secondary py-3 px-4 text-sm font-bold shadow-xs flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4 text-emerald-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    <span>Citar Próxima Consulta</span>
                                 </button>
                             </div>
                         </div>
@@ -374,28 +461,32 @@
 
         <!-- 3. VISTA ADMINISTRACIÓN -->
         <div id="view-admin" class="view hidden">
-            <h2 class="text-xl sm:text-2xl font-bold text-slate-800 mb-4 sm:mb-6 bg-white/90 p-4 rounded-lg shadow-sm border-l-4 border-neutral-900">Panel de Administración</h2>
+            <div class="card-his bg-white/95 backdrop-blur p-4 mb-4 sm:mb-6 border-l-4 border-slate-900 shadow-sm">
+                <h2 class="text-lg sm:text-xl font-bold text-slate-900">Panel de Control y Administración Institucional</h2>
+                <p class="text-xs text-slate-500">Configuración operativa, gestión del personal, auditoría y métricas de gestión hospitalaria</p>
+            </div>
             
             <div class="flex overflow-x-auto gap-4 sm:gap-8 border-b border-slate-200 mb-6 px-2 bg-white/90 pt-3 rounded-t-lg whitespace-nowrap scrollbar-hide">
-                <button onclick="cambiarTabAdmin('gestion')" id="tab-gestion" class="admin-tab active font-bold text-neutral-900 pb-2 cursor-pointer">Gestión y Modulación</button>
+                <button onclick="cambiarTabAdmin('gestion')" id="tab-gestion" class="admin-tab active font-bold text-neutral-900 pb-2 cursor-pointer border-b-2 border-slate-900">Gestión y Modulación</button>
                 <button onclick="cambiarTabAdmin('metricas')" id="tab-metricas" class="admin-tab font-bold text-slate-500 hover:text-slate-800 pb-2 transition cursor-pointer">Métricas y Rendimiento</button>
+                <button onclick="cambiarTabAdmin('auditoria')" id="tab-auditoria" class="admin-tab font-bold text-slate-500 hover:text-slate-800 pb-2 transition cursor-pointer">Registro de Auditoría</button>
             </div>
 
             <!-- SECCIÓN 1: GESTIÓN -->
             <div id="admin-sec-gestion" class="admin-section grid grid-cols-1 lg:grid-cols-4 gap-6">
                 
-                <div class="lg:col-span-1 bg-white/95 backdrop-blur p-5 rounded-xl shadow-sm border border-slate-200 self-start">
-                    <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">Modulación de Turnos</h3>
+                <div class="lg:col-span-1 card-his bg-white/95 backdrop-blur p-5 self-start">
+                    <h3 class="font-bold text-slate-900 text-sm mb-4 border-b border-slate-100 pb-2">Modulación de Turnos</h3>
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Alcance</label>
-                            <select id="admin-select-alcance" onchange="cargarConfiguracionModulacion()" class="w-full border border-slate-300 rounded p-2 text-sm focus:ring-2 focus:ring-neutral-700 outline-none">
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Alcance</label>
+                            <select id="admin-select-alcance" onchange="cargarConfiguracionModulacion()" class="w-full border border-slate-300 rounded p-2 text-xs focus:ring-1 focus:ring-slate-800 outline-none">
                                 <option value="global">Todas las especialidades (Global)</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Duración (Minutos)</label>
-                            <select id="admin-select-duracion" class="w-full border border-slate-300 rounded p-2 text-sm focus:ring-2 focus:ring-neutral-700 outline-none">
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Duración (Minutos)</label>
+                            <select id="admin-select-duracion" class="w-full border border-slate-300 rounded p-2 text-xs focus:ring-1 focus:ring-slate-800 outline-none">
                                 <option value="10">10 minutos</option>
                                 <option value="15" selected>15 minutos (Por Defecto)</option>
                                 <option value="20">20 minutos</option>
@@ -404,44 +495,44 @@
                                 <option value="60">60 minutos</option>
                             </select>
                         </div>
-                        <button onclick="iniciarGuardadoModulacion()" class="w-full bg-neutral-900 text-white font-bold py-2 rounded shadow hover:bg-black transition text-sm">Aplicar Cambios</button>
+                        <button onclick="iniciarGuardadoModulacion()" class="btn-his-primary w-full py-2 text-xs shadow-xs">Aplicar Cambios</button>
                     </div>
                 </div>
 
-                <div class="lg:col-span-3">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 bg-white/90 p-4 rounded-xl shadow-sm gap-4">
-                        <h3 class="text-lg font-bold text-slate-800">Gestión de Usuarios Activos</h3>
+                <div class="lg:col-span-3 space-y-4">
+                    <div class="card-his bg-white/95 backdrop-blur p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900">Gestión de Personal Institucional</h3>
                         <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                             <!-- Botones Protegidos de SuperAdmin -->
-                            <button id="btn-demo-foro" onclick="inyectarDemoCompletaForo()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white px-3.5 py-2 rounded-lg font-bold shadow transition hidden text-xs flex items-center justify-center gap-1.5">
-                                <span>Cargar Demo 100% Funcional</span>
+                            <button id="btn-demo-foro" onclick="inyectarDemoCompletaForo()" class="w-full sm:w-auto btn-his-secondary text-xs px-3 py-1.5 hidden shadow-xs">
+                                <span>Cargar Demo Foro</span>
                             </button>
-                            <button id="btn-reset-db" onclick="limpiarBaseDeDatos()" class="w-full sm:w-auto bg-red-600 text-white px-3.5 py-2 rounded-lg font-bold hover:bg-red-700 shadow transition hidden text-xs">Reset de Fábrica</button>
-                            <button id="btn-cargar-dummies" onclick="inyectarMedicosDePrueba()" class="w-full sm:w-auto bg-neutral-700 text-white px-3.5 py-2 rounded-lg font-bold hover:bg-neutral-800 shadow transition hidden text-xs">Inyectar Médicos</button>
+                            <button id="btn-reset-db" onclick="limpiarBaseDeDatos()" class="w-full sm:w-auto btn-his-danger text-xs px-3 py-1.5 hidden">Reset de Fábrica</button>
+                            <button id="btn-cargar-dummies" onclick="inyectarMedicosDePrueba()" class="w-full sm:w-auto btn-his-text text-xs px-3 py-1.5 border border-slate-300 hidden">Inyectar Médicos</button>
                             
-                            <button onclick="abrirModalUsuarioNulo()" class="w-full sm:w-auto bg-neutral-900 text-white px-3.5 py-2 rounded-lg font-bold hover:bg-black shadow transition text-xs">+ Nuevo Usuario</button>
+                            <button onclick="abrirModalUsuarioNulo()" class="btn-his-primary w-full sm:w-auto text-xs px-3.5 py-2 shadow-xs">+ Nuevo Usuario</button>
                         </div>
                     </div>
                     
-                    <div class="overflow-x-auto bg-white/95 backdrop-blur rounded-xl border border-slate-200 shadow-sm">
-                        <table class="w-full text-left border-collapse min-w-[700px]">
-                            <thead class="bg-neutral-900 text-white text-xs uppercase font-bold border-b border-neutral-900">
+                    <div class="overflow-x-auto card-his bg-white/95 backdrop-blur">
+                        <table class="table-his w-full min-w-[700px]">
+                            <thead>
                                 <tr>
-                                    <th class="p-3">Profesional / Staff</th>
-                                    <th class="p-3">Rol / Matrícula</th>
-                                    <th class="p-3">Credenciales</th>
-                                    <th class="p-3 text-center">Acciones</th>
+                                    <th>Profesional / Staff</th>
+                                    <th>Rol / Matrícula</th>
+                                    <th>Credenciales</th>
+                                    <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="admin-users-tbody" class="text-sm"></tbody>
                         </table>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row justify-between items-center mt-4 px-4 bg-white/95 backdrop-blur py-3 rounded-xl border border-slate-200 shadow-sm gap-4">
-                        <span id="admin-pag-info" class="text-sm text-slate-600 font-bold">Página 1</span>
+                    <div class="flex flex-col sm:flex-row justify-between items-center px-4 card-his bg-white/95 backdrop-blur py-2.5 gap-3">
+                        <span id="admin-pag-info" class="text-xs text-slate-600 font-bold font-mono">Página 1</span>
                         <div class="flex w-full sm:w-auto gap-2">
-                            <button id="btn-prev-users" onclick="cargarUsuariosAdmin('prev')" class="flex-1 sm:flex-none px-4 py-1.5 bg-slate-100 text-slate-700 border border-slate-300 rounded hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold transition">Anterior</button>
-                            <button id="btn-next-users" onclick="cargarUsuariosAdmin('next')" class="flex-1 sm:flex-none px-4 py-1.5 bg-slate-100 text-slate-700 border border-slate-300 rounded hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold transition">Siguiente</button>
+                            <button id="btn-prev-users" onclick="cargarUsuariosAdmin('prev')" class="btn-his-text flex-1 sm:flex-none px-3 py-1.5 border border-slate-300 rounded hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold transition">Anterior</button>
+                            <button id="btn-next-users" onclick="cargarUsuariosAdmin('next')" class="btn-his-text flex-1 sm:flex-none px-3 py-1.5 border border-slate-300 rounded hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold transition">Siguiente</button>
                         </div>
                     </div>
                 </div>
@@ -802,6 +893,40 @@
 
                 </div>
 
+            </div>
+
+            <!-- SECCIÓN 3: REGISTRO DE ACTIVIDAD Y AUDITORÍA -->
+            <div id="admin-sec-auditoria" class="admin-section hidden space-y-4">
+                <div class="card-his bg-white/95 backdrop-blur p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm sm:text-base">Registro de Auditoría y Trazabilidad Asistencial</h3>
+                        <p class="text-xs text-slate-500">Trazabilidad inmutable de eventos asistenciales y administrativos (Ley 26.529 y Ley 25.326)</p>
+                    </div>
+                    <button onclick="cargarAuditoriaAdmin()" class="btn-his-secondary text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-xs">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <span>Actualizar Registro</span>
+                    </button>
+                </div>
+
+                <div class="card-his bg-white/95 backdrop-blur overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="table-his w-full min-w-[750px]">
+                            <thead>
+                                <tr>
+                                    <th class="w-48">Fecha / Hora</th>
+                                    <th class="w-32">Rol Actor</th>
+                                    <th class="w-56">Operación / Evento</th>
+                                    <th>Detalle Registrado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-auditoria-tbody">
+                                <tr>
+                                    <td colspan="4" class="p-6 text-center text-slate-400">Seleccione el registro para consultar los eventos de auditoría...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <!-- MODAL DE INFORMACIÓN Y FÓRMULA DE MÉTRICAS -->
@@ -1331,6 +1456,59 @@
                         Aceptar
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: COMPROBANTE DE RECEPCIÓN / TURNO PRESENCIAL -->
+    <div id="modal-comprobante-recepcion" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="card-his bg-white max-w-md w-full p-6 animate-fade-in-up shadow-xl">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-blue-600"></div>
+                    <h3 class="font-bold text-slate-900 text-sm sm:text-base">Comprobante de Turno Oficial</h3>
+                </div>
+                <button onclick="cerrarModal('modal-comprobante-recepcion')" class="text-slate-400 hover:text-slate-700 text-sm font-bold">✕</button>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2.5 text-xs">
+                <div class="flex justify-between items-start border-b border-slate-200 pb-2">
+                    <div>
+                        <p class="text-[10px] uppercase font-bold text-slate-500">Hospital Teodoro J. Schestakow</p>
+                        <p class="font-bold text-slate-900 text-sm" id="comp-rec-paciente">Paciente</p>
+                        <p class="text-slate-600 font-mono">DNI: <span id="comp-rec-dni">--</span></p>
+                    </div>
+                    <div class="text-right">
+                        <span class="badge-his badge-his-pendiente text-[10px]">Acreditado</span>
+                        <p class="font-mono text-slate-500 text-[10px] mt-1">Cód: <span id="comp-rec-codigo">SCH-OK</span></p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                        <span class="block text-[10px] font-bold text-slate-500 uppercase">Especialidad</span>
+                        <span id="comp-rec-especialidad" class="font-semibold text-slate-800">--</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-slate-500 uppercase">Médico</span>
+                        <span id="comp-rec-medico" class="font-semibold text-slate-800">--</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-slate-500 uppercase">Fecha</span>
+                        <span id="comp-rec-fecha" class="font-semibold text-slate-800 font-mono">--</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-slate-500 uppercase">Horario</span>
+                        <span id="comp-rec-hora" class="font-bold text-blue-900 font-mono">-- hs</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2.5 mt-5">
+                <button onclick="cerrarModal('modal-comprobante-recepcion')" class="btn-his-text text-xs px-3 py-2 border border-slate-300 rounded">Cerrar</button>
+                <button onclick="window.print()" class="btn-his-primary text-xs px-4 py-2 flex items-center gap-1.5 shadow-xs">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    <span>Imprimir Talón</span>
+                </button>
             </div>
         </div>
     </div>

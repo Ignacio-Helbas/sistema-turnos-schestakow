@@ -26,7 +26,10 @@ import {
     abrirModal,
     cerrarModal,
     escaparHTML,
-    validarDiaHabil
+    validarDiaHabil,
+    mostrarToast,
+    formatearFechaAR,
+    formatearHoraAR
 } from "./ui.js";
 
 import {
@@ -110,43 +113,67 @@ export async function cargarAgendaMedico() {
         const snap = await getDocs(q);
 
         if (snap.empty) {
-            container.innerHTML = '<p class="text-sm text-slate-500 text-center mt-10">No hay turnos programados para hoy.</p>';
+            container.innerHTML = '<p class="text-xs text-slate-400 text-center py-10">No hay turnos programados para hoy.</p>';
+            const badgeEspera = document.getElementById('badge-total-espera');
+            if (badgeEspera) badgeEspera.innerText = '0';
             return;
         }
 
         let lista = [];
+        let enSalaCount = 0;
         snap.forEach(d => {
             const data = d.data();
             data.idDoc = d.id;
             lista.push(data);
+            if (data.estado === "En Espera") enSalaCount++;
         });
         lista.sort((a, b) => a.horario.localeCompare(b.horario));
+
+        const badgeEspera = document.getElementById('badge-total-espera');
+        if (badgeEspera) badgeEspera.innerText = String(enSalaCount);
 
         let html = '';
         lista.forEach(t => {
             const esAtendido = t.estado === "Atendido";
             const esAusente = t.estado === "Ausente";
             const esCancelado = t.estado && t.estado.includes("Cancelado");
+            const esEnEspera = t.estado === "En Espera";
 
-            let badge = `<span class="text-xs px-2 py-0.5 rounded font-bold bg-teal-100 text-teal-800">${escaparHTML(t.estado)}</span>`;
-            if (esAtendido) badge = `<span class="text-xs px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800">Atendido</span>`;
-            if (esAusente) badge = `<span class="text-xs px-2 py-0.5 rounded font-bold bg-amber-100 text-amber-800">Ausente</span>`;
-            if (esCancelado) badge = `<span class="text-xs px-2 py-0.5 rounded font-bold bg-red-100 text-red-800">Cancelado</span>`;
+            let badge = `<span class="badge-his badge-his-pendiente text-[11px]">${escaparHTML(t.estado)}</span>`;
+            if (esAtendido) badge = `<span class="badge-his badge-his-atendido text-[11px]">Atendido</span>`;
+            else if (esAusente) badge = `<span class="badge-his badge-his-ausente text-[11px]">Ausente</span>`;
+            else if (esCancelado) badge = `<span class="badge-his badge-his-cancelado text-[11px]">Cancelado</span>`;
+            else if (esEnEspera) badge = `<span class="badge-his badge-his-espera text-[11px]">En Sala</span>`;
+
+            let tiempoEsperaHtml = '';
+            if (esEnEspera && t.llegadaEn) {
+                let ms = null;
+                if (typeof t.llegadaEn.toMillis === 'function') ms = t.llegadaEn.toMillis();
+                else if (t.llegadaEn.seconds) ms = t.llegadaEn.seconds * 1000;
+                else if (t.llegadaEn instanceof Date) ms = t.llegadaEn.getTime();
+                if (ms) {
+                    const mins = Math.max(0, Math.floor((Date.now() - ms) / 60000));
+                    tiempoEsperaHtml = `<span class="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/80 font-medium font-mono">⏱️ ${mins} min</span>`;
+                }
+            }
+
+            const cardBg = esEnEspera ? 'bg-teal-50/40 border-teal-200' : 'bg-white border-slate-200';
 
             html += `
-                <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex justify-between items-center gap-2">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="font-mono font-bold text-sm text-emerald-900">${t.horario} hs</span>
+                <div class="card-his p-3 ${cardBg} shadow-xs flex justify-between items-center gap-2 transition hover:shadow-sm">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-mono font-bold text-xs text-slate-900">${t.horario} hs</span>
                             ${badge}
+                            ${tiempoEsperaHtml}
                         </div>
-                        <p class="font-bold text-sm text-slate-800 mt-1">${escaparHTML(t.pacienteNombre)}</p>
-                        <p class="text-xs text-slate-500">DNI: ${escaparHTML(t.pacienteDni || 'N/A')}</p>
+                        <p class="font-bold text-xs text-slate-900 mt-1 truncate">${escaparHTML(t.pacienteNombre)}</p>
+                        <p class="text-[11px] text-slate-500 font-mono">DNI: ${escaparHTML(t.pacienteDni || 'N/A')}</p>
                     </div>
-                    <div class="flex flex-col gap-1">
+                    <div class="flex flex-col gap-1 shrink-0">
                         ${!esAtendido && !esAusente && !esCancelado ? `
-                            <button onclick="llamarPaciente('${t.idDoc}')" class="text-xs bg-emerald-700 text-white font-bold px-3 py-1.5 rounded hover:bg-emerald-800 transition">Llamar</button>
-                            <button onclick="marcarAusente('${t.idDoc}')" class="text-xs bg-slate-100 text-slate-600 font-bold px-2 py-1 rounded hover:bg-slate-200 transition">Ausente</button>
+                            <button onclick="llamarPaciente('${t.idDoc}')" class="btn-his-secondary text-xs px-2.5 py-1" title="Iniciar atención en consultorio">Llamar</button>
+                            <button onclick="marcarAusente('${t.idDoc}')" class="btn-his-text text-xs px-2 py-0.5 text-slate-500 hover:text-slate-800 border border-slate-200 rounded">Ausente</button>
                         ` : ''}
                     </div>
                 </div>
@@ -156,7 +183,50 @@ export async function cargarAgendaMedico() {
         container.innerHTML = html;
     } catch (e) {
         console.error(e);
-        container.innerHTML = '<p class="text-sm text-red-500 text-center mt-10">Error al cargar pacientes.</p>';
+        container.innerHTML = '<p class="text-xs text-red-500 text-center mt-10">Error al cargar pacientes.</p>';
+    }
+}
+
+export async function llamarSiguientePaciente() {
+    const sesionActual = obtenerSesionActual();
+    const nombreMedico = sesionActual?.nombre || sesionActual?.correo;
+    const esNacho = (sesionActual?.correo && sesionActual.correo.toLowerCase() === "nachohelbas@gmail.com");
+    const hoyStr = new Date().toISOString().split('T')[0];
+
+    try {
+        let q;
+        if (esNacho || sesionActual?.rol === "Administración") {
+            q = query(collection(db, "turnos"), where("fecha", "==", hoyStr));
+        } else {
+            q = query(collection(db, "turnos"), where("medico", "==", nombreMedico), where("fecha", "==", hoyStr));
+        }
+        const snap = await getDocs(q);
+        if (snap.empty) {
+            mostrarToast("No hay pacientes en la agenda de hoy.", "info");
+            return;
+        }
+        let enSala = [];
+        let confirmados = [];
+        snap.forEach(d => {
+            const data = d.data();
+            data.idDoc = d.id;
+            if (data.estado === "En Espera") enSala.push(data);
+            else if (data.estado === "Confirmado" || data.estado === "Confirmado Presencial") confirmados.push(data);
+        });
+
+        enSala.sort((a, b) => (a.horario || '').localeCompare(b.horario || ''));
+        confirmados.sort((a, b) => (a.horario || '').localeCompare(b.horario || ''));
+
+        const siguiente = enSala.length > 0 ? enSala[0] : confirmados[0];
+        if (!siguiente) {
+            mostrarToast("No hay pacientes pendientes para llamar.", "info");
+            return;
+        }
+
+        await llamarPaciente(siguiente.idDoc);
+    } catch (e) {
+        console.error("Error al llamar siguiente:", e);
+        mostrarAlerta("Error", "No se pudo determinar el siguiente paciente.");
     }
 }
 
@@ -837,6 +907,7 @@ export async function llamarPaciente(idDoc) {
             await abrirFichaPacienteHC(pacienteId, idDoc);
         }
 
+        mostrarToast(`Llamando a consultorio: ${turnoData.pacienteNombre || 'Paciente'}`, "info");
         cargarAgendaMedico();
     } catch (e) {
         console.error("Error al llamar paciente:", e);
@@ -854,10 +925,28 @@ export async function marcarAusente(idDoc) {
             canceladoPor: "medico",
             canceladoEn: serverTimestamp()
         });
+        mostrarToast("Paciente marcado como ausente", "info");
         cargarAgendaMedico();
     } catch (e) {
         console.error(e);
         mostrarAlerta("Error", "No se pudo actualizar el estado.");
+    }
+}
+
+export function sincronizarEvolucionCampos() {
+    const ant = document.getElementById('input-antecedentes-consulta')?.value.trim();
+    const ef = document.getElementById('input-examen-fisico')?.value.trim();
+    const hallazgos = document.getElementById('input-hallazgos-consulta')?.value.trim();
+    const textoEvo = document.getElementById('texto-evolucion');
+    if (!textoEvo) return;
+
+    let bloques = [];
+    if (ant) bloques.push(`[ANAMNESIS Y ANTECEDENTES]\n${ant}`);
+    if (ef) bloques.push(`[EXAMEN FÍSICO]\n${ef}`);
+    if (hallazgos) bloques.push(`[HALLAZGOS Y CONDUCTA]\n${hallazgos}`);
+
+    if (bloques.length > 0) {
+        textoEvo.value = bloques.join('\n\n');
     }
 }
 
@@ -1362,3 +1451,5 @@ window.seleccionarSlotProximaConsulta = seleccionarSlotProximaConsulta;
 window.guardarProximaConsultaMedico = guardarProximaConsultaMedico;
 window.copiarEnlaceCitacion = copiarEnlaceCitacion;
 window.imprimirComprobanteCitacion = imprimirComprobanteCitacion;
+window.llamarSiguientePaciente = llamarSiguientePaciente;
+window.sincronizarEvolucionCampos = sincronizarEvolucionCampos;

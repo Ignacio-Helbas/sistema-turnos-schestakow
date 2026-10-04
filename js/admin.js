@@ -30,7 +30,10 @@ import {
     pedirConfirmacion,
     abrirModal,
     cerrarModal,
-    escaparHTML
+    escaparHTML,
+    mostrarToast,
+    formatearFechaAR,
+    formatearHoraAR
 } from "./ui.js";
 
 import {
@@ -111,24 +114,28 @@ export async function cargarUsuariosAdmin(direccion = 'init') {
         snap.forEach(d => {
             const u = d.data();
             const id = d.id;
+            let badgeRol = 'badge-his badge-his-pendiente';
+            if (u.rol === 'Administración') badgeRol = 'badge-his badge-his-admin';
+            else if (u.rol === 'Médico') badgeRol = 'badge-his badge-his-atendido';
+
             filas += `
                 <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
                     <td class="p-3">
-                        <p class="font-bold text-slate-800">${escaparHTML(u.nombre || 'Sin Nombre')}</p>
-                        <p class="text-xs text-slate-500">${escaparHTML(u.correo || 'Sin correo')}</p>
+                        <p class="font-bold text-slate-800 text-xs">${escaparHTML(u.nombre || 'Sin Nombre')}</p>
+                        <p class="text-[11px] text-slate-500 font-mono">${escaparHTML(u.correo || 'Sin correo')}</p>
                     </td>
                     <td class="p-3">
-                        <span class="px-2 py-0.5 rounded text-xs font-bold ${u.rol === 'Administración' ? 'bg-neutral-800 text-white' : u.rol === 'Médico' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${escaparHTML(u.rol || 'Recepción')}</span>
-                        ${u.matricula ? `<p class="text-xs text-slate-500 mt-1">M.P.: ${escaparHTML(u.matricula)}</p>` : ''}
+                        <span class="${badgeRol} text-[11px]">${escaparHTML(u.rol || 'Recepción')}</span>
+                        ${u.matricula ? `<p class="text-[11px] text-slate-500 font-mono mt-1">M.P.: ${escaparHTML(u.matricula)}</p>` : ''}
                     </td>
                     <td class="p-3 text-xs text-slate-600">
                         <p class="font-mono text-slate-700 text-xs font-semibold">${escaparHTML(u.correo || 'N/A')}</p>
-                        <button data-correo="${escaparHTML(u.correo || '')}" onclick="enviarResetPasswordUsuario(this.dataset.correo)" class="text-[11px] text-neutral-700 underline hover:text-neutral-900 mt-1">Enviar reset clave</button>
+                        <button data-correo="${escaparHTML(u.correo || '')}" onclick="enviarResetPasswordUsuario(this.dataset.correo)" class="text-[11px] text-blue-700 underline hover:text-blue-900 mt-1 inline-block">Enviar reset clave</button>
                     </td>
                     <td class="p-3 text-center">
-                        <div class="flex justify-center gap-2">
-                            <button data-id="${escaparHTML(id)}" onclick="editarUsuarioAdmin(this.dataset.id)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded font-bold transition">Editar</button>
-                            <button data-id="${escaparHTML(id)}" onclick="eliminarUsuarioAdmin(this.dataset.id)" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded font-bold transition">Eliminar</button>
+                        <div class="flex justify-center gap-1.5">
+                            <button data-id="${escaparHTML(id)}" onclick="editarUsuarioAdmin(this.dataset.id)" class="btn-his-text text-xs px-2.5 py-1 text-slate-700 hover:text-slate-900 border border-slate-200 rounded">Editar</button>
+                            <button data-id="${escaparHTML(id)}" onclick="eliminarUsuarioAdmin(this.dataset.id)" class="btn-his-danger text-xs px-2.5 py-1">Eliminar</button>
                         </div>
                     </td>
                 </tr>
@@ -279,7 +286,7 @@ export async function eliminarUsuarioAdmin(id) {
 export async function enviarResetPasswordUsuario(correo) {
     try {
         await sendPasswordResetEmail(auth, correo);
-        mostrarExito("Email Enviado", `Se envió un correo a ${correo} para restablecer su clave.`);
+        mostrarToast(`Se envió un correo a ${correo} para restablecer su clave.`, "info");
     } catch (error) {
         console.error(error);
         mostrarAlerta("Error", "No se pudo enviar el correo de restablecimiento.");
@@ -323,7 +330,7 @@ export async function ejecutarGuardadoModulacion() {
         }
 
         cerrarModal('modal-seguridad-modulacion');
-        mostrarExito("Modulación Aplicada", "Los intervalos de atención han sido actualizados.");
+        mostrarToast("Modulación aplicada correctamente", "success");
         await cargarConfiguracionModulacion();
     } catch (e) {
         console.error(e);
@@ -339,6 +346,45 @@ export async function cargarMetricas(forzarRecarga = false) {
     }
 }
 
+export async function cargarAuditoriaAdmin() {
+    const tbody = document.getElementById('admin-auditoria-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-slate-500 text-xs"><span class="inline-block w-4 h-4 border-2 border-slate-300 border-t-[#0f172a] rounded-full animate-spin mr-2 align-middle"></span> Consultando registros de auditoría institucional...</td></tr>';
+    try {
+        const q = query(
+            collection(db, "auditoria"),
+            orderBy("fecha", "desc"),
+            limit(30)
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) {
+            tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-slate-500 text-xs">Sin eventos de auditoría registrados aún.</td></tr>';
+            return;
+        }
+        let html = '';
+        snap.forEach(d => {
+            const ev = d.data();
+            const fechaStr = ev.fecha?.toDate ? ev.fecha.toDate().toLocaleString('es-AR') : (ev.fecha ? String(ev.fecha) : 'Fecha N/D');
+            let badgeRol = 'badge-his badge-his-pendiente';
+            if (ev.actorRol === 'Médico') badgeRol = 'badge-his badge-his-atendido';
+            else if (ev.actorRol === 'Administración') badgeRol = 'badge-his badge-his-admin';
+
+            html += `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                    <td class="font-mono text-xs text-slate-700 p-3">${escaparHTML(fechaStr)} hs</td>
+                    <td class="p-3"><span class="${badgeRol}">${escaparHTML(ev.actorRol || 'Sistema')}</span></td>
+                    <td class="font-mono font-bold text-xs text-slate-800 p-3">${escaparHTML(ev.accion || 'OPERACIÓN')}</td>
+                    <td class="text-xs text-slate-600 p-3">${escaparHTML(ev.detalle || '-')}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    } catch (e) {
+        console.warn("Aviso al cargar auditoría:", e);
+        tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-slate-500">Para visualizar el log completo de auditoría, inicie sesión con rol de Administración.</td></tr>';
+    }
+}
+
 export async function verificarLimpiezaAnual() {
     try {
         const snap = await getDocs(query(collection(db, "turnos"), limit(1)));
@@ -349,7 +395,7 @@ export async function verificarLimpiezaAnual() {
 
 export function ejecutarLimpiezaYDescarga() {
     cerrarModal('modal-limpieza-anual');
-    mostrarExito("Descarga Realizada", "Copia de respaldo exportada.");
+    mostrarToast("Copia de respaldo exportada correctamente", "success");
 }
 
 export async function verificarEntornoDemo() {
@@ -854,3 +900,4 @@ window.inyectarMedicosDePrueba = inyectarMedicosDePrueba;
 window.autocompletarNachoDemo = autocompletarNachoDemo;
 window.inyectarDemoCompletaForo = inyectarDemoCompletaForo;
 window.generarTurnosHistoricosDemo = generarTurnosHistoricosDemo;
+window.cargarAuditoriaAdmin = cargarAuditoriaAdmin;

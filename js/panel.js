@@ -43,7 +43,8 @@ import {
     cargarUsuariosAdmin,
     verificarLimpiezaAnual,
     verificarEntornoDemo,
-    cargarMetricas
+    cargarMetricas,
+    cargarAuditoriaAdmin
 } from "./admin.js";
 
 // Estado de catálogo compartido para el personal
@@ -172,6 +173,10 @@ export function aplicarPermisosVisuales(sesion) {
     const btnDemoForo = document.getElementById('btn-demo-foro');
     const btnNavDemoForo = document.getElementById('btn-nav-demo-foro');
 
+    const usuarioSesionInfo = document.getElementById('usuario-sesion-info');
+    const usuarioSesionNombre = document.getElementById('usuario-sesion-nombre');
+    const usuarioSesionRol = document.getElementById('usuario-sesion-rol');
+
     if (btnAdmin) btnAdmin.classList.add('hidden');
     if (btnRec) btnRec.classList.add('hidden');
     if (btnDoc) btnDoc.classList.add('hidden');
@@ -186,18 +191,29 @@ export function aplicarPermisosVisuales(sesion) {
     }
 
     const esNacho = (sesion.correo && sesion.correo.toLowerCase() === "nachohelbas@gmail.com");
+    const rolMostrar = esNacho ? 'Superadmin' : (sesion.rol || 'Personal');
+
+    if (usuarioSesionInfo) usuarioSesionInfo.classList.remove('hidden');
+    if (usuarioSesionNombre) usuarioSesionNombre.textContent = sesion.nombre || sesion.correo || 'Usuario Staff';
+    if (usuarioSesionRol) {
+        usuarioSesionRol.textContent = rolMostrar;
+        usuarioSesionRol.className = 'badge-his ' + (sesion.rol === 'Médico' ? 'badge-his-atendido' : (sesion.rol === 'Administración' || esNacho ? 'badge-his-admin' : 'badge-his-pendiente'));
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const esModoDev = params.get('dev') === '1';
 
     if (esNacho) {
         if (btnAdmin) btnAdmin.classList.remove('hidden');
         if (btnRec) btnRec.classList.remove('hidden');
         if (btnDoc) btnDoc.classList.remove('hidden');
-        if (btnDummies) btnDummies.classList.remove('hidden');
-        if (btnDemoForo) btnDemoForo.classList.remove('hidden');
-        if (btnNavDemoForo) btnNavDemoForo.classList.remove('hidden');
+        if (btnDummies && esModoDev) btnDummies.classList.remove('hidden');
+        if (btnDemoForo && esModoDev) btnDemoForo.classList.remove('hidden');
+        if (btnNavDemoForo && esModoDev) btnNavDemoForo.classList.remove('hidden');
 
         verificarEntornoDemo().then(esDemo => {
             if (btnReset) {
-                if (esDemo) btnReset.classList.remove('hidden');
+                if (esDemo && esModoDev) btnReset.classList.remove('hidden');
                 else btnReset.classList.add('hidden');
             }
         });
@@ -206,11 +222,11 @@ export function aplicarPermisosVisuales(sesion) {
         switchView('admin');
     } else if (sesion.rol === "Administración") {
         if (btnAdmin) btnAdmin.classList.remove('hidden');
-        if (btnDummies) btnDummies.classList.remove('hidden');
+        if (btnDummies && esModoDev) btnDummies.classList.remove('hidden');
 
         verificarEntornoDemo().then(esDemo => {
             if (btnReset) {
-                if (esDemo) btnReset.classList.remove('hidden');
+                if (esDemo && esModoDev) btnReset.classList.remove('hidden');
                 else btnReset.classList.add('hidden');
             }
         });
@@ -259,6 +275,32 @@ export function switchView(viewName) {
     const target = document.getElementById('view-' + viewName);
     if (target) target.classList.add('active');
 
+    // Breadcrumbs
+    const breadcrumbView = document.getElementById('breadcrumb-current-view');
+    if (breadcrumbView) {
+        const nombresVistas = {
+            'reception': 'Recepción y Admisión',
+            'doctor': 'Consultorio Médico',
+            'admin': 'Administración Institucional',
+            'login': 'Identificación del Personal'
+        };
+        breadcrumbView.textContent = nombresVistas[viewName] || viewName;
+    }
+
+    // Actualizar estilo activo de los botones de navegación del personal
+    ['reception', 'doctor', 'admin'].forEach(v => {
+        const btn = document.getElementById(`btn-nav-${v}`);
+        if (btn) {
+            if (v === viewName) {
+                btn.classList.add('text-blue-900', 'font-black', 'border-b-2', 'border-blue-900');
+                btn.classList.remove('text-slate-600');
+            } else {
+                btn.classList.remove('text-blue-900', 'font-black', 'border-b-2', 'border-blue-900');
+                btn.classList.add('text-slate-600');
+            }
+        }
+    });
+
     if (viewName === 'reception') {
         actualizarMedicosRecepcion();
         const estRec = obtenerEstadoRecepcion();
@@ -275,14 +317,14 @@ export function switchView(viewName) {
 
 export function cambiarTabAdmin(tabId) {
     document.querySelectorAll('.admin-tab').forEach(t => {
-        t.classList.remove('active', 'text-neutral-900', 'text-blue-800');
+        t.classList.remove('active', 'text-neutral-900', 'text-blue-800', 'border-b-2', 'border-slate-900');
         t.classList.add('text-slate-500');
     });
     document.querySelectorAll('.admin-section').forEach(s => s.classList.add('hidden'));
 
     const tabActiva = document.getElementById('tab-' + tabId);
     if (tabActiva) {
-        tabActiva.classList.add('active', 'text-neutral-900');
+        tabActiva.classList.add('active', 'text-neutral-900', 'border-b-2', 'border-slate-900');
         tabActiva.classList.remove('text-slate-500', 'text-blue-800');
     }
 
@@ -290,10 +332,28 @@ export function cambiarTabAdmin(tabId) {
     if (secActiva) secActiva.classList.remove('hidden');
 
     if (tabId === 'metricas') cargarMetricas();
+    if (tabId === 'auditoria') cargarAuditoriaAdmin();
 }
 
 export function toggleHistorial() {
     // Helper visual
+}
+
+function iniciarRelojHospitalario() {
+    const elReloj = document.getElementById('reloj-hospitalario');
+    if (!elReloj) return;
+    const actualizar = () => {
+        const d = new Date();
+        const dia = String(d.getDate()).padStart(2, '0');
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const anio = d.getFullYear();
+        const horas = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        const segs = String(d.getSeconds()).padStart(2, '0');
+        elReloj.textContent = `${dia}/${mes}/${anio} - ${horas}:${mins}:${segs} hs`;
+    };
+    actualizar();
+    setInterval(actualizar, 1000);
 }
 
 // Inicialización de la sesión y módulos del panel
@@ -303,8 +363,12 @@ inicializarAuth((sesion) => {
 });
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', inicializarEventosHC);
+    document.addEventListener('DOMContentLoaded', () => {
+        iniciarRelojHospitalario();
+        inicializarEventosHC();
+    });
 } else {
+    iniciarRelojHospitalario();
     inicializarEventosHC();
 }
 
@@ -313,4 +377,5 @@ window.switchView = switchView;
 window.cambiarTabAdmin = cambiarTabAdmin;
 window.toggleHistorial = toggleHistorial;
 window.cargarMetricas = cargarMetricas;
+window.cargarAuditoriaAdmin = cargarAuditoriaAdmin;
 window.cargarConfiguracionModulacion = cargarConfiguracionModulacion;

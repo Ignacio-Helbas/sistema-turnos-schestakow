@@ -24,7 +24,10 @@ import {
     pedirConfirmacion,
     abrirModal,
     cerrarModal,
-    escaparHTML
+    escaparHTML,
+    mostrarToast,
+    formatearFechaAR,
+    formatearHoraAR
 } from "./ui.js";
 
 import {
@@ -140,41 +143,57 @@ export async function generarAgendaRecepcion() {
         let turno = turnosOcupados[hsStr];
 
         if (turno) {
-            let badgeColor = "bg-blue-100 text-blue-800";
-            if (turno.estado === "Atendido") badgeColor = "bg-emerald-100 text-emerald-800";
-            else if (turno.estado === "En Espera") badgeColor = "bg-teal-100 text-teal-800";
-            else if (turno.estado && turno.estado.includes("Cancelado")) badgeColor = "bg-red-100 text-red-800";
-            else if (turno.estado === "Ausente") badgeColor = "bg-amber-100 text-amber-800";
+            let badgeColor = "badge-his badge-his-pendiente";
+            if (turno.estado === "Atendido") badgeColor = "badge-his badge-his-atendido";
+            else if (turno.estado === "En Espera") badgeColor = "badge-his badge-his-espera";
+            else if (turno.estado && turno.estado.includes("Cancelado")) badgeColor = "badge-his badge-his-cancelado";
+            else if (turno.estado === "Ausente") badgeColor = "badge-his badge-his-ausente";
+
+            const pacNomEsc = escaparHTML(turno.pacienteNombre || 'Paciente');
+            const pacDniEsc = escaparHTML(turno.pacienteDni || '');
+            const codEsc = escaparHTML(turno.codigoConfirmacion || '');
 
             filas += `
-                <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
-                    <td class="p-3 font-mono font-bold text-slate-700">${hsStr}</td>
+                <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition" data-estado="${escaparHTML(turno.estado || '')}">
+                    <td class="p-3 font-mono font-bold text-slate-900">${hsStr} hs</td>
                     <td class="p-3 text-xs font-semibold text-slate-500">${escaparHTML(turno.canal || canal)}</td>
                     <td class="p-3">
-                        <p class="font-bold text-slate-800">${escaparHTML(turno.pacienteNombre)}</p>
-                        <p class="text-xs text-slate-500">DNI: ${escaparHTML(turno.pacienteDni || 'N/A')} - Tel: ${escaparHTML(turno.pacienteCelular || 'N/A')}</p>
+                        <p class="font-bold text-slate-900 text-sm">${pacNomEsc}</p>
+                        <p class="text-xs text-slate-500 font-mono">DNI: ${pacDniEsc || 'N/A'} &bull; Tel: ${escaparHTML(turno.pacienteCelular || 'N/A')}</p>
                     </td>
-                    <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${badgeColor}">${escaparHTML(turno.estado)}</span></td>
+                    <td class="p-3"><span class="${badgeColor}">${escaparHTML(turno.estado)}</span></td>
                     <td class="p-3">
                         ${turno.estado === "Confirmado" || turno.estado === "Confirmado Presencial" ? `
-                            <button onclick="registrarLlegadaRecepcion('${turno.idDoc}')" class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded hover:bg-emerald-100 font-bold transition mr-1">Registrar llegada</button>
-                            <button onclick="cancelarTurnoRecepcion('${turno.idDoc}')" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded hover:bg-red-100 font-bold transition">Liberar</button>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <button onclick="registrarLlegadaRecepcion('${turno.idDoc}')" class="btn-his-secondary text-xs px-2.5 py-1" title="Registrar llegada a sala">Marcar llegada</button>
+                                <button onclick="reprogramarTurnoRecepcion('${turno.idDoc}', '${pacNomEsc}', '${hsStr}')" class="btn-his-text text-xs px-2 py-1 text-slate-700 hover:text-slate-900 border border-slate-200 rounded" title="Liberar horario para reasignar">Reprogramar</button>
+                                <button onclick="imprimirComprobanteTurnoRecepcion('${turno.idDoc}', '${pacNomEsc}', '${pacDniEsc}', '${hsStr}', '${codEsc}')" class="btn-his-text text-xs px-2 py-1 text-slate-700 hover:text-slate-900 border border-slate-200 rounded" title="Imprimir comprobante institucional">Comprobante</button>
+                                <button onclick="cancelarTurnoRecepcion('${turno.idDoc}')" class="btn-his-danger text-xs px-2 py-1" title="Cancelar turno">Liberar</button>
+                            </div>
                         ` : (turno.estado === "En Espera" ? `
-                            <span class="text-[11px] font-bold text-teal-700 bg-teal-50 px-2 py-1 rounded border border-teal-200 inline-block mr-1">En Sala</span>
-                            <button onclick="cancelarTurnoRecepcion('${turno.idDoc}')" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded hover:bg-red-100 font-bold transition">Liberar</button>
-                        ` : '')}
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="badge-his badge-his-espera text-[11px]">En Sala</span>
+                                <button onclick="imprimirComprobanteTurnoRecepcion('${turno.idDoc}', '${pacNomEsc}', '${pacDniEsc}', '${hsStr}', '${codEsc}')" class="btn-his-text text-xs px-2 py-1 text-slate-700 hover:text-slate-900 border border-slate-200 rounded" title="Imprimir comprobante institucional">Comprobante</button>
+                                <button onclick="cancelarTurnoRecepcion('${turno.idDoc}')" class="btn-his-danger text-xs px-2 py-1">Liberar</button>
+                            </div>
+                        ` : (turno.estado === "Atendido" ? `
+                            <div class="flex items-center gap-1.5">
+                                <span class="badge-his badge-his-atendido text-[11px]">Atendido</span>
+                                <button onclick="imprimirComprobanteTurnoRecepcion('${turno.idDoc}', '${pacNomEsc}', '${pacDniEsc}', '${hsStr}', '${codEsc}')" class="btn-his-text text-xs px-2 py-1 text-slate-700 hover:text-slate-900 border border-slate-200 rounded" title="Imprimir comprobante">Comprobante</button>
+                            </div>
+                        ` : ''))}
                     </td>
                 </tr>
             `;
         } else {
             filas += `
-                <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
-                    <td class="p-3 font-mono font-bold text-slate-400">${hsStr}</td>
+                <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition" data-estado="Libre">
+                    <td class="p-3 font-mono font-bold text-slate-400">${hsStr} hs</td>
                     <td class="p-3 text-xs font-semibold text-slate-400">${canal}</td>
-                    <td class="p-3 text-sm text-slate-400 italic">Disponible</td>
-                    <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold bg-slate-100 text-slate-500">Libre</span></td>
+                    <td class="p-3 text-xs text-slate-400 italic">Horario disponible para asignación presencial o web</td>
+                    <td class="p-3"><span class="badge-his bg-slate-100 text-slate-500 border-slate-200">Libre</span></td>
                     <td class="p-3">
-                        <button onclick="abrirModalDarTurno('${hsStr}')" class="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded hover:bg-blue-100 font-bold transition">+ Asignar</button>
+                        <button onclick="abrirModalDarTurno('${hsStr}')" class="btn-his-primary text-xs px-2.5 py-1 shadow-xs">+ Asignar</button>
                     </td>
                 </tr>
             `;
@@ -193,12 +212,91 @@ export async function registrarLlegadaRecepcion(idDoc) {
             estado: "En Espera",
             llegadaEn: serverTimestamp()
         });
-        mostrarExito("Llegada Registrada", "El paciente fue ingresado en la Sala de Espera.");
+        mostrarToast("Llegada registrada: paciente ingresado en sala de espera", "success");
         generarAgendaRecepcion();
     } catch (e) {
         console.error("Error al registrar llegada:", e);
         mostrarAlerta("Error", "No se pudo registrar la llegada del paciente.");
     }
+}
+
+export async function reprogramarTurnoRecepcion(idDoc, pacienteNombre, horaActual) {
+    const confirmar = await pedirConfirmacion(
+        "Reprogramar Turno",
+        `¿Desea liberar el turno de las ${horaActual} hs de ${pacienteNombre} para asignarle un nuevo horario o fecha en recepción?`,
+        "Liberar y Reasignar"
+    );
+    if (!confirmar) return;
+
+    try {
+        const sesion = obtenerSesionActual();
+        await updateDoc(doc(db, "turnos", idDoc), {
+            estado: "Cancelado - Reprogramación",
+            canceladoEn: serverTimestamp(),
+            canceladoPor: sesion ? sesion.uid : "recepcion"
+        });
+        mostrarToast("Turno liberado para su reprogramación", "info");
+        generarAgendaRecepcion();
+    } catch (e) {
+        console.error("Error al reprogramar turno:", e);
+        mostrarAlerta("Error", "No se pudo liberar el turno para reprogramación.");
+    }
+}
+
+export function imprimirComprobanteTurnoRecepcion(idDoc, pacNom, pacDni, hsStr, cod) {
+    const elPac = document.getElementById('comp-rec-paciente');
+    const elDni = document.getElementById('comp-rec-dni');
+    const elCod = document.getElementById('comp-rec-codigo');
+    const elEsp = document.getElementById('comp-rec-especialidad');
+    const elMed = document.getElementById('comp-rec-medico');
+    const elFec = document.getElementById('comp-rec-fecha');
+    const elHor = document.getElementById('comp-rec-hora');
+
+    if (elPac) elPac.innerText = pacNom || 'Paciente';
+    if (elDni) elDni.innerText = pacDni || '--';
+    if (elCod) elCod.innerText = cod ? String(cod).substring(0, 12).toUpperCase() : 'SCH-OK';
+    if (elEsp) elEsp.innerText = especialidadSeleccionadaRecepcion || '--';
+    if (elMed) elMed.innerText = medicoSeleccionadoRecepcion || '--';
+    if (elFec) elFec.innerText = formatearFechaAR(fechaRecepcionSeleccionada) || '--';
+    if (elHor) elHor.innerText = formatearHoraAR(hsStr) || '--';
+
+    abrirModal('modal-comprobante-recepcion');
+}
+
+export function filtrarAgendaRecepcionPorDni(textoFiltro) {
+    const tbody = document.getElementById('reception-tbody');
+    if (!tbody) return;
+    const inputEl = document.getElementById('reception-filtro-texto');
+    const term = (textoFiltro !== undefined ? textoFiltro : (inputEl ? inputEl.value : '')).trim().toLowerCase();
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(tr => {
+        if (!term) {
+            tr.style.display = '';
+            return;
+        }
+        const text = tr.innerText.toLowerCase();
+        tr.style.display = text.includes(term) ? '' : 'none';
+    });
+}
+
+export function filtrarAgendaPorEstado(estadoFiltro) {
+    const tbody = document.getElementById('reception-tbody');
+    if (!tbody) return;
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(tr => {
+        if (!estadoFiltro || estadoFiltro === 'todos') {
+            tr.style.display = '';
+            return;
+        }
+        const text = tr.innerText.toLowerCase();
+        if (estadoFiltro === 'en_sala') {
+            tr.style.display = text.includes('en sala') || text.includes('en espera') ? '' : 'none';
+        } else if (estadoFiltro === 'pendientes') {
+            tr.style.display = text.includes('confirmado') ? '' : 'none';
+        } else if (estadoFiltro === 'atendidos') {
+            tr.style.display = text.includes('atendido') ? '' : 'none';
+        }
+    });
 }
 
 export function abrirModalDarTurno(hora) {
@@ -321,7 +419,7 @@ export async function cancelarTurnoRecepcion(idDoc) {
             batch.delete(doc(db, "disponibilidad", slotId));
         }
         await batch.commit();
-        mostrarExito("Turno Cancelado", "El turno fue cancelado.");
+        mostrarToast("Turno cancelado y horario liberado", "info");
         generarAgendaRecepcion();
     } catch (error) {
         console.error(error);
@@ -365,7 +463,7 @@ export async function ejecutarAusenciaEmergencia() {
 
         await Promise.all(promesas);
         cerrarModal('modal-ausencia-emergencia');
-        mostrarExito("Agenda Suspendida", `Se han bloqueado ${turnosCancelados} turnos.`);
+        mostrarToast(`Agenda suspendida: ${turnosCancelados} turnos cancelados por emergencia`, "warning");
         generarAgendaRecepcion();
     } catch (error) {
         console.error(error);
@@ -425,3 +523,7 @@ window.ejecutarAusenciaEmergencia = ejecutarAusenciaEmergencia;
 window.descargarExcelRecepcion = descargarExcelRecepcion;
 window.simularAutocompletado = simularAutocompletado;
 window.toggleTimeSelector = toggleTimeSelector;
+window.reprogramarTurnoRecepcion = reprogramarTurnoRecepcion;
+window.imprimirComprobanteTurnoRecepcion = imprimirComprobanteTurnoRecepcion;
+window.filtrarAgendaRecepcionPorDni = filtrarAgendaRecepcionPorDni;
+window.filtrarAgendaPorEstado = filtrarAgendaPorEstado;
