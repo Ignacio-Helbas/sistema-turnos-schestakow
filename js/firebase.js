@@ -1,0 +1,187 @@
+// ==========================================
+// CONFIGURACIÓN DE FIREBASE (MODO REAL)
+// Módulo canónico único para toda la aplicación
+// ==========================================
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+    getAuth,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+    sendPasswordResetEmail,
+    signInAnonymously
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+    getFirestore,
+    collection,
+    query,
+    where,
+    getDocs,
+    doc,
+    setDoc,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    getDoc,
+    orderBy,
+    limit,
+    startAfter,
+    serverTimestamp,
+    writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+    getFunctions,
+    httpsCallable
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAghXQKrYy6EJGD5IqEdO4c_E-ntozUmz8",
+    authDomain: "sistema-turnos-utn.firebaseapp.com",
+    projectId: "sistema-turnos-utn",
+    storageBucket: "sistema-turnos-utn.firebasestorage.app",
+    messagingSenderId: "588893912264",
+    appId: "1:588893912264:web:c5d56455f06cf178d979fd"
+};
+
+export const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const functionsInstancia = getFunctions(app);
+
+/**
+ * Crea una cuenta en Firebase Authentication utilizando una instancia secundaria
+ * de la app, permitiendo al Administrador registrar personal sin perder su propia sesión.
+ */
+export async function crearCuentaAuthSecundaria(email, password) {
+    const secondaryAppName = `secondaryApp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const secondaryApp = initializeApp(firebaseConfig, secondaryAppName);
+    const secondaryAuth = getAuth(secondaryApp);
+    try {
+        const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+        const uid = cred.user.uid;
+        await signOut(secondaryAuth);
+        return uid;
+    } finally {
+        try {
+            await deleteApp(secondaryApp);
+        } catch (_) {}
+    }
+}
+
+// Exportar helpers de Firestore y Auth para evitar reimportaciones dispersas
+export {
+    collection,
+    query,
+    where,
+    getDocs,
+    doc,
+    setDoc,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    getDoc,
+    orderBy,
+    limit,
+    startAfter,
+    serverTimestamp,
+    writeBatch,
+    httpsCallable,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+    sendPasswordResetEmail,
+    signInAnonymously
+};
+
+// ==========================================
+// GESTIÓN DE SESIÓN CON CUSTOM CLAIMS
+// ==========================================
+export async function iniciarSesionFirebase(correo, password) {
+    const correoFinal = (correo || "").trim();
+    const credencial = await signInWithEmailAndPassword(auth, correoFinal, password);
+    const user = credencial.user;
+
+    const tokenResult = await user.getIdTokenResult(true);
+    let rol = tokenResult.claims.rol;
+
+    let perfil = {};
+    const perfilSnap = await getDoc(doc(db, "usuarios", user.uid));
+    if (perfilSnap.exists()) {
+        perfil = perfilSnap.data();
+        if (perfil.activo === false) {
+            await signOut(auth);
+            throw new Error("USUARIO_INACTIVO");
+        }
+        if (!rol) {
+            rol = perfil.rol;
+            if (rol === "Administración") {
+                try {
+                    const fnAsignar = httpsCallable(functionsInstancia, "asignarRolAdminInicial");
+                    await fnAsignar();
+                    const refreshed = await user.getIdTokenResult(true);
+                    rol = refreshed.claims.rol || rol;
+                } catch (e) {
+                    console.warn("No se pudo autoasignar claim inicial:", e);
+                }
+            }
+        }
+    }
+
+    return {
+        uid: user.uid,
+        correo: user.email,
+        nombre: perfil.nombre || user.displayName || user.email,
+        rol: rol || perfil.rol || "Recepción"
+    };
+}
+
+export async function cerrarSesionFirebase() {
+    await signOut(auth);
+}
+
+export function observarSesion(callback) {
+    return onAuthStateChanged(auth, async (user) => {
+        if (!user || user.isAnonymous) {
+            callback(null);
+            return;
+        }
+        try {
+            const tokenResult = await user.getIdTokenResult(false);
+            let rol = tokenResult.claims.rol;
+
+            const perfilSnap = await getDoc(doc(db, "usuarios", user.uid));
+            let perfil = {};
+            if (perfilSnap.exists()) {
+                perfil = perfilSnap.data();
+                if (perfil.activo === false) {
+                    await signOut(auth);
+                    callback(null);
+                    return;
+                }
+                if (!rol) rol = perfil.rol;
+            }
+
+            callback({
+                uid: user.uid,
+                correo: user.email,
+                nombre: perfil.nombre || user.displayName || user.email,
+                rol: rol || "Recepción"
+            });
+        } catch (e) {
+            console.error("Error al validar sesión:", e);
+            callback(null);
+        }
+    });
+}
+
+export async function asegurarSesionAnonima() {
+    if (!auth.currentUser) {
+        try {
+            await signInAnonymously(auth);
+        } catch (e) {
+            console.warn("Sesión anónima opcional no activada:", e);
+        }
+    }
+}
