@@ -1,0 +1,19 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "interconsultas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "participantes",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "actualizadaEn",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
