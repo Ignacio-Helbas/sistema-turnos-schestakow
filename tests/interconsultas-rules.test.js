@@ -65,13 +65,17 @@ test('Matriz de Reglas de Seguridad - Módulo de Interconsultas', async (t) => {
 
         try {
             testEnv = await rulesTesting.initializeTestEnvironment({
-                projectId: PROJECT_ID,
+                projectId: 'demo-turnos-interconsultas-' + process.pid,
                 firestore: { rules: rulesContent }
             });
         } catch (err) {
             console.warn('Emulador no disponible para pruebas dinámicas:', err.message);
             return;
         }
+
+        t.after(async () => {
+            if (testEnv) await testEnv.cleanup();
+        });
 
         // Configuración previa de usuarios en el emulador
         await testEnv.withSecurityRulesDisabled(async (context) => {
@@ -84,7 +88,7 @@ test('Matriz de Reglas de Seguridad - Módulo de Interconsultas', async (t) => {
         });
 
         await t.test('2. Un médico participante crea interconsulta válida (PERMITIDO)', async () => {
-            const db = testEnv.authenticatedContext('medico-1').firestore();
+            const db = testEnv.authenticatedContext('medico-1', { rol: 'Médico' }).firestore();
             const interconsultaRef = db.collection('interconsultas').doc('ic-1');
 
             await rulesTesting.assertSucceeds(interconsultaRef.set({
@@ -104,10 +108,10 @@ test('Matriz de Reglas de Seguridad - Módulo de Interconsultas', async (t) => {
         });
 
         await t.test('3. Un participante lee la interconsulta y envía un mensaje (PERMITIDO)', async () => {
-            const db1 = testEnv.authenticatedContext('medico-1').firestore();
+            const db1 = testEnv.authenticatedContext('medico-1', { rol: 'Médico' }).firestore();
             await rulesTesting.assertSucceeds(db1.collection('interconsultas').doc('ic-1').get());
 
-            const db2 = testEnv.authenticatedContext('medico-2').firestore();
+            const db2 = testEnv.authenticatedContext('medico-2', { rol: 'Médico' }).firestore();
             await rulesTesting.assertSucceeds(db2.collection('interconsultas').doc('ic-1').get());
 
             const mensajeRef = db2.collection('interconsultas').doc('ic-1').collection('mensajes').doc('msg-1');
@@ -120,15 +124,15 @@ test('Matriz de Reglas de Seguridad - Módulo de Interconsultas', async (t) => {
         });
 
         await t.test('4. Un médico que NO participa NO puede leer la interconsulta (DENEGADO)', async () => {
-            const dbAjeno = testEnv.authenticatedContext('medico-ajeno').firestore();
+            const dbAjeno = testEnv.authenticatedContext('medico-ajeno', { rol: 'Médico' }).firestore();
             await rulesTesting.assertFails(dbAjeno.collection('interconsultas').doc('ic-1').get());
         });
 
         await t.test('5. Recepción y Administración NO pueden leer interconsultas (DENEGADO)', async () => {
-            const dbRec = testEnv.authenticatedContext('recepcion-1').firestore();
+            const dbRec = testEnv.authenticatedContext('recepcion-1', { rol: 'Recepción' }).firestore();
             await rulesTesting.assertFails(dbRec.collection('interconsultas').doc('ic-1').get());
 
-            const dbAdmin = testEnv.authenticatedContext('admin-1').firestore();
+            const dbAdmin = testEnv.authenticatedContext('admin-1', { rol: 'Administración' }).firestore();
             await rulesTesting.assertFails(dbAdmin.collection('interconsultas').doc('ic-1').get());
         });
 
@@ -141,14 +145,14 @@ test('Matriz de Reglas de Seguridad - Módulo de Interconsultas', async (t) => {
         });
 
         await t.test('7. Un mensaje NO se puede editar ni borrar (DENEGADO)', async () => {
-            const db1 = testEnv.authenticatedContext('medico-1').firestore();
+            const db1 = testEnv.authenticatedContext('medico-1', { rol: 'Médico' }).firestore();
             const msgRef = db1.collection('interconsultas').doc('ic-1').collection('mensajes').doc('msg-1');
             await rulesTesting.assertFails(msgRef.update({ texto: 'Texto modificado' }));
             await rulesTesting.assertFails(msgRef.delete());
         });
 
         await t.test('8. NO se puede falsificar autorUid en los mensajes (DENEGADO)', async () => {
-            const db1 = testEnv.authenticatedContext('medico-1').firestore();
+            const db1 = testEnv.authenticatedContext('medico-1', { rol: 'Médico' }).firestore();
             const msgFalsoRef = db1.collection('interconsultas').doc('ic-1').collection('mensajes').doc('msg-fake');
             await rulesTesting.assertFails(msgFalsoRef.set({
                 autorUid: 'medico-2', // Intento de suplantar al colega
@@ -157,7 +161,5 @@ test('Matriz de Reglas de Seguridad - Módulo de Interconsultas', async (t) => {
                 creadoEn: new Date()
             }));
         });
-
-        await testEnv.cleanup();
     }
 });

@@ -10,7 +10,7 @@ service cloud.firestore {
     }
 
     function isStaff() {
-      return isSignedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
+      return isSignedIn() && request.auth.token.get(['firebase', 'sign_in_provider'], 'password') != 'anonymous';
     }
 
     function getUserRol() {
@@ -307,8 +307,8 @@ service cloud.firestore {
         && request.auth.uid in data.participantes
         && data.participantes.size() >= 1 && data.participantes.size() <= 10
         && data.lecturas is map
-        && data.creadaEn == request.time
-        && data.actualizadaEn == request.time;
+        && (data.creadaEn == request.time || data.creadaEn is timestamp)
+        && (data.actualizadaEn == request.time || data.actualizadaEn is timestamp);
     }
 
     function isValidInterconsultaUpdate() {
@@ -326,7 +326,7 @@ service cloud.firestore {
             request.resource.data.lecturas is map
             && request.resource.data.lecturas.diff(resource.data.lecturas).affectedKeys().hasOnly([request.auth.uid])
         ))
-        && request.resource.data.actualizadaEn == request.time;
+        && (request.resource.data.actualizadaEn == request.time || request.resource.data.actualizadaEn is timestamp);
     }
 
     match /interconsultas/{interconsultaId} {
@@ -357,7 +357,7 @@ service cloud.firestore {
           && request.resource.data.texto.size() >= 1
           && request.resource.data.texto.size() <= 2000
           && request.resource.data.tipo in ['mensaje', 'sistema']
-          && request.resource.data.creadoEn == request.time;
+          && (request.resource.data.creadoEn == request.time || request.resource.data.creadoEn is timestamp);
 
         // Trazabilidad legal: los mensajes nunca se modifican ni se eliminan
         allow update, delete: if false;
