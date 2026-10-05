@@ -4,7 +4,7 @@ Plataforma web para autogestión de turnos médicos, admisión hospitalaria, his
 
 ---
 
-> ### 🏥 Acceso al Sistema en Vivo
+> ### Acceso al Sistema 
 > **[Ingresar a la Plataforma Web (GitHub Pages)](https://ignacio-helbas.github.io/sistema-turnos-schestakow/)**
 >
 > *Aviso: Este es un proyecto universitario experimental con fines académicos. Por favor, no ingrese datos personales ni de salud reales.*
