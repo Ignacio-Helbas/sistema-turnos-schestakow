@@ -375,3 +375,36 @@ window.toggleHistorial = toggleHistorial;
 window.cargarMetricas = cargarMetricas;
 window.cargarAuditoriaAdmin = cargarAuditoriaAdmin;
 window.cargarConfiguracionModulacion = cargarConfiguracionModulacion;
+
+// Fallback reactivo de navegación entre sub-vistas del Consultorio (Atención vs Interconsultas)
+if (!window.cambiarSubvistaDoctor) {
+    window.cambiarSubvistaDoctor = function (subvista) {
+        const subAtencion = document.getElementById("subvista-doctor-atencion");
+        const subInterconsultas = document.getElementById("subvista-doctor-interconsultas");
+        const tabAtencion = document.getElementById("tab-consultorio-atencion");
+        const tabInterconsultas = document.getElementById("tab-consultorio-interconsultas");
+
+        if (!subAtencion || !subInterconsultas) return;
+
+        if (subvista === "interconsultas") {
+            subAtencion.classList.add("hidden");
+            subInterconsultas.classList.remove("hidden");
+            if (tabAtencion) {
+                tabAtencion.className = "px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer";
+            }
+            if (tabInterconsultas) {
+                tabInterconsultas.className = "px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer";
+            }
+            window.inicializarModuloInterconsultas?.();
+        } else {
+            subInterconsultas.classList.add("hidden");
+            subAtencion.classList.remove("hidden");
+            if (tabAtencion) {
+                tabAtencion.className = "px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer";
+            }
+            if (tabInterconsultas) {
+                tabInterconsultas.className = "px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer";
+            }
+        }
+    };
+}

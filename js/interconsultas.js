@@ -842,6 +842,23 @@ export function vincularEventosDOMInterconsultas() {
     window.desmontarModuloInterconsultas = desmontarModuloInterconsultas;
 }
 
+// Asignación síncrona inmediata en window apenas evalúa el script modular
+if (typeof window !== "undefined") {
+    window.cambiarSubvistaDoctor = cambiarSubvistaDoctor;
+    window.seleccionarInterconsulta = seleccionarInterconsulta;
+    window.volverAListaInterconsultasMovil = volverAListaInterconsultasMovil;
+    window.enviarMensajeInterconsultaActual = enviarMensajeInterconsultaActual;
+    window.abrirModalNuevaInterconsultaDesdePaciente = abrirModalNuevaInterconsultaDesdePaciente;
+    window.abrirModalCrearInterconsulta = abrirModalCrearInterconsulta;
+    window.confirmarCrearNuevaInterconsulta = confirmarCrearNuevaInterconsulta;
+    window.confirmarCierreInterconsulta = confirmarCierreInterconsulta;
+    window.abrirModalAgregarColega = abrirModalAgregarColega;
+    window.confirmarAgregarColega = confirmarAgregarColega;
+    window.establecerFiltroEstadoInterconsultas = establecerFiltroEstadoInterconsultas;
+    window.inicializarModuloInterconsultas = inicializarModuloInterconsultas;
+    window.desmontarModuloInterconsultas = desmontarModuloInterconsultas;
+}
+
 if (typeof document !== "undefined") {
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", vincularEventosDOMInterconsultas);

@@ -237,12 +237,12 @@
             </div>
 
             <!-- Selector de Sub-vistas del Consultorio: Atención vs Interconsultas -->
-            <div class="mb-5 border-b border-slate-200 flex items-center gap-2">
-                <button type="button" id="tab-consultorio-atencion" onclick="cambiarSubvistaDoctor('atencion')" class="px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer">
+            <div class="mb-5 bg-white/95 backdrop-blur px-3 pt-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                <button type="button" id="tab-consultorio-atencion" onclick="window.cambiarSubvistaDoctor('atencion')" class="px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer">
                     <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     <span>Atención Clínica & Historia</span>
                 </button>
-                <button type="button" id="tab-consultorio-interconsultas" onclick="cambiarSubvistaDoctor('interconsultas')" class="px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer">
+                <button type="button" id="tab-consultorio-interconsultas" onclick="window.cambiarSubvistaDoctor('interconsultas')" class="px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer">
                     <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                     <span>Interconsultas Médicas</span>
                     <span id="badge-interconsultas-no-leidas" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white">0</span>

@@ -28,7 +28,9 @@ import {
     limit,
     startAfter,
     serverTimestamp,
-    writeBatch
+    writeBatch,
+    onSnapshot,
+    arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
     getFunctions,
@@ -92,7 +94,9 @@ export {
     signOut,
     onAuthStateChanged,
     sendPasswordResetEmail,
-    signInAnonymously
+    signInAnonymously,
+    onSnapshot,
+    arrayUnion
 };
 
 // ==========================================
