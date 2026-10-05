@@ -870,7 +870,8 @@ export async function llamarPaciente(idDoc) {
                     dni,
                     nombre: (turnoData.pacienteNombre || 'Paciente').split(' ')[0] || 'Paciente',
                     apellido: (turnoData.pacienteNombre || '').split(' ').slice(1).join(' ') || 'Schestakow',
-                    fechaNacimiento: '1990-01-01',
+                    fechaNacimiento: turnoData.pacienteFechaNacimiento || '1990-01-01',
+                    cobertura: turnoData.pacienteCobertura || 'Sin Obra Social',
                     sexo: 'No especificado',
                     contacto: {
                         celular: turnoData.pacienteCelular || '',

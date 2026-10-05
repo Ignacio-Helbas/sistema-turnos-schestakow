@@ -307,13 +307,17 @@ export function abrirModalDarTurno(hora) {
 }
 
 export async function confirmarTurnoRecepcionFirebase() {
-    const dni = document.getElementById('auto-dni').value.trim();
     const nombre = document.getElementById('auto-nombre').value.trim();
+    const fechaNacimiento = document.getElementById('auto-fecha-nacimiento')?.value || '';
+    const dni = document.getElementById('auto-dni').value.trim();
+    const coberturaSel = document.getElementById('auto-cobertura')?.value || 'No (Sin Obra Social)';
+    const coberturaOtra = document.getElementById('auto-cobertura-otra')?.value.trim() || '';
+    const cobertura = (coberturaSel === 'Otra Cobertura' && coberturaOtra) ? coberturaOtra : coberturaSel;
     const celular = document.getElementById('auto-celular').value.trim();
-    const email = document.getElementById('auto-email').value.trim();
+    const email = document.getElementById('auto-email')?.value.trim() || '';
 
     if (!nombre || !celular) {
-        mostrarAlerta("Datos Obligatorios", "Nombre y celular son obligatorios.");
+        mostrarAlerta("Datos Obligatorios", "Nombre completo y celular son obligatorios.");
         return;
     }
     if (dni && !/^[0-9]{6,10}$/.test(dni)) {
@@ -370,8 +374,10 @@ export async function confirmarTurnoRecepcionFirebase() {
             horario: horaSeleccionadaRecepcion,
             pacienteNombre: nombre,
             pacienteDni: dni,
+            pacienteFechaNacimiento: fechaNacimiento,
+            pacienteCobertura: cobertura,
             pacienteCelular: celular,
-            pacienteEmail: email || "",
+            pacienteEmail: email,
             canal: "Presencial",
             estado: "Confirmado Presencial",
             codigoConfirmacion: turnoRef.id,
@@ -390,10 +396,18 @@ export async function confirmarTurnoRecepcionFirebase() {
 
         cerrarModal('modal-dar-turno');
         mostrarExito("¡Turno Asignado!", "El turno presencial fue registrado.");
-        document.getElementById('auto-dni').value = '';
         document.getElementById('auto-nombre').value = '';
+        if (document.getElementById('auto-fecha-nacimiento')) document.getElementById('auto-fecha-nacimiento').value = '';
+        document.getElementById('auto-dni').value = '';
+        if (document.getElementById('auto-cobertura')) document.getElementById('auto-cobertura').value = 'No (Sin Obra Social)';
+        if (document.getElementById('auto-cobertura-otra')) {
+            document.getElementById('auto-cobertura-otra').value = '';
+            document.getElementById('div-auto-cobertura-otra')?.classList.add('hidden');
+        }
         document.getElementById('auto-celular').value = '';
-        document.getElementById('auto-email').value = '';
+        if (document.getElementById('auto-email')) document.getElementById('auto-email').value = '';
+        const msgEl = document.getElementById('auto-msg');
+        if (msgEl) msgEl.classList.add('hidden');
         generarAgendaRecepcion();
     } catch (error) {
         console.error(error);
@@ -480,6 +494,16 @@ export function toggleTimeSelector() {
     }
 }
 
+export function toggleOtraObraSocial(valor) {
+    const divOtra = document.getElementById('div-auto-cobertura-otra');
+    if (!divOtra) return;
+    if (valor === 'Otra Cobertura') {
+        divOtra.classList.remove('hidden');
+    } else {
+        divOtra.classList.add('hidden');
+    }
+}
+
 export async function simularAutocompletado(dni) {
     if (!dni || dni.length < 6) return;
     try {
@@ -487,10 +511,26 @@ export async function simularAutocompletado(dni) {
         if (!snap.empty) {
             const d = snap.docs[0].data();
             const nomEl = document.getElementById('auto-nombre');
+            const fecEl = document.getElementById('auto-fecha-nacimiento');
+            const cobEl = document.getElementById('auto-cobertura');
             const celEl = document.getElementById('auto-celular');
             const mailEl = document.getElementById('auto-email');
             const msgEl = document.getElementById('auto-msg');
             if (nomEl && !nomEl.value) nomEl.value = d.pacienteNombre || '';
+            if (fecEl && !fecEl.value) fecEl.value = d.pacienteFechaNacimiento || '';
+            if (cobEl && d.pacienteCobertura) {
+                const opciones = Array.from(cobEl.options).map(o => o.value);
+                if (opciones.includes(d.pacienteCobertura)) {
+                    cobEl.value = d.pacienteCobertura;
+                } else {
+                    cobEl.value = 'Otra Cobertura';
+                    const otraInp = document.getElementById('auto-cobertura-otra');
+                    if (otraInp) {
+                        otraInp.value = d.pacienteCobertura;
+                        document.getElementById('div-auto-cobertura-otra')?.classList.remove('hidden');
+                    }
+                }
+            }
             if (celEl && !celEl.value) celEl.value = d.pacienteCelular || '';
             if (mailEl && !mailEl.value) mailEl.value = d.pacienteEmail || '';
             if (msgEl) msgEl.classList.remove('hidden');
@@ -523,6 +563,7 @@ window.ejecutarAusenciaEmergencia = ejecutarAusenciaEmergencia;
 window.descargarExcelRecepcion = descargarExcelRecepcion;
 window.simularAutocompletado = simularAutocompletado;
 window.toggleTimeSelector = toggleTimeSelector;
+window.toggleOtraObraSocial = toggleOtraObraSocial;
 window.reprogramarTurnoRecepcion = reprogramarTurnoRecepcion;
 window.imprimirComprobanteTurnoRecepcion = imprimirComprobanteTurnoRecepcion;
 window.filtrarAgendaRecepcionPorDni = filtrarAgendaRecepcionPorDni;
