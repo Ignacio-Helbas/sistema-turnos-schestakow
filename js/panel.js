@@ -171,7 +171,6 @@ export function aplicarPermisosVisuales(sesion) {
     const btnDummies = document.getElementById('btn-cargar-dummies');
     const btnReset = document.getElementById('btn-reset-db');
     const btnDemoForo = document.getElementById('btn-demo-foro');
-    const btnNavDemoForo = document.getElementById('btn-nav-demo-foro');
 
     const usuarioSesionInfo = document.getElementById('usuario-sesion-info');
     const usuarioSesionNombre = document.getElementById('usuario-sesion-nombre');
@@ -183,7 +182,6 @@ export function aplicarPermisosVisuales(sesion) {
     if (btnDummies) btnDummies.classList.add('hidden');
     if (btnReset) btnReset.classList.add('hidden');
     if (btnDemoForo) btnDemoForo.classList.add('hidden');
-    if (btnNavDemoForo) btnNavDemoForo.classList.add('hidden');
 
     const barraSuperadmin = document.getElementById('barra-superadmin-controles');
     if (barraSuperadmin) barraSuperadmin.classList.add('hidden');
@@ -212,7 +210,6 @@ export function aplicarPermisosVisuales(sesion) {
         if (btnDoc) btnDoc.classList.remove('hidden');
         if (btnDummies) btnDummies.classList.remove('hidden');
         if (btnDemoForo) btnDemoForo.classList.remove('hidden');
-        if (btnNavDemoForo) btnNavDemoForo.classList.remove('hidden');
         if (btnReset) btnReset.classList.remove('hidden');
         if (barraSuperadmin) barraSuperadmin.classList.remove('hidden');
 
@@ -223,7 +220,6 @@ export function aplicarPermisosVisuales(sesion) {
         if (esModoDev) {
             if (btnDummies) btnDummies.classList.remove('hidden');
             if (btnDemoForo) btnDemoForo.classList.remove('hidden');
-            if (btnNavDemoForo) btnNavDemoForo.classList.remove('hidden');
             if (btnReset) btnReset.classList.remove('hidden');
             if (barraSuperadmin) barraSuperadmin.classList.remove('hidden');
         }

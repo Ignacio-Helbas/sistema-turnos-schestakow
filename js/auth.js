@@ -61,13 +61,11 @@ export function mostrarPantallaLogin() {
     const btnRec = document.getElementById('btn-nav-reception');
     const btnDoc = document.getElementById('btn-nav-doctor');
     const btnLogout = document.getElementById('btn-logout');
-    const btnNavDemo = document.getElementById('btn-nav-demo-foro');
 
     if (btnAdmin) btnAdmin.classList.add('hidden');
     if (btnRec) btnRec.classList.add('hidden');
     if (btnDoc) btnDoc.classList.add('hidden');
     if (btnLogout) btnLogout.classList.add('hidden');
-    if (btnNavDemo) btnNavDemo.classList.add('hidden');
 }
 
 export async function iniciarSesionReal() {

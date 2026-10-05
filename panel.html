@@ -50,16 +50,6 @@
 <body class="pagina-panel text-slate-800 font-sans flex flex-col min-h-screen">
 
     <!-- ========================================== -->
-    <!-- BANNER DE DESCARGO ACADÉMICO -->
-    <!-- ========================================== -->
-    <div class="bg-amber-500 text-amber-950 px-4 py-1.5 text-center text-xs font-bold tracking-wide border-b border-amber-600/30 flex items-center justify-center gap-2 select-none z-50">
-        <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-        </svg>
-        <span>Proyecto universitario experimental – UTN FRSR. No solicitar turnos médicos reales por este medio.</span>
-    </div>
-
-    <!-- ========================================== -->
     <!-- CABECERA Y NAVEGACIÓN DEL STAFF -->
     <!-- ========================================== -->
     <header class="bg-white/95 backdrop-blur shadow-md sticky top-0 z-40 border-b border-blue-900/10">
@@ -86,7 +76,6 @@
                     <button id="btn-nav-reception" onclick="switchView('reception')" class="hidden text-slate-600 hover:text-blue-900 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Recepción</button>
                     <button id="btn-nav-doctor" onclick="switchView('doctor')" class="hidden text-slate-600 hover:text-blue-900 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Consultorio</button>
                     <button id="btn-nav-admin" onclick="switchView('admin')" class="hidden text-slate-600 hover:text-blue-900 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Administración</button>
-                    <button id="btn-nav-demo-foro" onclick="inyectarDemoCompletaForo()" class="hidden bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 rounded-lg transition flex items-center gap-1 shadow-sm" title="Preparar datos funcionales para la presentación">Demo Foro</button>
                     
                     <!-- Usuario en Sesión y Botón Cerrar Sesión -->
                     <div class="flex items-center gap-2.5 sm:gap-4 w-full md:w-auto justify-end">
@@ -101,15 +90,6 @@
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                             <span class="hidden sm:inline">Cerrar Sesión</span>
                         </button>
-                    </div>
-
-                    <!-- Indicador de Sistema En Vivo -->
-                    <div id="indicador-vivo" class="flex items-center gap-1.5 ml-1 md:ml-2">
-                        <span class="relative flex h-2.5 w-2.5">
-                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                        </span>
-                        <span class="text-emerald-600 font-bold text-[10px] uppercase">En Vivo</span>
                     </div>
                 </nav>
 
@@ -1122,81 +1102,92 @@
 
     <!-- Modal: Ausencia Emergencia -->
     <div id="modal-ausencia-emergencia" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-fade-in-up border-t-4 border-red-600 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-xl font-bold text-slate-800 mb-2">Reportar Ausencia / Emergencia</h3>
-            <p class="text-sm text-slate-500 mb-4 border-b pb-2">Suspenderá los turnos del médico seleccionado en la fecha cargada en Recepción.</p>
+        <div class="modal-box-his max-w-md shadow-xl animate-fade-in-up flex flex-col max-h-[90vh]">
+            <div class="bg-red-700 text-white p-4 flex justify-between items-center border-b border-red-800">
+                <div class="flex items-center gap-2.5">
+                    <svg class="w-5 h-5 text-red-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <div>
+                        <h3 class="font-bold text-base text-white leading-tight">Reportar Ausencia / Emergencia</h3>
+                        <p class="text-xs text-red-100">Suspensión temporal de agenda médica</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModal('modal-ausencia-emergencia')" class="text-red-200 hover:text-white transition text-lg font-bold">&times;</button>
+            </div>
             
-            <div class="space-y-4 mb-6">
+            <div class="p-5 space-y-4 overflow-y-auto bg-white">
+                <p class="text-xs text-slate-600 leading-relaxed border-b border-slate-100 pb-2">Suspenderá los turnos del médico seleccionado en la fecha cargada en Recepción.</p>
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Alcance de la Suspensión</label>
-                    <select id="select-alcance-ausencia" onchange="toggleTimeSelector()" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-red-500 outline-none">
+                    <label class="label-his" for="select-alcance-ausencia">Alcance de la Suspensión</label>
+                    <select id="select-alcance-ausencia" onchange="toggleTimeSelector()" class="select-his">
                         <option value="todo_dia">Todo el día (A partir de ahora)</option>
                         <option value="desde_hora">A partir de una hora específica</option>
                     </select>
                 </div>
                 <div id="div-hora-ausencia" class="hidden">
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Suspender a partir de las (Hs)</label>
-                    <input type="time" id="hora-desde-ausencia" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-red-500 outline-none">
+                    <label class="label-his" for="hora-desde-ausencia">Suspender a partir de las (Hs)</label>
+                    <input type="time" id="hora-desde-ausencia" class="input-his">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Motivo (Opcional - Visible Internamente)</label>
-                    <input type="text" id="motivo-ausencia" placeholder="Ej: Cirugía de urgencia, Enfermedad..." class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-red-500 outline-none">
+                    <label class="label-his" for="motivo-ausencia">Motivo (Opcional - Visible Internamente)</label>
+                    <input type="text" id="motivo-ausencia" placeholder="Ej: Cirugía de urgencia, Enfermedad..." class="input-his">
                 </div>
             </div>
             
-            <div class="flex justify-end gap-3">
-                <button onclick="cerrarModal('modal-ausencia-emergencia')" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg transition">Cancelar</button>
-                <button onclick="ejecutarAusenciaEmergencia()" class="px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 shadow transition">Bloquear Agenda</button>
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-2.5">
+                <button type="button" onclick="cerrarModal('modal-ausencia-emergencia')" class="btn-his-secondary text-xs">Cancelar</button>
+                <button type="button" onclick="ejecutarAusenciaEmergencia()" class="btn-his-danger text-xs">Bloquear Agenda</button>
             </div>
         </div>
     </div>
 
     <!-- MODAL GESTIÓN DE USUARIO (ADMIN) -->
     <div id="modal-usuario" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
-            <div class="bg-neutral-900 p-4 text-white flex justify-between items-center">
-                <h3 class="font-bold text-lg">Registrar / Editar Usuario</h3>
-                <button onclick="cerrarModal('modal-usuario')" class="text-slate-300 hover:text-white transition" aria-label="Cerrar modal">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+        <div class="modal-box-his max-w-md shadow-2xl animate-fade-in-up flex flex-col max-h-[92vh]">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center border-b border-slate-800">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-2.5 h-2.5 rounded-full bg-sky-400"></div>
+                    <div>
+                        <h3 class="font-bold text-base text-white leading-tight">Registrar / Editar Usuario</h3>
+                        <p class="text-xs text-slate-300">Gestión de Personal Institucional</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModal('modal-usuario')" class="text-slate-400 hover:text-white transition text-lg font-bold" aria-label="Cerrar modal">&times;</button>
             </div>
             
-            <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+            <div class="p-5 space-y-4 overflow-y-auto bg-white">
                 <input type="hidden" id="input-usuario-id">
                 
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-nombre">Nombre Completo *</label>
-                    <input type="text" id="input-usuario-nombre" class="w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-neutral-700 outline-none transition" placeholder="Ej: Dr. Juan Pérez">
+                    <label class="label-his" for="input-usuario-nombre">Nombre Completo <span class="text-red-600 font-bold">*</span></label>
+                    <input type="text" id="input-usuario-nombre" class="input-his" placeholder="Ej: Dr. Juan Pérez">
                 </div>
                 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-rol">Rol *</label>
-                        <select id="input-usuario-rol" onchange="toggleCamposMedico()" class="w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-neutral-700 outline-none transition">
+                        <label class="label-his" for="input-usuario-rol">Rol <span class="text-red-600 font-bold">*</span></label>
+                        <select id="input-usuario-rol" onchange="toggleCamposMedico()" class="select-his">
                             <option value="Administración">Administración</option>
                             <option value="Recepción">Recepción</option>
                             <option value="Médico">Médico</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-tel">Teléfono</label>
-                        <input type="text" inputmode="numeric" pattern="[0-9]*" id="input-usuario-tel" class="w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-neutral-700 outline-none transition" placeholder="Solo números">
+                        <label class="label-his" for="input-usuario-tel">Teléfono</label>
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" id="input-usuario-tel" class="input-his tabular-nums" placeholder="Solo números">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-correo">Correo Electrónico (Firebase) *</label>
-                    <input type="email" id="input-usuario-correo" class="w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-neutral-700 outline-none transition" placeholder="usuario@hospital.com">
+                    <label class="label-his" for="input-usuario-correo">Correo Electrónico (Firebase) <span class="text-red-600 font-bold">*</span></label>
+                    <input type="email" id="input-usuario-correo" class="input-his" placeholder="usuario@hospital.com">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-pass">Contraseña (Mínimo 6 caracteres)</label>
+                    <label class="label-his" for="input-usuario-pass">Contraseña (Mínimo 6 caracteres)</label>
                     <div class="relative">
-                        <input type="password" id="input-usuario-pass" autocomplete="new-password" minlength="6" placeholder="Mínimo 6 caracteres para nuevo usuario" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-neutral-700 outline-none">
+                        <input type="password" id="input-usuario-pass" autocomplete="new-password" minlength="6" placeholder="Mínimo 6 caracteres" class="input-his pr-10">
                         <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-500 hover:text-slate-700 focus:outline-none" aria-label="Mostrar u ocultar contraseña">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
@@ -1205,13 +1196,13 @@
                 </div>
 
                 <div id="div-usuario-matricula" class="hidden">
-                    <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-matricula">Matrícula (M.P.)</label>
-                    <input type="text" id="input-usuario-matricula" class="w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-neutral-700 outline-none transition" placeholder="Nro de Matrícula">
+                    <label class="label-his" for="input-usuario-matricula">Matrícula (M.P.)</label>
+                    <input type="text" id="input-usuario-matricula" class="input-his font-mono" placeholder="Nro de Matrícula">
                 </div>
                 
                 <div id="div-usuario-especialidad" class="hidden">
-                    <label class="block text-sm font-bold text-slate-700 mb-1" for="input-usuario-especialidad">Especialidad</label>
-                    <select id="input-usuario-especialidad" class="w-full border border-slate-300 rounded p-2.5 bg-slate-50 text-slate-800 focus:bg-white focus:ring-2 focus:ring-neutral-700 outline-none transition">
+                    <label class="label-his" for="input-usuario-especialidad">Especialidad</label>
+                    <select id="input-usuario-especialidad" class="select-his">
                         <option value="Clínica Médica">Clínica Médica</option>
                         <option value="Cardiología">Cardiología</option>
                         <option value="Pediatría">Pediatría</option>
@@ -1227,227 +1218,255 @@
                 </div>
             </div>
             
-            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-3">
-                <button onclick="cerrarModal('modal-usuario')" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded font-bold hover:bg-slate-50 transition shadow-sm">Cancelar</button>
-                <button onclick="guardarUsuarioAdminFirebase()" class="px-4 py-2 bg-neutral-900 text-white rounded font-bold hover:bg-black shadow transition">Guardar Usuario</button>
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-2.5">
+                <button type="button" onclick="cerrarModal('modal-usuario')" class="btn-his-secondary text-xs">Cancelar</button>
+                <button type="button" onclick="guardarUsuarioAdminFirebase()" class="btn-his-primary text-xs">Guardar Usuario</button>
             </div>
         </div>
     </div>
 
     <!-- Modal: Confirmación de Modulación -->
     <div id="modal-seguridad-modulacion" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 animate-fade-in-up border-t-4 border-neutral-900">
-            <h3 class="text-xl font-bold text-slate-800 mb-2">Confirmar Modulación</h3>
-            <p class="text-sm text-slate-600 mb-4">Modificar los intervalos de tiempo alterará la grilla de turnos. Escriba "CONFIRMAR" para aplicar.</p>
-            <input type="text" id="input-seguridad-admin" class="w-full border border-slate-300 rounded-lg p-2 text-center mb-4 focus:ring-2 focus:ring-neutral-700 outline-none" placeholder="Escriba aquí">
-            <div class="flex justify-end gap-3">
-                <button onclick="cerrarModal('modal-seguridad-modulacion')" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg transition text-sm">Cancelar</button>
-                <button onclick="if(document.getElementById('input-seguridad-admin').value === 'CONFIRMAR'){ejecutarGuardadoModulacion();}else{mostrarAlerta('Error', 'Debe escribir CONFIRMAR');}" class="px-4 py-2 bg-neutral-900 text-white font-bold rounded-lg hover:bg-black shadow transition text-sm">Aplicar</button>
+        <div class="modal-box-his max-w-sm p-6 animate-fade-in-up border-t-4 border-slate-900">
+            <h3 class="text-base font-bold text-slate-900 mb-1">Confirmar Modulación</h3>
+            <p class="text-xs text-slate-600 mb-4 leading-relaxed">Modificar los intervalos de tiempo alterará la grilla de turnos. Escriba <span class="font-bold text-slate-900 font-mono">CONFIRMAR</span> para aplicar.</p>
+            <input type="text" id="input-seguridad-admin" class="input-his text-center mb-4 font-mono font-bold tracking-wider" placeholder="CONFIRMAR">
+            <div class="flex justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button type="button" onclick="cerrarModal('modal-seguridad-modulacion')" class="btn-his-secondary text-xs">Cancelar</button>
+                <button type="button" onclick="if(document.getElementById('input-seguridad-admin').value === 'CONFIRMAR'){ejecutarGuardadoModulacion();}else{mostrarAlerta('Error', 'Debe escribir CONFIRMAR');}" class="btn-his-primary text-xs">Aplicar</button>
             </div>
         </div>
     </div>
 
-    <!-- Modales de Notificaciones Genéricas -->
+    <!-- Modales de Notificaciones Genéricas Institucionales HIS -->
     <div id="modal-exito" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 text-center animate-fade-in-up">
-            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+        <div class="modal-box-his max-w-sm p-6 text-center animate-fade-in-up">
+            <div class="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
             </div>
-            <h3 id="exito-titulo" class="text-xl font-bold text-slate-800 mb-2">Éxito</h3>
-            <p id="exito-mensaje" class="text-slate-600 mb-6">Operación realizada correctamente.</p>
-            <button onclick="cerrarModal('modal-exito')" class="w-full bg-slate-800 text-white font-bold py-2 rounded-lg hover:bg-slate-900 transition">Aceptar</button>
+            <h3 id="exito-titulo" class="text-base font-bold text-slate-900 mb-1">Operación Exitosa</h3>
+            <p id="exito-mensaje" class="text-xs text-slate-600 mb-5 leading-relaxed">Operación realizada correctamente.</p>
+            <button type="button" onclick="cerrarModal('modal-exito')" class="btn-his-primary w-full text-xs">Aceptar</button>
         </div>
     </div>
 
     <div id="modal-alerta" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 text-center animate-fade-in-up">
-            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        <div class="modal-box-his max-w-sm p-6 text-center animate-fade-in-up">
+            <div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
             </div>
-            <h3 id="alerta-titulo" class="text-xl font-bold text-slate-800 mb-2">Atención</h3>
-            <p id="alerta-mensaje" class="text-slate-600 mb-6">Revise la información.</p>
-            <button onclick="cerrarModal('modal-alerta')" class="w-full bg-slate-800 text-white font-bold py-2 rounded-lg hover:bg-slate-900 transition">Entendido</button>
+            <h3 id="alerta-titulo" class="text-base font-bold text-slate-900 mb-1">Atención</h3>
+            <p id="alerta-mensaje" class="text-xs text-slate-600 mb-5 leading-relaxed">Revise la información ingresada.</p>
+            <button type="button" onclick="cerrarModal('modal-alerta')" class="btn-his-primary w-full text-xs">Entendido</button>
         </div>
     </div>
 
     <div id="modal-confirmacion" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 animate-fade-in-up">
-            <h3 id="confirm-titulo" class="text-xl font-bold text-slate-800 mb-2">Confirmar</h3>
-            <p id="confirm-mensaje" class="text-slate-600 mb-6">¿Está seguro de realizar esta acción?</p>
-            <div class="flex justify-end gap-3">
-                <button id="btn-confirm-cancelar" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg transition">Cancelar</button>
-                <button id="btn-confirm-aceptar" class="px-4 py-2 bg-blue-800 text-white font-bold rounded-lg hover:bg-blue-900 shadow transition">Aceptar</button>
+        <div class="modal-box-his max-w-sm p-6 animate-fade-in-up">
+            <div class="flex items-start gap-3 mb-4">
+                <div class="w-10 h-10 bg-blue-100 text-[#002845] rounded-full flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <h3 id="confirm-titulo" class="text-base font-bold text-slate-900 leading-tight">Confirmar Acción</h3>
+                    <p id="confirm-mensaje" class="text-xs text-slate-600 mt-1 leading-relaxed">¿Está seguro de realizar esta acción?</p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button type="button" id="btn-confirm-cancelar" class="btn-his-secondary text-xs">Cancelar</button>
+                <button type="button" id="btn-confirm-aceptar" class="btn-his-primary text-xs">Aceptar</button>
             </div>
         </div>
     </div>
 
     <!-- MODAL: LIMPIEZA AUTOMÁTICA DE DATOS -->
     <div id="modal-limpieza-anual" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 animate-fade-in-up border-t-4 border-amber-500 max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center gap-3 mb-4 text-amber-600">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                <h3 class="text-xl font-bold text-slate-800">Depuración Requerida</h3>
+        <div class="modal-box-his max-w-md p-6 animate-fade-in-up border-t-4 border-amber-500 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center gap-3 mb-3 text-amber-600">
+                <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-900 leading-tight">Depuración Requerida</h3>
+                    <p class="text-xs text-slate-500">Mantenimiento y Archivo Histórico</p>
+                </div>
             </div>
-            <p class="text-sm text-slate-600 mb-4">Se han detectado turnos inactivos con más de 1 año de antigüedad.</p>
-            <div class="bg-amber-50 p-3 rounded border border-amber-100 text-xs text-amber-800 mb-5">
-                Por normativas de capacidad y protección de datos, deben ser archivados. Puede posponer esta acción, o descargar una copia segura en Excel antes de eliminarlos.
+            <p class="text-xs text-slate-600 mb-3 leading-relaxed">Se han detectado turnos inactivos con más de 1 año de antigüedad.</p>
+            <div class="bg-amber-50 p-3 rounded border border-amber-200 text-xs text-amber-900 mb-5 leading-relaxed">
+                Por normativas de capacidad y protección de datos, deben ser archivados. Puede posponer esta acción o descargar una copia segura en Excel antes de eliminarlos.
             </div>
-            <div class="flex flex-col sm:flex-row justify-end gap-3">
-                <button onclick="cerrarModal('modal-limpieza-anual')" class="w-full sm:w-auto px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded transition text-sm">Posponer</button>
-                <button onclick="ejecutarLimpiezaYDescarga()" class="w-full sm:w-auto px-4 py-2 bg-amber-500 text-white font-bold rounded hover:bg-amber-600 shadow transition text-sm">Descargar Excel y Depurar</button>
+            <div class="flex flex-col sm:flex-row justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button type="button" onclick="cerrarModal('modal-limpieza-anual')" class="btn-his-secondary text-xs">Posponer</button>
+                <button type="button" onclick="ejecutarLimpiezaYDescarga()" class="btn-his-primary text-xs bg-amber-600 hover:bg-amber-700 border-amber-600">Descargar Excel y Depurar</button>
             </div>
         </div>
     </div>
 
     <!-- MODAL DE PROGRESO DE CARGA -->
     <div id="modal-progreso" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden cursor-wait p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
-            <h3 class="text-lg font-bold text-slate-800 mb-2">Procesando Operación</h3>
-            <p id="progreso-texto" class="text-sm text-slate-600 mb-4">Iniciando...</p>
-            <div class="w-full bg-slate-200 rounded-full h-4 overflow-hidden border border-slate-300">
-                <div id="progreso-barra" class="bg-blue-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+        <div class="modal-box-his max-w-sm p-6 text-center animate-fade-in-up">
+            <h3 class="text-base font-bold text-slate-900 mb-1">Procesando Operación</h3>
+            <p id="progreso-texto" class="text-xs text-slate-600 mb-4">Iniciando...</p>
+            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
+                <div id="progreso-barra" class="bg-[#002845] h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
-            <p class="text-xs text-slate-400 mt-3">Por favor no cierre esta ventana.</p>
+            <p class="text-[11px] text-slate-400 mt-3">Por favor, no cierre esta ventana.</p>
         </div>
     </div>
 
     <!-- MODAL: EDITAR RESUMEN CLÍNICO (Alergias, Antecedentes, Medicación) -->
     <div id="modal-editar-resumen-clinico" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 animate-fade-in-up max-h-[90vh] overflow-y-auto">
-            <h3 class="text-xl font-bold text-slate-800 mb-1">Actualizar Resumen Clínico</h3>
-            <p class="text-xs text-slate-500 mb-4">Información permanente visible para todo el equipo médico autorizado</p>
+        <div class="modal-box-his max-w-lg shadow-xl animate-fade-in-up flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center border-b border-slate-800">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+                    <div>
+                        <h3 class="font-bold text-base text-white leading-tight">Actualizar Resumen Clínico</h3>
+                        <p class="text-xs text-slate-300">Información permanente visible para el equipo médico</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModal('modal-editar-resumen-clinico')" class="text-slate-400 hover:text-white transition text-lg font-bold">&times;</button>
+            </div>
             
-            <div class="space-y-4">
+            <div class="p-5 space-y-4 overflow-y-auto bg-white">
                 <div>
-                    <label class="block text-xs font-bold text-red-800 uppercase mb-1">Alergias Conocidas</label>
-                    <textarea id="modal-input-alergias" rows="2" placeholder="Ej: Penicilina, Dipirona, Mariscos..." class="w-full border border-red-200 bg-red-50/40 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-red-400"></textarea>
+                    <label class="label-his text-red-800" for="modal-input-alergias">Alergias Conocidas</label>
+                    <textarea id="modal-input-alergias" rows="2" placeholder="Ej: Penicilina, Dipirona, Mariscos..." class="input-his border-red-200 bg-red-50/30 focus:border-red-400"></textarea>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-teal-800 uppercase mb-1">Antecedentes Patológicos y Quirúrgicos</label>
-                    <textarea id="modal-input-antecedentes" rows="3" placeholder="Ej: DBT tipo 2, HTA, Apendicectomía (2018)..." class="w-full border border-teal-200 bg-teal-50/40 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+                    <label class="label-his text-teal-800" for="modal-input-antecedentes">Antecedentes Patológicos y Quirúrgicos</label>
+                    <textarea id="modal-input-antecedentes" rows="3" placeholder="Ej: DBT tipo 2, HTA, Apendicectomía (2018)..." class="input-his border-teal-200 bg-teal-50/30 focus:border-teal-400"></textarea>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-emerald-800 uppercase mb-1">Medicación Activa Habitual</label>
-                    <textarea id="modal-input-medicacion" rows="2" placeholder="Ej: Enalapril 10mg/día, Metformina 850mg c/12hs..." class="w-full border border-emerald-200 bg-emerald-50/40 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+                    <label class="label-his text-emerald-800" for="modal-input-medicacion">Medicación Activa Habitual</label>
+                    <textarea id="modal-input-medicacion" rows="2" placeholder="Ej: Enalapril 10mg/día, Metformina 850mg c/12hs..." class="input-his border-emerald-200 bg-emerald-50/30 focus:border-emerald-400"></textarea>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Motivo de la Modificación * (Auditoría)</label>
-                    <input type="text" id="modal-input-motivo-cambio-resumen" placeholder="Ej: Paciente refiere nueva alergia medicamentosa..." class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                    <label class="label-his" for="modal-input-motivo-cambio-resumen">Motivo de la Modificación <span class="text-red-600 font-bold">*</span> (Auditoría)</label>
+                    <input type="text" id="modal-input-motivo-cambio-resumen" placeholder="Ej: Paciente refiere nueva alergia medicamentosa..." class="input-his">
                 </div>
             </div>
 
-            <div class="flex justify-end gap-3 mt-6">
-                <button onclick="cerrarModal('modal-editar-resumen-clinico')" class="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition text-sm">Cancelar</button>
-                <button id="btn-confirmar-guardar-resumen" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg shadow transition text-sm">Guardar Resumen</button>
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-2.5">
+                <button type="button" onclick="cerrarModal('modal-editar-resumen-clinico')" class="btn-his-secondary text-xs">Cancelar</button>
+                <button type="button" id="btn-confirmar-guardar-resumen" class="btn-his-primary text-xs">Guardar Resumen</button>
             </div>
         </div>
     </div>
 
     <!-- MODAL: ACCESO DE EMERGENCIA A HISTORIA CLÍNICA -->
     <div id="modal-acceso-emergencia" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-fade-in-up border-t-4 border-amber-600">
-            <div class="flex items-center gap-3 mb-2 text-amber-700">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                <h3 class="text-lg font-bold text-slate-900">Acceso de Emergencia Médica</h3>
-            </div>
-            <p class="text-xs text-slate-600 mb-4 leading-relaxed">
-                Habilita el acceso inmediato a la historia clínica de un paciente sin turno asignado previo. <strong>Esta acción quedará registrada en el log inmutable de auditoría.</strong>
-            </p>
-
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">DNI del Paciente *</label>
-                    <input type="text" id="modal-emergencia-dni" maxlength="10" placeholder="Sin puntos" inputmode="numeric" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+        <div class="modal-box-his max-w-md shadow-xl animate-fade-in-up flex flex-col border-t-4 border-amber-600">
+            <div class="p-5 pb-0">
+                <div class="flex items-center gap-3 mb-2 text-amber-700">
+                    <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                        <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 leading-tight">Acceso de Emergencia Médica</h3>
+                        <p class="text-xs text-amber-800">Protocolo de Excepción</p>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Motivo Justificado de Emergencia * (mínimo 10 caracteres)</label>
-                    <textarea id="modal-emergencia-motivo" rows="3" placeholder="Ej: Paciente ingresa descompensado por guardia central sin turno previo..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none"></textarea>
+                <p class="text-xs text-slate-600 mb-4 leading-relaxed">
+                    Habilita el acceso inmediato a la historia clínica de un paciente sin turno asignado previo. <strong class="text-slate-800">Esta acción quedará registrada en el log inmutable de auditoría.</strong>
+                </p>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="label-his" for="modal-emergencia-dni">DNI del Paciente <span class="text-red-600 font-bold">*</span></label>
+                        <input type="text" id="modal-emergencia-dni" maxlength="10" placeholder="Sin puntos" inputmode="numeric" class="input-his font-mono">
+                    </div>
+                    <div>
+                        <label class="label-his" for="modal-emergencia-motivo">Motivo Justificado de Emergencia <span class="text-red-600 font-bold">*</span> (mínimo 10 caracteres)</label>
+                        <textarea id="modal-emergencia-motivo" rows="3" placeholder="Ej: Paciente ingresa descompensado por guardia central sin turno previo..." class="input-his"></textarea>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex justify-end gap-3 mt-6">
-                <button onclick="cerrarModal('modal-acceso-emergencia')" class="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition text-sm">Cancelar</button>
-                <button id="btn-confirmar-acceso-emergencia" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow transition text-sm">Habilitar y Acceder</button>
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-2.5 mt-5">
+                <button type="button" onclick="cerrarModal('modal-acceso-emergencia')" class="btn-his-secondary text-xs">Cancelar</button>
+                <button type="button" id="btn-confirmar-acceso-emergencia" class="btn-his-danger text-xs bg-amber-600 hover:bg-amber-700 text-white border-amber-600">Habilitar y Acceder</button>
             </div>
         </div>
     </div>
 
     <!-- MODAL: RECTIFICACIÓN DE CONSULTA INMUTABLE -->
     <div id="modal-rectificar-consulta" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 animate-fade-in-up max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center gap-2 mb-2 text-emerald-800">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                <h3 class="text-lg font-bold">Rectificar Consulta Médica</h3>
+        <div class="modal-box-his max-w-lg shadow-xl animate-fade-in-up flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center border-b border-slate-800">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+                    <div>
+                        <h3 class="font-bold text-base text-white leading-tight">Rectificar Consulta Médica</h3>
+                        <p class="text-xs text-slate-300">Enmienda inmutable con vinculación a consulta previa</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModal('modal-rectificar-consulta')" class="text-slate-400 hover:text-white transition text-lg font-bold">&times;</button>
             </div>
-            <p class="text-xs text-slate-500 mb-4">
-                La consulta previa permanecerá inmutable en el historial. Esta nueva entrada se vinculará formalmente como su rectificación oficial.
-            </p>
-
+            
             <input type="hidden" id="rectificar-consulta-original-id">
 
-            <div class="space-y-4">
-                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
+            <div class="p-5 space-y-4 overflow-y-auto bg-white">
+                <p class="text-xs text-slate-600 leading-relaxed border-b border-slate-100 pb-2">
+                    La consulta previa permanecerá inmutable en el historial. Esta nueva entrada se vinculará formalmente como su rectificación oficial.
+                </p>
+
+                <div class="bg-slate-50 p-3 rounded border border-slate-200 text-xs">
                     <p class="font-bold text-slate-700 mb-1">Consulta a rectificar:</p>
                     <p id="rectificar-resumen-original" class="text-slate-600 italic">Cargando...</p>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Motivo de la Rectificación *</label>
-                    <input type="text" id="rectificar-motivo" placeholder="Ej: Corrección de posología, aclaración diagnóstica..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <label class="label-his" for="rectificar-motivo">Motivo de la Rectificación <span class="text-red-600 font-bold">*</span></label>
+                    <input type="text" id="rectificar-motivo" placeholder="Ej: Corrección de posología, aclaración diagnóstica..." class="input-his">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Texto de la Rectificación / Nueva Evolución *</label>
-                    <textarea id="rectificar-evolucion" rows="4" placeholder="Escriba la corrección médica detallada..." class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                    <label class="label-his" for="rectificar-evolucion">Texto de la Rectificación / Nueva Evolución <span class="text-red-600 font-bold">*</span></label>
+                    <textarea id="rectificar-evolucion" rows="4" placeholder="Escriba la corrección médica detallada..." class="input-his"></textarea>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Nuevas Indicaciones / Receta</label>
-                    <textarea id="rectificar-indicaciones" rows="2" placeholder="Indicaciones actualizadas..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                    <label class="label-his" for="rectificar-indicaciones">Nuevas Indicaciones / Receta</label>
+                    <textarea id="rectificar-indicaciones" rows="2" placeholder="Indicaciones actualizadas..." class="input-his"></textarea>
                 </div>
             </div>
 
-            <div class="flex justify-end gap-3 mt-6">
-                <button onclick="cerrarModal('modal-rectificar-consulta')" class="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition text-sm">Cancelar</button>
-                <button id="btn-confirmar-guardar-rectificacion" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg shadow transition text-sm">Guardar Rectificación Inmutable</button>
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-2.5">
+                <button type="button" onclick="cerrarModal('modal-rectificar-consulta')" class="btn-his-secondary text-xs">Cancelar</button>
+                <button type="button" id="btn-confirmar-guardar-rectificacion" class="btn-his-primary text-xs">Guardar Rectificación Inmutable</button>
             </div>
         </div>
     </div>
 
     <!-- MODAL: AGENDAR PRÓXIMA CONSULTA / CITACIÓN MÉDICA -->
     <div id="modal-proxima-consulta" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up max-h-[92vh] flex flex-col">
+        <div class="modal-box-his max-w-lg shadow-2xl animate-fade-in-up max-h-[92vh] flex flex-col">
             <!-- Cabecera -->
-            <div class="bg-emerald-800 text-white p-4 flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <div class="p-1.5 bg-emerald-700 rounded-lg">
-                        <svg class="w-5 h-5 text-emerald-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    </div>
+            <div class="bg-[#002845] text-white p-4 flex justify-between items-center border-b border-[#001c31]">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
                     <div>
-                        <h3 class="font-bold text-base sm:text-lg leading-tight">Agendar Próxima Consulta</h3>
-                        <p class="text-xs text-emerald-100">Citación médica y seguimiento del paciente</p>
+                        <h3 class="font-bold text-base text-white leading-tight">Agendar Próxima Consulta</h3>
+                        <p class="text-xs text-slate-300">Citación médica y seguimiento del paciente</p>
                     </div>
                 </div>
-                <button onclick="cerrarModal('modal-proxima-consulta')" class="text-emerald-200 hover:text-white transition" aria-label="Cerrar modal">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+                <button type="button" onclick="cerrarModal('modal-proxima-consulta')" class="text-slate-300 hover:text-white transition text-lg font-bold" aria-label="Cerrar modal">&times;</button>
             </div>
 
             <!-- Cuerpo scrollable -->
-            <div class="p-5 space-y-4 overflow-y-auto flex-grow">
+            <div class="p-5 space-y-4 overflow-y-auto flex-grow bg-white">
                 <!-- Ficha del Paciente Activo -->
-                <div class="bg-emerald-50/70 border border-emerald-200 rounded-lg p-3">
+                <div class="bg-slate-50 border border-slate-200 rounded p-3 text-xs">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider mb-0.5">Paciente Citado</p>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Paciente Citado</p>
                             <h4 id="prox-consulta-paciente-nombre" class="font-bold text-slate-900 text-sm">--</h4>
-                            <p class="text-xs text-slate-600">DNI: <span id="prox-consulta-paciente-dni" class="font-bold font-mono">--</span></p>
+                            <p class="text-xs text-slate-600 font-mono">DNI: <span id="prox-consulta-paciente-dni" class="font-bold">--</span></p>
                         </div>
                         <div class="text-right">
-                            <p class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider mb-0.5">Profesional Asignado</p>
-                            <p id="prox-consulta-medico-nombre" class="font-bold text-xs text-slate-800">--</p>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Profesional Asignado</p>
+                            <p id="prox-consulta-medico-nombre" class="font-bold text-xs text-slate-900">--</p>
                             <p id="prox-consulta-medico-especialidad" class="text-[11px] text-slate-500">--</p>
                         </div>
                     </div>
@@ -1455,19 +1474,19 @@
 
                 <!-- 1. Día de la Consulta (Fecha) -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1" for="prox-consulta-fecha">1. Fecha Asignada por el Médico *</label>
-                    <input type="date" id="prox-consulta-fecha" onchange="cambioFechaProximaConsulta(this)" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <label class="label-his" for="prox-consulta-fecha">1. Fecha Asignada por el Médico <span class="text-red-600 font-bold">*</span></label>
+                    <input type="date" id="prox-consulta-fecha" onchange="cambioFechaProximaConsulta(this)" class="input-his">
                     <p class="text-[11px] text-slate-500 mt-1">Días hábiles de lunes a viernes.</p>
                 </div>
 
                 <!-- 2. Modalidad de Asignación de Horario -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-2">2. Modalidad del Horario</label>
+                    <label class="label-his">2. Modalidad del Horario</label>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <!-- Opción A: Médico asigna horario -->
-                        <label id="label-modo-exacto" class="border-2 border-emerald-600 bg-emerald-50/50 rounded-lg p-3 cursor-pointer transition flex flex-col justify-between">
+                        <label id="label-modo-exacto" class="border-2 border-[#002845] bg-blue-50/40 rounded p-3 cursor-pointer transition flex flex-col justify-between">
                             <div class="flex items-start gap-2">
-                                <input type="radio" name="modo-horario-citacion" id="modo-horario-exacto" value="exacto" checked onchange="toggleModoHorarioCitacion()" class="mt-0.5 text-emerald-600 focus:ring-emerald-500">
+                                <input type="radio" name="modo-horario-citacion" id="modo-horario-exacto" value="exacto" checked onchange="toggleModoHorarioCitacion()" class="mt-0.5 text-[#002845] focus:ring-[#002845]">
                                 <div>
                                     <span class="block text-xs font-bold text-slate-900">Horario Exacto</span>
                                     <span class="block text-[11px] text-slate-600 mt-0.5">El médico asigna la hora de atención ahora mismo.</span>
@@ -1476,9 +1495,9 @@
                         </label>
 
                         <!-- Opción B: Paciente elige horario -->
-                        <label id="label-modo-paciente" class="border-2 border-slate-200 hover:border-emerald-300 rounded-lg p-3 cursor-pointer transition flex flex-col justify-between">
+                        <label id="label-modo-paciente" class="border-2 border-slate-200 hover:border-slate-300 rounded p-3 cursor-pointer transition flex flex-col justify-between">
                             <div class="flex items-start gap-2">
-                                <input type="radio" name="modo-horario-citacion" id="modo-horario-paciente" value="paciente" onchange="toggleModoHorarioCitacion()" class="mt-0.5 text-emerald-600 focus:ring-emerald-500">
+                                <input type="radio" name="modo-horario-citacion" id="modo-horario-paciente" value="paciente" onchange="toggleModoHorarioCitacion()" class="mt-0.5 text-[#002845] focus:ring-[#002845]">
                                 <div>
                                     <span class="block text-xs font-bold text-slate-900">A Elección del Paciente</span>
                                     <span class="block text-[11px] text-slate-600 mt-0.5">El paciente elige su horario dentro del día fijado.</span>
@@ -1490,36 +1509,36 @@
 
                 <!-- Bloque Horario Exacto (Opción A) -->
                 <div id="bloque-horarios-exactos" class="space-y-2">
-                    <label class="block text-xs font-bold text-slate-700 uppercase">Horarios Disponibles de ese Día</label>
-                    <div id="contenedor-slots-proxima-consulta" class="grid grid-cols-3 sm:grid-cols-4 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200 max-h-36 overflow-y-auto">
+                    <label class="label-his">Horarios Disponibles de ese Día</label>
+                    <div id="contenedor-slots-proxima-consulta" class="grid grid-cols-3 sm:grid-cols-4 gap-2 bg-slate-50 p-3 rounded border border-slate-200 max-h-36 overflow-y-auto">
                         <p class="text-xs text-slate-400 col-span-3 sm:col-span-4 text-center py-4">Seleccione una fecha para ver los horarios disponibles.</p>
                     </div>
                     <input type="hidden" id="prox-consulta-horario-seleccionado" value="">
                 </div>
 
                 <!-- Bloque Info Elección Paciente (Opción B) -->
-                <div id="bloque-info-paciente" class="hidden bg-teal-50 border border-teal-200 rounded-lg p-3 text-xs text-teal-900">
+                <div id="bloque-info-paciente" class="hidden bg-teal-50 border border-teal-200 rounded p-3 text-xs text-teal-900">
                     <div class="flex items-start gap-2">
                         <svg class="w-5 h-5 text-teal-700 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         <p>
-                            El día quedará <strong>oficialmente asignado y reservado</strong>. Se generará un comprobante de citación con enlace directo y código único para que el paciente seleccione su horario preferido desde su celular o recepción.
+                            El día quedará <strong class="text-teal-950">oficialmente asignado y reservado</strong>. Se generará un comprobante de citación con enlace directo y código único para que el paciente seleccione su horario preferido desde su celular o recepción.
                         </p>
                     </div>
                 </div>
 
                 <!-- 3. Motivo / Indicación de la Citación -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1" for="prox-consulta-motivo">3. Motivo / Indicación de la Citación (Opcional)</label>
-                    <input type="text" id="prox-consulta-motivo" placeholder="Ej: Control evolutivo, revisión de estudios de laboratorio..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <label class="label-his" for="prox-consulta-motivo">3. Motivo / Indicación de la Citación (Opcional)</label>
+                    <input type="text" id="prox-consulta-motivo" placeholder="Ej: Control evolutivo, revisión de estudios de laboratorio..." class="input-his">
                 </div>
             </div>
 
             <!-- Footer -->
-            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-3">
-                <button onclick="cerrarModal('modal-proxima-consulta')" class="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition text-sm">Cancelar</button>
-                <button id="btn-guardar-proxima-consulta" onclick="guardarProximaConsultaMedico()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg shadow transition text-sm flex items-center gap-1.5">
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-2.5">
+                <button type="button" onclick="cerrarModal('modal-proxima-consulta')" class="btn-his-secondary text-xs">Cancelar</button>
+                <button type="button" id="btn-guardar-proxima-consulta" onclick="guardarProximaConsultaMedico()" class="btn-his-primary text-xs flex items-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    Confirmar Citación
+                    <span>Confirmar Citación</span>
                 </button>
             </div>
         </div>
@@ -1527,37 +1546,37 @@
 
     <!-- MODAL: COMPROBANTE DE CITACIÓN / PRÓXIMA CONSULTA -->
     <div id="modal-comprobante-citacion" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
-            <div class="bg-emerald-800 text-white p-4 flex justify-between items-center">
+        <div class="modal-box-his max-w-md shadow-2xl animate-fade-in-up">
+            <div class="bg-[#002845] text-white p-4 flex justify-between items-center border-b border-[#001c31]">
                 <h3 class="font-bold text-base flex items-center gap-2">
-                    <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Citación Médica Registrada
+                    <svg class="w-5 h-5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Citación Médica Registrada</span>
                 </h3>
-                <button onclick="cerrarModal('modal-comprobante-citacion')" class="text-emerald-200 hover:text-white transition">✕</button>
+                <button type="button" onclick="cerrarModal('modal-comprobante-citacion')" class="text-slate-300 hover:text-white transition text-lg font-bold">&times;</button>
             </div>
 
-            <div class="p-5 space-y-4">
-                <div id="comprobante-citacion-cuerpo" class="border border-slate-200 rounded-lg p-4 bg-slate-50 text-xs space-y-2">
+            <div class="p-5 space-y-4 bg-white">
+                <div id="comprobante-citacion-cuerpo" class="border border-slate-200 rounded p-4 bg-slate-50 text-xs space-y-2">
                     <!-- Dinámico -->
                 </div>
 
-                <div id="contenedor-enlace-citacion" class="hidden bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs space-y-2">
+                <div id="contenedor-enlace-citacion" class="hidden bg-emerald-50 border border-emerald-200 rounded p-3 text-xs space-y-2">
                     <p class="font-bold text-emerald-900">Enlace de Citación para el Paciente:</p>
                     <div class="flex items-center gap-2">
-                        <input type="text" id="input-enlace-citacion" readonly class="w-full bg-white border border-emerald-300 rounded p-1.5 text-[11px] font-mono select-all">
-                        <button onclick="copiarEnlaceCitacion()" id="btn-copiar-enlace-citacion" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded font-bold transition flex items-center gap-1 flex-shrink-0 text-xs">
+                        <input type="text" id="input-enlace-citacion" readonly class="input-his text-[11px] font-mono select-all">
+                        <button type="button" onclick="copiarEnlaceCitacion()" id="btn-copiar-enlace-citacion" class="btn-his-primary text-xs px-3 py-1.5 shrink-0">
                             Copiar
                         </button>
                     </div>
                     <p class="text-[11px] text-slate-500">Compartí este enlace por WhatsApp o email para que el paciente elija su horario dentro de la fecha asignada.</p>
                 </div>
 
-                <div class="flex flex-col sm:flex-row justify-end gap-2 pt-2">
-                    <button onclick="imprimirComprobanteCitacion()" class="w-full sm:w-auto px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold rounded-lg transition text-xs flex items-center justify-center gap-1.5">
+                <div class="flex flex-col sm:flex-row justify-end gap-2.5 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="imprimirComprobanteCitacion()" class="btn-his-secondary text-xs flex items-center justify-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                        Imprimir Talón
+                        <span>Imprimir Talón</span>
                     </button>
-                    <button onclick="cerrarModal('modal-comprobante-citacion')" class="w-full sm:w-auto px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition text-xs">
+                    <button type="button" onclick="cerrarModal('modal-comprobante-citacion')" class="btn-his-primary text-xs">
                         Aceptar
                     </button>
                 </div>
