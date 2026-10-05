@@ -152,6 +152,7 @@ export function actualizarMedicosPublico() {
         selectMed.disabled = true;
         selectMed.classList.add('bg-slate-50', 'text-slate-500');
         if (containerHorarios) containerHorarios.innerHTML = '<p class="text-sm text-slate-500 col-span-2 sm:col-span-3 text-center">Seleccione Especialidad y Profesional.</p>';
+        if (window.actualizarProgresoFormulario) window.actualizarProgresoFormulario();
         return;
     }
 
@@ -161,6 +162,7 @@ export function actualizarMedicosPublico() {
         selectMed.disabled = true;
         selectMed.classList.add('bg-slate-50', 'text-slate-500');
         if (containerHorarios) containerHorarios.innerHTML = '<p class="text-sm text-slate-500 col-span-2 sm:col-span-3 text-center">No hay profesionales disponibles en esta área.</p>';
+        if (window.actualizarProgresoFormulario) window.actualizarProgresoFormulario();
         return;
     }
 
@@ -172,6 +174,7 @@ export function actualizarMedicosPublico() {
     });
     selectMed.innerHTML = opts;
     generarHorariosPublicos();
+    if (window.actualizarProgresoFormulario) window.actualizarProgresoFormulario();
 }
 
 export async function generarHorariosPublicos() {
@@ -242,6 +245,7 @@ export async function generarHorariosPublicos() {
         minBucle += duracionActual;
     }
     container.innerHTML = html || '<div class="col-span-2 sm:col-span-4 py-4 text-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded">No hay turnos disponibles para esta fecha. Por favor seleccione otro día hábil.</div>';
+    if (window.actualizarProgresoFormulario) window.actualizarProgresoFormulario();
 }
 
 export function seleccionarHorario(btnClickeado) {
@@ -251,6 +255,7 @@ export function seleccionarHorario(btnClickeado) {
     });
     btnClickeado.classList.remove('bg-white', 'text-blue-900');
     btnClickeado.classList.add('bg-blue-800', 'text-white');
+    if (window.actualizarProgresoFormulario) window.actualizarProgresoFormulario();
 }
 
 export async function confirmarTurnoFirebase() {
@@ -372,6 +377,7 @@ export async function confirmarTurnoFirebase() {
         document.getElementById('horarios-publicos').innerHTML = '<p class="text-xs text-slate-500 col-span-2 sm:col-span-4 text-center py-3">Seleccione Profesional y Fecha para ver horarios.</p>';
         document.getElementById('select-medico').innerHTML = '<option>Primero seleccione especialidad</option>';
         document.getElementById('select-medico').disabled = true;
+        if (window.actualizarProgresoFormulario) window.actualizarProgresoFormulario();
 
     } catch (error) {
         console.error("Error al confirmar turno:", error);
