@@ -458,7 +458,7 @@ export async function cargarCronologiaConsultas(pacienteId) {
                             ${esRectificada ? `<span class="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Rectificada por entrada posterior</span>` : ''}
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="text-[11px] bg-slate-100 text-slate-500 font-mono px-2 py-0.5 rounded">Inmutable</span>
+                            <span class="text-[11px] bg-slate-100 text-slate-500 font-semibold px-2 py-0.5 rounded">Inmutable</span>
                             <button onclick="abrirModalRectificar('${c.id}')" class="text-xs text-emerald-700 hover:text-emerald-900 font-bold border border-emerald-200 px-2 py-1 rounded bg-emerald-50/50 hover:bg-emerald-100 transition">
                                 Rectificar
                             </button>
@@ -1257,7 +1257,7 @@ function mostrarComprobanteCitacion(cita) {
     cuerpo.innerHTML = `
         <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-2">
             <span class="font-bold text-slate-800 text-sm">Resumen de Citación Médica</span>
-            <span class="font-mono text-slate-500 text-[11px]">${cita.canal}</span>
+            <span class="text-slate-500 text-[11px] font-semibold">${cita.canal}</span>
         </div>
         <div class="space-y-1">
             <p><strong>Paciente:</strong> ${escaparHTML(cita.pacienteNombre)} (DNI ${escaparHTML(cita.pacienteDni)})</p>

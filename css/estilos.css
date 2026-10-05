@@ -3,12 +3,14 @@
    Inspirado en estándares de software clínico, accesibilidad AA y sobriedad.
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
-
 /* --------------------------------------------------------------------------
    1. VARIABLES DE SISTEMA Y PALETA INSTITUCIONAL (Derivada del Logo)
    -------------------------------------------------------------------------- */
 :root {
+    /* Tipografías del Sistema Hospitalario */
+    --fuente-codigo: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    --fuente-base: "Public Sans", system-ui, "Segoe UI", Arial, sans-serif;
+
     /* Color Primario Institucional: Azul Marino / Petróleo Profundo (Logo y Tipografía) */
     --his-primary: #002845;
     --his-primary-hover: #001c31;
@@ -39,7 +41,7 @@
     --his-text-secondary: #334155;
     --his-text-muted: #64748b;
     --his-text-inverse: #ffffff;
-    --his-font: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --his-font: var(--fuente-base);
 
     /* Estados Operativos y Clínicos (Semáforo Hospitalario) */
     --his-status-espera: #0369a1;       /* En Espera / Consulta: Azul Clínico */
@@ -66,6 +68,14 @@
     --his-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.08);
 }
 
+/* Diferenciación de tipografía base según página */
+body.pagina-panel {
+    --fuente-base: "IBM Plex Sans", system-ui, "Segoe UI", Arial, sans-serif;
+}
+body.pagina-publica {
+    --fuente-base: "Public Sans", system-ui, "Segoe UI", Arial, sans-serif;
+}
+
 /* --------------------------------------------------------------------------
    2. ESTRUCTURA BASE Y REGLAS DE NAVEGACIÓN EXISTENTES (PRESERVADAS)
    -------------------------------------------------------------------------- */
@@ -73,8 +83,18 @@ body {
     display: flex; 
     flex-direction: column; 
     min-height: 100vh; 
-    font-family: var(--his-font);
+    font-family: var(--fuente-base);
     color: var(--his-text);
+}
+
+/* Asegurar que botones, inputs, selects y textareas hereden la fuente base */
+button, input, select, textarea {
+    font-family: inherit;
+}
+
+/* Mapeo estricto de fuente monospace */
+.font-mono, code, kbd, samp {
+    font-family: var(--fuente-codigo);
 }
 
 /* Números tabulares para fechas, DNI, teléfonos, códigos y tablas médicas */

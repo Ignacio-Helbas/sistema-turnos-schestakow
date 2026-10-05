@@ -159,7 +159,7 @@ export async function generarAgendaRecepcion() {
                     <td class="p-3 text-xs font-semibold text-slate-500">${escaparHTML(turno.canal || canal)}</td>
                     <td class="p-3">
                         <p class="font-bold text-slate-900 text-sm">${pacNomEsc}</p>
-                        <p class="text-xs text-slate-500 font-mono">DNI: ${pacDniEsc || 'N/A'} &bull; Tel: ${escaparHTML(turno.pacienteCelular || 'N/A')}</p>
+                        <p class="text-xs text-slate-500">DNI: <span class="font-mono font-bold">${pacDniEsc || 'N/A'}</span> &bull; Tel: <span class="tabular-nums">${escaparHTML(turno.pacienteCelular || 'N/A')}</span></p>
                     </td>
                     <td class="p-3"><span class="${badgeColor}">${escaparHTML(turno.estado)}</span></td>
                     <td class="p-3">

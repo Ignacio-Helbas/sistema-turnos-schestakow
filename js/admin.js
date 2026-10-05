@@ -122,14 +122,14 @@ export async function cargarUsuariosAdmin(direccion = 'init') {
                 <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
                     <td class="p-3">
                         <p class="font-bold text-slate-800 text-xs">${escaparHTML(u.nombre || 'Sin Nombre')}</p>
-                        <p class="text-[11px] text-slate-500 font-mono">${escaparHTML(u.correo || 'Sin correo')}</p>
+                        <p class="text-[11px] text-slate-500">${escaparHTML(u.correo || 'Sin correo')}</p>
                     </td>
                     <td class="p-3">
                         <span class="${badgeRol} text-[11px]">${escaparHTML(u.rol || 'Recepción')}</span>
                         ${u.matricula ? `<p class="text-[11px] text-slate-500 font-mono mt-1">M.P.: ${escaparHTML(u.matricula)}</p>` : ''}
                     </td>
                     <td class="p-3 text-xs text-slate-600">
-                        <p class="font-mono text-slate-700 text-xs font-semibold">${escaparHTML(u.correo || 'N/A')}</p>
+                        <p class="text-slate-700 text-xs font-semibold">${escaparHTML(u.correo || 'N/A')}</p>
                         <button data-correo="${escaparHTML(u.correo || '')}" onclick="enviarResetPasswordUsuario(this.dataset.correo)" class="text-[11px] text-blue-700 underline hover:text-blue-900 mt-1 inline-block">Enviar reset clave</button>
                     </td>
                     <td class="p-3 text-center">
@@ -373,7 +373,7 @@ export async function cargarAuditoriaAdmin() {
                 <tr class="hover:bg-slate-50 transition border-b border-slate-100">
                     <td class="font-mono text-xs text-slate-700 p-3">${escaparHTML(fechaStr)} hs</td>
                     <td class="p-3"><span class="${badgeRol}">${escaparHTML(ev.actorRol || 'Sistema')}</span></td>
-                    <td class="font-mono font-bold text-xs text-slate-800 p-3">${escaparHTML(ev.accion || 'OPERACIÓN')}</td>
+                    <td class="font-bold text-xs text-slate-800 p-3">${escaparHTML(ev.accion || 'OPERACIÓN')}</td>
                     <td class="text-xs text-slate-600 p-3">${escaparHTML(ev.detalle || '-')}</td>
                 </tr>
             `;
