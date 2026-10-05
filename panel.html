@@ -478,9 +478,39 @@
 
         <!-- 3. VISTA ADMINISTRACIÓN -->
         <div id="view-admin" class="view hidden">
-            <div class="card-his bg-white/95 backdrop-blur p-4 mb-4 sm:mb-6 border-l-4 border-slate-900 shadow-sm">
+            <div class="card-his bg-white/95 backdrop-blur p-4 mb-4 border-l-4 border-slate-900 shadow-sm">
                 <h2 class="text-lg sm:text-xl font-bold text-slate-900">Panel de Control y Administración Institucional</h2>
                 <p class="text-xs text-slate-500">Configuración operativa, gestión del personal, auditoría y métricas de gestión hospitalaria</p>
+            </div>
+
+            <!-- Barra de Control Exclusiva de Ignacio Helbas (Superadmin) -->
+            <div id="barra-superadmin-controles" class="hidden card-his bg-slate-900 text-white p-4 mb-4 sm:mb-6 shadow-md border-l-4 border-sky-400 animate-fade-in-up">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse shrink-0"></div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-sm sm:text-base font-bold text-white leading-tight">Control Maestro de Demostración &bull; Ignacio Helbas</h3>
+                                <span class="badge-his bg-sky-950 text-sky-200 border-sky-700 text-[10px]">Superadmin</span>
+                            </div>
+                            <p class="text-xs text-slate-300 mt-0.5">Herramientas de inyección para el Foro Universitario, catálogo para testeo público y reinicio seguro.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-end">
+                        <button id="btn-demo-foro" onclick="inyectarDemoCompletaForo()" class="btn-his-primary text-xs px-3.5 py-2 shadow-xs bg-emerald-700 hover:bg-emerald-800 border-emerald-600 flex items-center gap-1.5 font-bold" title="Carga turnos de hoy (en sala, atendidos), historias clínicas completas y métricas históricas de 2 meses para el foro">
+                            <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>Presentación Foro (100% Funcional)</span>
+                        </button>
+                        <button id="btn-cargar-dummies" onclick="inyectarMedicosDePrueba()" class="btn-his-secondary text-xs px-3.5 py-2 shadow-xs flex items-center gap-1.5 text-slate-900 bg-white hover:bg-slate-100 font-bold" title="Inyecta 28 profesionales con todas las especialidades para que el público general saque turnos en vivo en index.html">
+                            <svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                            <span>Inyectar Médicos (Público General)</span>
+                        </button>
+                        <button id="btn-reset-db" onclick="limpiarBaseDeDatos()" class="btn-his-danger text-xs px-3.5 py-2 shadow-xs flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white border-red-700 font-bold" title="Borra todos los turnos, pacientes, historias y médicos inyectados. Tu cuenta de Ignacio Helbas queda protegida al 100%">
+                            <svg class="w-4 h-4 text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <span>Limpiar Datos Inyectados</span>
+                        </button>
+                    </div>
+                </div>
             </div>
             
             <div class="flex overflow-x-auto gap-4 sm:gap-8 border-b border-slate-200 mb-6 px-2 bg-white/90 pt-3 rounded-t-lg whitespace-nowrap scrollbar-hide">
@@ -520,13 +550,6 @@
                     <div class="card-his bg-white/95 backdrop-blur p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <h3 class="text-sm sm:text-base font-bold text-slate-900">Gestión de Personal Institucional</h3>
                         <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                            <!-- Botones Protegidos de SuperAdmin -->
-                            <button id="btn-demo-foro" onclick="inyectarDemoCompletaForo()" class="w-full sm:w-auto btn-his-secondary text-xs px-3 py-1.5 hidden shadow-xs">
-                                <span>Cargar Demo Foro</span>
-                            </button>
-                            <button id="btn-reset-db" onclick="limpiarBaseDeDatos()" class="w-full sm:w-auto btn-his-danger text-xs px-3 py-1.5 hidden">Reset de Fábrica</button>
-                            <button id="btn-cargar-dummies" onclick="inyectarMedicosDePrueba()" class="w-full sm:w-auto btn-his-text text-xs px-3 py-1.5 border border-slate-300 hidden">Inyectar Médicos</button>
-                            
                             <button onclick="abrirModalUsuarioNulo()" class="btn-his-primary w-full sm:w-auto text-xs px-3.5 py-2 shadow-xs">+ Nuevo Usuario</button>
                         </div>
                     </div>

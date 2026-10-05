@@ -185,6 +185,9 @@ export function aplicarPermisosVisuales(sesion) {
     if (btnDemoForo) btnDemoForo.classList.add('hidden');
     if (btnNavDemoForo) btnNavDemoForo.classList.add('hidden');
 
+    const barraSuperadmin = document.getElementById('barra-superadmin-controles');
+    if (barraSuperadmin) barraSuperadmin.classList.add('hidden');
+
     if (btnLogout) {
         btnLogout.classList.remove('hidden');
         btnLogout.innerText = `Cerrar Sesión (${sesion.nombre || sesion.correo})`;
@@ -207,29 +210,23 @@ export function aplicarPermisosVisuales(sesion) {
         if (btnAdmin) btnAdmin.classList.remove('hidden');
         if (btnRec) btnRec.classList.remove('hidden');
         if (btnDoc) btnDoc.classList.remove('hidden');
-        if (btnDummies && esModoDev) btnDummies.classList.remove('hidden');
-        if (btnDemoForo && esModoDev) btnDemoForo.classList.remove('hidden');
-        if (btnNavDemoForo && esModoDev) btnNavDemoForo.classList.remove('hidden');
-
-        verificarEntornoDemo().then(esDemo => {
-            if (btnReset) {
-                if (esDemo && esModoDev) btnReset.classList.remove('hidden');
-                else btnReset.classList.add('hidden');
-            }
-        });
+        if (btnDummies) btnDummies.classList.remove('hidden');
+        if (btnDemoForo) btnDemoForo.classList.remove('hidden');
+        if (btnNavDemoForo) btnNavDemoForo.classList.remove('hidden');
+        if (btnReset) btnReset.classList.remove('hidden');
+        if (barraSuperadmin) barraSuperadmin.classList.remove('hidden');
 
         sincronizarMedicosPublicos();
         switchView('admin');
     } else if (sesion.rol === "Administración") {
         if (btnAdmin) btnAdmin.classList.remove('hidden');
-        if (btnDummies && esModoDev) btnDummies.classList.remove('hidden');
-
-        verificarEntornoDemo().then(esDemo => {
-            if (btnReset) {
-                if (esDemo && esModoDev) btnReset.classList.remove('hidden');
-                else btnReset.classList.add('hidden');
-            }
-        });
+        if (esModoDev) {
+            if (btnDummies) btnDummies.classList.remove('hidden');
+            if (btnDemoForo) btnDemoForo.classList.remove('hidden');
+            if (btnNavDemoForo) btnNavDemoForo.classList.remove('hidden');
+            if (btnReset) btnReset.classList.remove('hidden');
+            if (barraSuperadmin) barraSuperadmin.classList.remove('hidden');
+        }
 
         sincronizarMedicosPublicos();
         switchView('admin');

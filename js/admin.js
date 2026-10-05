@@ -419,37 +419,26 @@ export async function verificarEntornoDemo() {
 }
 
 export async function limpiarBaseDeDatos() {
-    try {
-        let snap = await getDoc(doc(db, "configuracion", "entorno"));
-        if (!snap.exists()) {
-            snap = await getDoc(doc(db, "config", "entorno"));
-        }
-        if (!snap.exists() || snap.data()?.esDemo !== true) {
-            mostrarAlerta(
-                "Operación Bloqueada",
-                "El Reset de Fábrica está bloqueado porque el entorno no tiene habilitada la bandera de demostración (configuracion/entorno con esDemo == true)."
-            );
-            return;
-        }
-    } catch (e) {
-        console.error("Error al validar flag demo:", e);
-        mostrarAlerta("Error de Seguridad", "No se pudo verificar la autorización del entorno para esta operación.");
+    const sesionActual = obtenerSesionActual();
+    const esNacho = (sesionActual?.correo && sesionActual.correo.toLowerCase() === "nachohelbas@gmail.com");
+
+    if (!esNacho && sesionActual?.rol !== 'Administración') {
+        mostrarAlerta("Acceso Denegado", "Solo el Administrador General puede ejecutar la limpieza de la base de datos.");
         return;
     }
 
-    const input = prompt("ADVERTENCIA DE SEGURIDAD\nEsta acción borrará TODOS los turnos y usuarios de prueba.\n\nPara confirmar, escriba exactamente la palabra: BORRAR");
-    if (input !== "BORRAR") {
-        mostrarAlerta("Cancelado", "Palabra de confirmación incorrecta. No se ha borrado ningún dato.");
-        return;
-    }
+    const confirm = await pedirConfirmacion(
+        "¿Limpiar Datos Inyectados?",
+        "Esta acción eliminará todos los turnos, disponibilidades, pacientes, historias clínicas y médicos demostrativos.\n\nSu cuenta de Administrador Supremo (Ignacio Helbas) quedará 100% protegida y conservada.",
+        "Sí, Limpiar Base de Datos"
+    );
+    if (!confirm) return;
 
     abrirModal('modal-progreso');
     const barra = document.getElementById('progreso-barra');
     const texto = document.getElementById('progreso-texto');
     if (texto) texto.innerText = "Borrando turnos de prueba...";
-    if (barra) barra.style.width = '30%';
-
-    const sesionActual = obtenerSesionActual();
+    if (barra) barra.style.width = '20%';
 
     try {
         const turnosSnap = await getDocs(collection(db, "turnos"));
@@ -461,26 +450,17 @@ export async function limpiarBaseDeDatos() {
         }
         if (barra) barra.style.width = '40%';
 
-        if (texto) texto.innerText = "Borrando usuarios demostrativos...";
-        const usuariosSnap = await getDocs(collection(db, "usuarios"));
-        const promesasUsuarios = [];
-        usuariosSnap.forEach(d => {
-            const u = d.data();
-            if (u.rol !== "Administración" && d.id !== sesionActual?.uid) {
-                promesasUsuarios.push(deleteDoc(doc(db, "usuarios", d.id)));
-            }
-        });
-        await Promise.all(promesasUsuarios);
-        if (barra) barra.style.width = '60%';
-
-        const medicosPubSnap = await getDocs(collection(db, "medicos_publicos"));
-        const promesasMedicosPub = medicosPubSnap.docs.map(d => deleteDoc(doc(db, "medicos_publicos", d.id)));
-        await Promise.all(promesasMedicosPub);
-
+        if (texto) texto.innerText = "Borrando disponibilidades y médicos públicos...";
         const dispSnap = await getDocs(collection(db, "disponibilidad"));
         const promesasDisp = dispSnap.docs.map(d => deleteDoc(doc(db, "disponibilidad", d.id)));
         await Promise.all(promesasDisp);
 
+        const medicosPubSnap = await getDocs(collection(db, "medicos_publicos"));
+        const promesasMedicosPub = medicosPubSnap.docs.map(d => deleteDoc(doc(db, "medicos_publicos", d.id)));
+        await Promise.all(promesasMedicosPub);
+        if (barra) barra.style.width = '60%';
+
+        if (texto) texto.innerText = "Borrando pacientes e historias clínicas...";
         const pacientesSnap = await getDocs(collection(db, "pacientes"));
         for (let i = 0; i < pacientesSnap.docs.length; i += BATCH_SIZE) {
             const batch = writeBatch(db);
@@ -488,13 +468,43 @@ export async function limpiarBaseDeDatos() {
             await batch.commit();
         }
 
+        const dniMapSnap = await getDocs(collection(db, "pacientes_por_dni")).catch(() => ({ docs: [] }));
+        if (dniMapSnap && dniMapSnap.docs) {
+            const promesasDni = dniMapSnap.docs.map(d => deleteDoc(d.ref));
+            await Promise.all(promesasDni);
+        }
+        if (barra) barra.style.width = '80%';
+
+        if (texto) texto.innerText = "Limpiando personal demostrativo y protegiendo Administrador Supremo...";
+        const usuariosSnap = await getDocs(collection(db, "usuarios"));
+        const promesasUsuarios = [];
+        usuariosSnap.forEach(d => {
+            const u = d.data();
+            const esCuentaIgnacio = (u.correo && u.correo.toLowerCase() === "nachohelbas@gmail.com") ||
+                                    (u.nombre && u.nombre.toLowerCase().includes("ignacio helbas")) ||
+                                    (sesionActual && d.id === sesionActual.uid);
+            if (!esCuentaIgnacio) {
+                promesasUsuarios.push(deleteDoc(doc(db, "usuarios", d.id)));
+            }
+        });
+        await Promise.all(promesasUsuarios);
+
+        // Asegurar que la cuenta de Ignacio Helbas quede 100% activa e intacta
+        if (sesionActual?.uid) {
+            await setDoc(doc(db, "usuarios", sesionActual.uid), {
+                nombre: "Ignacio Helbas",
+                correo: sesionActual.correo || "nachohelbas@gmail.com",
+                rol: "Administración",
+                activo: true,
+                actualizadoEn: serverTimestamp()
+            }, { merge: true });
+        }
+
         await deleteDoc(doc(db, "configuracion", "entorno")).catch(() => {});
-        const btnReset = document.getElementById('btn-reset-db');
-        if (btnReset) btnReset.classList.add('hidden');
 
         if (barra) barra.style.width = '100%';
         cerrarModal('modal-progreso');
-        mostrarExito("Reinicio Exitoso", "El sistema ha sido restaurado a su estado de fábrica. Turnos, disponibilidad y médicos demostrativos eliminados.");
+        mostrarExito("Reinicio Exitoso", "Todos los datos inyectados fueron eliminados con éxito. Su cuenta de Administrador Supremo de Ignacio Helbas se mantiene 100% activa e intacta.");
 
         cargarUsuariosAdmin('init');
         cargarEspecialistasFirebase();
@@ -502,12 +512,16 @@ export async function limpiarBaseDeDatos() {
     } catch (e) {
         console.error(e);
         cerrarModal('modal-progreso');
-        mostrarAlerta("Error", "Error al vaciar la base de datos.");
+        mostrarAlerta("Error", "Error al vaciar la base de datos: " + e.message);
     }
 }
 
 export async function inyectarMedicosDePrueba() {
-    const confirm = await pedirConfirmacion("¿Inyectar Médicos?", "Se cargarán 28 profesionales categorizados para la demostración tecnológica.", "Sí, Inyectar");
+    const confirm = await pedirConfirmacion(
+        "¿Inyectar Médicos para Público General?",
+        "Se cargarán 29 profesionales categorizados con todas sus especialidades médicas en el catálogo público para que cualquier persona en el portal web (index.html) pueda consultar y agendar turnos en vivo.",
+        "Sí, Inyectar Médicos"
+    );
     if (!confirm) return;
 
     const medicosDemo = [
@@ -549,11 +563,13 @@ export async function inyectarMedicosDePrueba() {
     let completados = 0;
     const total = medicosDemo.length;
 
-    for (const med of medicosDemo) {
+    for (let i = 0; i < medicosDemo.length; i++) {
+        const med = medicosDemo[i];
+        const uidDoc = `med_demo_${med.mat}`;
         const payload = {
             nombre: med.nom,
             rol: "Médico",
-            username: med.nom.split(' ')[1].toLowerCase() + Math.floor(Math.random() * 1000),
+            username: med.nom.split(' ')[1].toLowerCase() + med.mat.substring(0, 3),
             correo: med.nom.split(' ')[1].toLowerCase() + "@hospital.demo",
             tel: "2604000000",
             matricula: med.mat,
@@ -563,28 +579,29 @@ export async function inyectarMedicosDePrueba() {
         };
 
         try {
-            const userRef = await addDoc(collection(db, "usuarios"), payload);
-            await setDoc(doc(db, "medicos_publicos", userRef.id), {
-                medicoUid: userRef.id,
+            await setDoc(doc(db, "usuarios", uidDoc), payload, { merge: true });
+            await setDoc(doc(db, "medicos_publicos", uidDoc), {
+                medicoUid: uidDoc,
                 nombre: med.nom,
                 especialidad: med.esp,
+                matricula: med.mat,
                 activo: true
-            });
+            }, { merge: true });
         } catch (e) {
-            console.error("Fallo inyectando a:", med.nom);
+            console.error("Fallo inyectando a:", med.nom, e);
         }
 
         completados++;
         let porcentaje = Math.round((completados / total) * 100);
         if (barra) barra.style.width = porcentaje + '%';
-        if (texto) texto.innerText = `Cargando: ${med.nom} (${completados}/${total})`;
+        if (texto) texto.innerText = `Cargando profesional: ${med.nom} (${completados}/${total})`;
     }
 
     cerrarModal('modal-progreso');
-    mostrarExito("Inyección Exitosa", "Los 28 profesionales demostrativos fueron cargados al sistema con sus respectivas especialidades.");
+    mostrarExito("Médicos Inyectados con Éxito", "Se cargaron 29 profesionales hospitalarios categorizados para que el público general pueda reservar turnos en vivo desde el portal web.");
 
+    await cargarEspecialistasFirebase();
     cargarUsuariosAdmin('init');
-    cargarEspecialistasFirebase();
     cargarMetricas();
 }
 
