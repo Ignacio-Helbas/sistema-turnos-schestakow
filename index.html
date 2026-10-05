@@ -54,19 +54,31 @@
     <!-- ==================================================================== -->
     <header class="bg-white/95 backdrop-blur shadow-sm sticky top-0 z-40 border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16 sm:h-20">
+            <div class="flex justify-between items-center h-16 sm:h-20 gap-4">
                 <!-- Logo institucional (Doble clic para acceso institucional a panel.html) -->
                 <div ondblclick="window.location.href='panel.html'" class="flex items-center select-none cursor-pointer" title="Hospital Teodoro J. Schestakow (Doble clic para acceso institucional)">
                     <img src="img/LogoHospitalSolo.png" alt="Hospital Teodoro J. Schestakow" class="h-10 sm:h-12 w-auto object-contain">
                 </div>
+
+                <!-- Navegación Pública: Turnos Online vs Directorio de Centros de Salud -->
+                <nav class="flex items-center gap-1 sm:gap-2">
+                    <button type="button" id="tab-nav-turnos" onclick="window.cambiarVistaPublica('turnos')" class="px-3 py-1.5 text-xs sm:text-sm font-bold text-[#002845] border-b-2 border-[#002845] transition flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-[#002845]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span>Turnos Online</span>
+                    </button>
+                    <button type="button" id="tab-nav-centros" onclick="window.cambiarVistaPublica('centros')" class="px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent transition flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-[#007a78]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                        <span>Centros de Salud</span>
+                    </button>
+                </nav>
             </div>
         </div>
     </header>
 
     <!-- ==================================================================== -->
-    <!-- CONTENEDOR PRINCIPAL: RESERVA PÚBLICA DE TURNOS                      -->
+    <!-- CONTENEDOR PRINCIPAL: RESERVA PÚBLICA Y DIRECTORIO SANITARIO         -->
     <!-- ==================================================================== -->
-    <main class="flex-grow w-full max-w-4xl mx-auto px-3 sm:px-6 py-6 sm:py-10 flex flex-col justify-center">
+    <main class="flex-grow w-full max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-10 flex flex-col justify-start">
 
         <!-- FORMULARIO PRINCIPAL DE RESERVA -->
         <section id="view-public" class="view active w-full">
@@ -179,13 +191,10 @@
                     </div>
 
                     <!-- Botón de Acción Principal y Resumen -->
-                    <div class="pt-2 flex flex-col sm:flex-row gap-3">
-                        <button type="button" onclick="abrirResumenPrevioTurno()" class="btn-his-primary flex-1 py-3 text-xs sm:text-sm">
+                    <div class="pt-2">
+                        <button type="button" onclick="abrirResumenPrevioTurno()" class="btn-his-primary w-full py-3 text-xs sm:text-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                             Revisar Resumen y Confirmar Turno
-                        </button>
-                        <button type="button" onclick="confirmarTurnoFirebase()" class="btn-his-secondary sm:w-auto py-3 text-xs whitespace-nowrap" title="Confirmación rápida directa">
-                            Confirmación Rápida
                         </button>
                     </div>
 
@@ -199,6 +208,72 @@
                     </button>
                 </div>
 
+            </div>
+        </section>
+
+        <!-- ================================================================ -->
+        <!-- DIRECTORIO DE CENTROS DE SALUD, CAPS Y AMBULATORIOS              -->
+        <!-- ================================================================ -->
+        <section id="view-centros-salud" class="view hidden w-full">
+            <div class="w-full space-y-6">
+                <!-- Banner de Cabecera del Directorio -->
+                <div class="card-his p-6 sm:p-8 bg-white/95 backdrop-blur-sm shadow-lg rounded-lg border border-slate-200">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5 mb-5">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded text-xs font-semibold bg-[#e6f5f4] text-[#007a78] border border-[#a7f3d0] mb-2">
+                                <svg class="w-3.5 h-3.5 text-[#007a78]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                <span>Red Sanitaria Departamental</span>
+                            </div>
+                            <h1 class="text-xl sm:text-2xl font-bold text-[#002845] tracking-tight">
+                                Centros de Salud, CAPS y Ambulatorios
+                            </h1>
+                            <p class="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl">
+                                Guía territorial de atención primaria en San Rafael, Mendoza. Ubicación georreferenciada con mapas interactivos y contacto directo.
+                            </p>
+                        </div>
+                        <div class="text-left md:text-right shrink-0">
+                            <span id="contador-centros-salud" class="inline-block text-xs font-bold px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                Cargando centros...
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Filtros y Búsqueda -->
+                    <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+                        <!-- Botones de Filtro por Zona -->
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-xs font-bold text-slate-700 mr-1 flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                                Zona:
+                            </span>
+                            <button type="button" id="btn-filtro-todos" onclick="window.establecerFiltroZona('todos')" class="px-3 py-1.5 text-xs font-semibold rounded bg-[#002845] text-white shadow-xs transition">
+                                Todos (34)
+                            </button>
+                            <button type="button" id="btn-filtro-ciudad" onclick="window.establecerFiltroZona('ciudad')" class="px-3 py-1.5 text-xs font-medium rounded bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition">
+                                Ciudad y Barrios (13)
+                            </button>
+                            <button type="button" id="btn-filtro-distritos" onclick="window.establecerFiltroZona('distritos')" class="px-3 py-1.5 text-xs font-medium rounded bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition">
+                                Distritos (21)
+                            </button>
+                        </div>
+
+                        <!-- Barra de Búsqueda Rápida -->
+                        <div class="relative flex-grow max-w-md">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </div>
+                            <input type="text" id="input-busqueda-centros" placeholder="Buscar por nombre, barrio, calle o CAPS..." class="input-his pl-9 pr-8 text-xs sm:text-sm w-full bg-slate-50 focus:bg-white transition">
+                            <button type="button" onclick="window.limpiarFiltrosCentros()" class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600" title="Limpiar búsqueda">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid de Tarjetas de Centros de Salud -->
+                <div id="grid-centros-salud" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- Inyectado dinámicamente por js/centros.js -->
+                </div>
             </div>
         </section>
 
@@ -541,7 +616,8 @@
         }
     </script>
 
-    <!-- Script del Portal Público Modular -->
+    <!-- Scripts del Portal Público Modular -->
+    <script type="module" src="js/centros.js"></script>
     <script type="module" src="js/publico.js"></script>
 
 </body>
