@@ -260,6 +260,9 @@ export function limpiarFiltrosCentros() {
     establecerFiltroZona('todos');
 }
 
+const CLASE_TAB_ACTIVO = 'inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-[#002845] border-b-2 border-[#002845] transition whitespace-nowrap cursor-pointer';
+const CLASE_TAB_INACTIVO = 'inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent transition whitespace-nowrap cursor-pointer';
+
 /**
  * Alterna entre la vista pública de reserva de turnos y la del directorio de centros de salud.
  * @param {'turnos'|'centros'} vista
@@ -279,8 +282,8 @@ export function cambiarVistaPublica(vista) {
         viewCentros.classList.add('active');
 
         if (tabTurnos && tabCentros) {
-            tabTurnos.className = 'px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent transition';
-            tabCentros.className = 'px-3 py-1.5 text-xs sm:text-sm font-bold text-[#002845] border-b-2 border-[#002845] transition';
+            tabTurnos.className = CLASE_TAB_INACTIVO;
+            tabCentros.className = CLASE_TAB_ACTIVO;
         }
 
         renderizarCentros();
@@ -296,8 +299,8 @@ export function cambiarVistaPublica(vista) {
         viewPublic.classList.add('active');
 
         if (tabTurnos && tabCentros) {
-            tabTurnos.className = 'px-3 py-1.5 text-xs sm:text-sm font-bold text-[#002845] border-b-2 border-[#002845] transition';
-            tabCentros.className = 'px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent transition';
+            tabTurnos.className = CLASE_TAB_ACTIVO;
+            tabCentros.className = CLASE_TAB_INACTIVO;
         }
 
         try {
