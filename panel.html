@@ -151,18 +151,18 @@
             <div class="card-his bg-white/95 backdrop-blur p-4 sm:p-5 mb-6">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Especialidad</label>
-                        <select id="reception-especialidad" onchange="actualizarMedicosRecepcion()" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-600 outline-none"></select>
+                        <label class="label-his" for="reception-especialidad">Especialidad</label>
+                        <select id="reception-especialidad" onchange="actualizarMedicosRecepcion()" class="select-his"></select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Médico Asignado</label>
-                        <select id="reception-medico" disabled class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50 text-slate-500 outline-none"></select>
+                        <label class="label-his" for="reception-medico">Médico Asignado</label>
+                        <select id="reception-medico" disabled class="select-his"></select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Fecha de Atención</label>
-                        <input type="date" id="input-fecha-recepcion" onchange="validarDiaHabil(this)" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-600 outline-none">
+                        <label class="label-his" for="input-fecha-recepcion">Fecha de Atención</label>
+                        <input type="date" id="input-fecha-recepcion" onchange="validarDiaHabil(this)" class="input-his">
                     </div>
-                    <button onclick="buscarAgendaRecepcion()" class="btn-his-primary w-full py-2.5 text-xs font-bold shadow-xs">Cargar Agenda</button>
+                    <button onclick="buscarAgendaRecepcion()" class="btn-his-primary w-full py-2.5 text-sm font-bold shadow-xs">Cargar Agenda</button>
                 </div>
             </div>
 
@@ -172,19 +172,19 @@
                         <div class="w-2.5 h-2.5 rounded-full bg-blue-600"></div>
                         <h3 id="titulo-agenda-recepcion" class="font-bold text-slate-800 text-sm sm:text-base">Agenda:</h3>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                        <div class="relative flex-grow sm:flex-grow-0 sm:w-56">
-                            <input type="text" id="reception-filtro-texto" oninput="filtrarAgendaRecepcionPorDni(this.value)" placeholder="Filtrar por paciente/DNI..." class="w-full pl-8 pr-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-600 outline-none">
-                            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+                        <div class="relative flex-grow sm:flex-grow-0 sm:w-60">
+                            <input type="text" id="reception-filtro-texto" oninput="filtrarAgendaRecepcionPorDni(this.value)" placeholder="Filtrar por paciente/DNI..." class="input-his pl-8 pr-3 py-1.5 text-xs sm:text-sm">
+                            <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         </div>
-                        <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 text-xs">
-                            <button type="button" onclick="filtrarAgendaPorEstado('todos')" class="px-2 py-1 rounded text-[11px] font-bold text-slate-700 hover:bg-slate-100 transition">Todos</button>
-                            <button type="button" onclick="filtrarAgendaPorEstado('en_sala')" class="px-2 py-1 rounded text-[11px] font-bold text-teal-800 hover:bg-teal-50 transition">En Sala</button>
-                            <button type="button" onclick="filtrarAgendaPorEstado('pendientes')" class="px-2 py-1 rounded text-[11px] font-bold text-blue-800 hover:bg-blue-50 transition">Confirmados</button>
-                            <button type="button" onclick="filtrarAgendaPorEstado('atendidos')" class="px-2 py-1 rounded text-[11px] font-bold text-emerald-800 hover:bg-emerald-50 transition">Atendidos</button>
+                        <div class="flex items-center gap-1.5 bg-slate-100/90 border border-slate-200 rounded-lg p-1 text-sm">
+                            <button type="button" onclick="filtrarAgendaPorEstado('todos')" class="btn-filtro-recepcion px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-bold text-slate-800 bg-white shadow-xs border border-slate-300 transition" data-filtro="todos">Todos</button>
+                            <button type="button" onclick="filtrarAgendaPorEstado('en_sala')" class="btn-filtro-recepcion px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-bold text-teal-800 hover:bg-white hover:shadow-xs border border-transparent transition" data-filtro="en_sala">En Sala</button>
+                            <button type="button" onclick="filtrarAgendaPorEstado('pendientes')" class="btn-filtro-recepcion px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-bold text-blue-800 hover:bg-white hover:shadow-xs border border-transparent transition" data-filtro="pendientes">Confirmados</button>
+                            <button type="button" onclick="filtrarAgendaPorEstado('atendidos')" class="btn-filtro-recepcion px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-bold text-emerald-800 hover:bg-white hover:shadow-xs border border-transparent transition" data-filtro="atendidos">Atendidos</button>
                         </div>
-                        <button onclick="descargarExcelRecepcion()" class="btn-his-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 shadow-xs">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <button onclick="descargarExcelRecepcion()" class="btn-his-secondary text-xs sm:text-sm font-bold px-3.5 sm:px-4 py-2 flex items-center gap-2 shadow-xs text-emerald-800 border-emerald-300 hover:bg-emerald-50">
+                            <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                             <span>Excel</span>
                         </button>
                     </div>
@@ -986,34 +986,57 @@
     
     <!-- Modal: Dar Turno Recepción -->
     <div id="modal-dar-turno" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 animate-fade-in-up max-h-[90vh] overflow-y-auto">
-            <h3 class="text-xl font-bold text-slate-800 mb-2">Asignar Turno: <span id="modal-hora-turno" class="text-blue-800"></span> hs</h3>
-            <p class="text-sm text-slate-500 mb-4 border-b pb-2">Complete los datos del paciente presencial.</p>
+        <div class="modal-box-his max-w-lg shadow-2xl animate-fade-in-up flex flex-col max-h-[92vh]">
+            <!-- Cabecera Institucional HIS -->
+            <div class="bg-slate-900 text-white p-4 sm:p-5 flex justify-between items-center border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-2.5 h-2.5 rounded-full bg-sky-400"></div>
+                    <div>
+                        <h3 class="font-bold text-base sm:text-lg text-white leading-tight">
+                            Asignar Turno Presencial &bull; <span id="modal-hora-turno" class="font-mono text-sky-300"></span> hs
+                        </h3>
+                        <p class="text-xs text-slate-300">Admisión y Registro Inmediato en Recepción</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModal('modal-dar-turno')" class="text-slate-400 hover:text-white transition p-1 text-xl font-bold leading-none" aria-label="Cerrar modal">&times;</button>
+            </div>
             
-            <div class="space-y-4 mb-6">
+            <!-- Formulario Clínico HIS -->
+            <div class="p-5 sm:p-6 space-y-4 overflow-y-auto bg-white">
                 <!-- 1. Nombre Completo -->
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Nombre Completo (Nombre y Apellido) <span class="text-red-500">*</span></label>
-                    <input type="text" id="auto-nombre" placeholder="Ej: Juan Carlos Pérez" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <label class="label-his" for="auto-nombre">
+                        Nombre Completo (Nombre y Apellido) <span class="text-red-600 font-bold">*</span>
+                    </label>
+                    <input type="text" id="auto-nombre" placeholder="Ej: Juan Carlos Pérez" class="input-his">
                 </div>
 
                 <!-- 2. Fecha de Nacimiento -->
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Fecha de Nacimiento</label>
-                    <input type="date" id="auto-fecha-nacimiento" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <label class="label-his" for="auto-fecha-nacimiento">
+                        Fecha de Nacimiento
+                    </label>
+                    <input type="date" id="auto-fecha-nacimiento" class="input-his">
                 </div>
 
                 <!-- 3. DNI -->
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">DNI (Sin puntos) <span class="text-red-500">*</span></label>
-                    <input type="text" inputmode="numeric" pattern="[0-9]*" id="auto-dni" oninput="simularAutocompletado(this.value)" placeholder="Ej: 32456789" maxlength="10" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none font-mono">
-                    <p id="auto-msg" class="text-xs text-emerald-600 font-bold mt-1 hidden">✓ Paciente encontrado en historial (datos completados).</p>
+                    <label class="label-his" for="auto-dni">
+                        DNI (Sin puntos) <span class="text-red-600 font-bold">*</span>
+                    </label>
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" id="auto-dni" oninput="simularAutocompletado(this.value)" placeholder="Ej: 32456789" maxlength="10" class="input-his font-mono">
+                    <div id="auto-msg" class="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded px-2.5 py-1 font-semibold mt-1.5 hidden flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <span>Paciente registrado previamente (datos autocompletados).</span>
+                    </div>
                 </div>
 
                 <!-- 4. Obra Social (Si/No y listado) -->
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Obra Social / Cobertura</label>
-                    <select id="auto-cobertura" onchange="toggleOtraObraSocial(this.value)" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <label class="label-his" for="auto-cobertura">
+                        Obra Social / Cobertura
+                    </label>
+                    <select id="auto-cobertura" onchange="toggleOtraObraSocial(this.value)" class="select-his">
                         <option value="No (Sin Obra Social)">No (Pública Exclusiva / Sin Obra Social)</option>
                         <option value="PAMI">Sí - PAMI</option>
                         <option value="OSEP">Sí - OSEP Mendoza</option>
@@ -1023,26 +1046,36 @@
                         <option value="Otra Cobertura">Sí - Otra Obra Social / Prepaga</option>
                     </select>
                     <div id="div-auto-cobertura-otra" class="hidden mt-2">
-                        <input type="text" id="auto-cobertura-otra" placeholder="Especifique nombre de la Obra Social / Prepaga" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="text" id="auto-cobertura-otra" placeholder="Especifique nombre de la Obra Social / Prepaga" class="input-his">
                     </div>
                 </div>
 
                 <!-- 5. Celular -->
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Celular / Teléfono de Contacto <span class="text-red-500">*</span></label>
-                    <input type="text" inputmode="numeric" id="auto-celular" placeholder="Ej: 2604123456" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none font-mono">
+                    <label class="label-his" for="auto-celular">
+                        Celular / Teléfono de Contacto <span class="text-red-600 font-bold">*</span>
+                    </label>
+                    <input type="text" inputmode="numeric" id="auto-celular" placeholder="Ej: 2604123456" class="input-his font-mono">
                 </div>
 
                 <!-- Email (Opcional) -->
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Email (Opcional - para comprobante)</label>
-                    <input type="email" id="auto-email" placeholder="usuario@correo.com" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <label class="label-his" for="auto-email">
+                        Email (Opcional - para envío de comprobante)
+                    </label>
+                    <input type="email" id="auto-email" placeholder="paciente@correo.com" class="input-his">
                 </div>
             </div>
             
-            <div class="flex justify-end gap-3">
-                <button onclick="cerrarModal('modal-dar-turno')" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg transition">Cancelar</button>
-                <button onclick="confirmarTurnoRecepcionFirebase()" class="px-4 py-2 bg-blue-800 text-white font-bold rounded-lg hover:bg-blue-900 shadow transition">Confirmar Presencial</button>
+            <!-- Pie de Acciones HIS -->
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end items-center gap-3">
+                <button type="button" onclick="cerrarModal('modal-dar-turno')" class="btn-his-secondary">
+                    Cancelar
+                </button>
+                <button type="button" onclick="confirmarTurnoRecepcionFirebase()" class="btn-his-primary">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span>Confirmar Turno Presencial</span>
+                </button>
             </div>
         </div>
     </div>

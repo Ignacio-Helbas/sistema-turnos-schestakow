@@ -280,6 +280,18 @@ export function filtrarAgendaRecepcionPorDni(textoFiltro) {
 }
 
 export function filtrarAgendaPorEstado(estadoFiltro) {
+    const estado = estadoFiltro || 'todos';
+    const botones = document.querySelectorAll('.btn-filtro-recepcion');
+    botones.forEach(btn => {
+        if (btn.dataset.filtro === estado) {
+            btn.classList.add('bg-white', 'shadow-xs', 'border-slate-300');
+            btn.classList.remove('border-transparent');
+        } else {
+            btn.classList.remove('bg-white', 'shadow-xs', 'border-slate-300');
+            btn.classList.add('border-transparent');
+        }
+    });
+
     const tbody = document.getElementById('reception-tbody');
     if (!tbody) return;
     const rows = tbody.querySelectorAll('tr');
