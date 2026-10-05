@@ -445,5 +445,62 @@ export const CENTROS_SALUD = [
     "redes": [],
     "map_url": "https://www.google.com/maps/search/?api=1&query=Clinica+Ciudad+Av.+El+Libertador+254+San+Rafael",
     "map_embed": "<iframe width='100%' height='200' src='https://maps.google.com/maps?q=Clinica+Ciudad+Av.+El+Libertador+254+San+Rafael&t=&z=15&ie=UTF8&iwloc=&output=embed' frameborder='0' scrolling='no' marginheight='0' marginwidth='0'></iframe>"
+  },
+  {
+    "id": "hospital-eva-peron",
+    "nombre": "Hospital Eva Perón",
+    "caps_nro": null,
+    "tipo": "Hospital Público / Regional",
+    "zona": "Distritos",
+    "direccion": "Calle Pública S/N (o República S/N), Jaime Prats, San Rafael",
+    "telefono": "+54 2625 49-5000",
+    "web": null,
+    "redes": [],
+    "map_url": "https://www.google.com/maps/search/?api=1&query=Hospital+Eva+Peron+Jaime+Prats+San+Rafael+Mendoza",
+    "map_embed": "<iframe width='100%' height='200' src='https://maps.google.com/maps?q=Hospital+Eva+Peron+Jaime+Prats+San+Rafael+Mendoza&t=&z=15&ie=UTF8&iwloc=&output=embed' frameborder='0' scrolling='no' marginheight='0' marginwidth='0'></iframe>"
+  },
+  {
+    "id": "hospital-espanol",
+    "nombre": "Hospital Español del Sur Mendocino",
+    "caps_nro": null,
+    "tipo": "Hospital Privado / Alta Complejidad",
+    "zona": "Ciudad y Barrios",
+    "direccion": "Av. El Libertador 950, San Rafael",
+    "telefono": "+54 260 408-0000",
+    "web": "https://www.hesm.org/",
+    "redes": [
+      {
+        "plataforma": "WhatsApp",
+        "url": "https://wa.me/5492604498763"
+      }
+    ],
+    "map_url": "https://www.google.com/maps/search/?api=1&query=Hospital+Español+del+Sur+Mendocino+Av.+El+Libertador+950+San+Rafael",
+    "map_embed": "<iframe width='100%' height='200' src='https://maps.google.com/maps?q=Hospital+Español+del+Sur+Mendocino+Av.+El+Libertador+950+San+Rafael&t=&z=15&ie=UTF8&iwloc=&output=embed' frameborder='0' scrolling='no' marginheight='0' marginwidth='0'></iframe>"
+  },
+  {
+    "id": "fuesmen-sr",
+    "nombre": "FUESMEN (Sede San Rafael)",
+    "caps_nro": null,
+    "tipo": "Centro Ambulatorio / Diagnóstico y Alta Complejidad",
+    "zona": "Ciudad y Barrios",
+    "direccion": "Emilio Civit 150, San Rafael",
+    "telefono": "+54 260 443-4111",
+    "web": "https://www.fuesmen.edu.ar/sede-san-rafael/",
+    "redes": [],
+    "map_url": "https://www.google.com/maps/search/?api=1&query=FUESMEN+Emilio+Civit+150+San+Rafael+Mendoza",
+    "map_embed": "<iframe width='100%' height='200' src='https://maps.google.com/maps?q=FUESMEN+Emilio+Civit+150+San+Rafael+Mendoza&t=&z=15&ie=UTF8&iwloc=&output=embed' frameborder='0' scrolling='no' marginheight='0' marginwidth='0'></iframe>"
+  },
+  {
+    "id": "cms9-san-rafael",
+    "nombre": "Centro Médico Sanitario CMS 9",
+    "caps_nro": null,
+    "tipo": "Centro Ambulatorio / Atención Primaria",
+    "zona": "Ciudad y Barrios",
+    "direccion": "Gral. Paz 841, San Rafael",
+    "telefono": null,
+    "web": null,
+    "redes": [],
+    "map_url": "https://www.google.com/maps/search/?api=1&query=Centro+Medico+Sanitario+Gral.+Paz+841+San+Rafael+Mendoza",
+    "map_embed": "<iframe width='100%' height='200' src='https://maps.google.com/maps?q=Centro+Medico+Sanitario+Gral.+Paz+841+San+Rafael+Mendoza&t=&z=15&ie=UTF8&iwloc=&output=embed' frameborder='0' scrolling='no' marginheight='0' marginwidth='0'></iframe>"
   }
 ];

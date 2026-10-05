@@ -179,13 +179,35 @@
                             </div>
                         </div>
 
-                        <!-- Checkbox Consentimiento Ley 25.326 -->
-                        <div class="pt-2">
-                            <label class="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700 bg-slate-50 p-3 rounded border border-slate-200">
+                        <!-- Consentimientos Normativos y Sanitarios -->
+                        <div class="pt-2 space-y-2.5">
+                            <!-- Checkbox 1: Ley 25.326 (Protección de Datos Personales) -->
+                            <label class="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700 bg-slate-50 hover:bg-slate-100/70 p-3 rounded border border-slate-200 transition">
                                 <input type="checkbox" id="consentimiento-datos" class="mt-0.5 rounded border-slate-300 text-[#002845] focus:ring-[#007a78]">
-                                <span>
+                                <span class="leading-relaxed">
                                     Acepto el tratamiento de mis datos personales para la gestión de este turno sanitario de acuerdo a la <strong>Ley 25.326 de Protección de los Datos Personales</strong>.
                                 </span>
+                            </label>
+
+                            <!-- Checkbox 2: Ley 26.529 (Derechos del Paciente, Fines Académicos e Historia Clínica Informatizada) -->
+                            <label class="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700 bg-slate-50 hover:bg-slate-100/70 p-3 rounded border border-slate-200 transition">
+                                <input type="checkbox" id="consentimiento-ley26529" class="mt-0.5 rounded border-slate-300 text-[#002845] focus:ring-[#007a78]">
+                                <div class="space-y-1.5 leading-relaxed">
+                                    <div class="font-semibold text-slate-800">
+                                        Presto conformidad y consentimiento según los términos de la <strong>Ley 26.529</strong> (Derechos del Paciente, Historia Clínica y Consentimiento Informado):
+                                    </div>
+                                    <div class="text-[11px] text-slate-600 bg-white/90 p-2.5 rounded border border-slate-200/80 space-y-1.5 font-normal">
+                                        <p>
+                                            <strong>• Art. 8° (Exposición con fines académicos):</strong> Presto consentimiento previo ante exposiciones con fines formativos, docentes y universitarios vinculados a las actividades académicas del Hospital Escuela Schestakow, resguardando la dignidad y confidencialidad.
+                                        </p>
+                                        <p>
+                                            <strong>• Art. 12° (Definición y alcance de Historia Clínica):</strong> Tomo conocimiento de que la historia clínica constituye el documento médico obligatorio, cronológico y completo en el que constará toda actuación realizada por profesionales y auxiliares de la salud.
+                                        </p>
+                                        <p>
+                                            <strong>• Art. 13° (Historia clínica informatizada):</strong> Presto conformidad para la confección y archivo en soporte digital/informático bajo estándares que aseguran su integridad, autenticidad, inalterabilidad, accesos restringidos mediante claves y técnicas idóneas de seguridad.
+                                        </p>
+                                    </div>
+                                </div>
                             </label>
                         </div>
                     </div>
@@ -247,13 +269,13 @@
                                 Zona:
                             </span>
                             <button type="button" id="btn-filtro-todos" onclick="window.establecerFiltroZona('todos')" class="px-3 py-1.5 text-xs font-semibold rounded bg-[#002845] text-white shadow-xs transition">
-                                Todos (34)
+                                Todos (38)
                             </button>
                             <button type="button" id="btn-filtro-ciudad" onclick="window.establecerFiltroZona('ciudad')" class="px-3 py-1.5 text-xs font-medium rounded bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition">
-                                Ciudad y Barrios (13)
+                                Ciudad y Barrios (16)
                             </button>
                             <button type="button" id="btn-filtro-distritos" onclick="window.establecerFiltroZona('distritos')" class="px-3 py-1.5 text-xs font-medium rounded bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition">
-                                Distritos (21)
+                                Distritos (22)
                             </button>
                         </div>
 
@@ -529,7 +551,8 @@
             const nom = document.getElementById('paciente-nombre')?.value.trim();
             const dni = document.getElementById('paciente-dni')?.value.trim();
             const cel = document.getElementById('paciente-celular')?.value.trim();
-            const chk = document.getElementById('consentimiento-datos')?.checked;
+            const chk1 = document.getElementById('consentimiento-datos')?.checked;
+            const chk2 = document.getElementById('consentimiento-ley26529')?.checked;
 
             let p = 0;
             if (esp) p += 15;
@@ -539,7 +562,8 @@
             if (nom && nom.length >= 2) p += 10;
             if (dni && dni.length >= 6) p += 10;
             if (cel && cel.length >= 6) p += 10;
-            if (chk) p += 5;
+            if (chk1) p += 2.5;
+            if (chk2) p += 2.5;
 
             const barra = document.getElementById('barra-progreso');
             if (barra) {
@@ -565,7 +589,8 @@
             const dni = document.getElementById('paciente-dni')?.value.trim();
             const cel = document.getElementById('paciente-celular')?.value.trim();
             const cob = document.getElementById('paciente-cobertura')?.value || 'Sin Cobertura (Pública)';
-            const chk = document.getElementById('consentimiento-datos')?.checked;
+            const chk1 = document.getElementById('consentimiento-datos')?.checked;
+            const chk2 = document.getElementById('consentimiento-ley26529')?.checked;
 
             if (!esp || !med || !fec || !hor) {
                 if (window.mostrarAlerta) {
@@ -583,11 +608,19 @@
                 }
                 return;
             }
-            if (!chk) {
+            if (!chk1) {
                 if (window.mostrarAlerta) {
-                    window.mostrarAlerta("Consentimiento Requerido", "Debe aceptar el tratamiento de datos de acuerdo a la Ley 25.326 para continuar.");
+                    window.mostrarAlerta("Consentimiento Requerido", "Debe aceptar el tratamiento de datos personales de acuerdo a la Ley 25.326 para continuar.");
                 } else {
-                    alert("Debe aceptar el tratamiento de datos.");
+                    alert("Debe aceptar el tratamiento de datos de acuerdo a la Ley 25.326.");
+                }
+                return;
+            }
+            if (!chk2) {
+                if (window.mostrarAlerta) {
+                    window.mostrarAlerta("Consentimiento Requerido", "Debe prestar conformidad según la Ley 26.529 (fines académicos e historia clínica informatizada) para continuar.");
+                } else {
+                    alert("Debe prestar conformidad según la Ley 26.529.");
                 }
                 return;
             }

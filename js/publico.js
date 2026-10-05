@@ -272,7 +272,13 @@ export async function confirmarTurnoFirebase() {
 
     const chkConsentimiento = document.getElementById('consentimiento-datos');
     if (chkConsentimiento && !chkConsentimiento.checked) {
-        mostrarAlerta("Consentimiento Requerido", "Debe aceptar el tratamiento de datos de acuerdo a la Ley 25.326 para continuar.");
+        mostrarAlerta("Consentimiento Requerido", "Debe aceptar el tratamiento de datos personales de acuerdo a la Ley 25.326 para continuar.");
+        return;
+    }
+
+    const chkLey26529 = document.getElementById('consentimiento-ley26529');
+    if (chkLey26529 && !chkLey26529.checked) {
+        mostrarAlerta("Consentimiento Requerido", "Debe prestar conformidad según la Ley 26.529 (fines académicos e historia clínica informatizada) para continuar.");
         return;
     }
 
@@ -346,6 +352,8 @@ export async function confirmarTurnoFirebase() {
             codigoConfirmacion: turnoId,
             canal: "Web",
             estado: "Confirmado",
+            consentimientoLey25326: true,
+            consentimientoLey26529: true,
             creadoEn: serverTimestamp(),
             creadoPor: null,
             llegadaEn: null,
@@ -372,6 +380,7 @@ export async function confirmarTurnoFirebase() {
         if (document.getElementById('paciente-cobertura')) document.getElementById('paciente-cobertura').value = 'Sin Cobertura (Pública)';
         if (document.getElementById('paciente-fecha-nacimiento')) document.getElementById('paciente-fecha-nacimiento').value = '';
         if (chkConsentimiento) chkConsentimiento.checked = false;
+        if (chkLey26529) chkLey26529.checked = false;
         document.getElementById('input-fecha-paciente').value = '';
         document.getElementById('select-especialidad').value = '';
         document.getElementById('horarios-publicos').innerHTML = '<p class="text-xs text-slate-500 col-span-2 sm:col-span-4 text-center py-3">Seleccione Profesional y Fecha para ver horarios.</p>';

@@ -37,6 +37,18 @@ export function escaparHTML(str) {
 
 /**
  * Filtra el listado de centros de salud según zona geográfica y texto de búsqueda.
+/**
+ * Normaliza un texto convirtiendo a minúsculas y removiendo acentos/diacríticos.
+ * @param {string} txt
+ * @returns {string}
+ */
+export function normalizarTexto(txt) {
+    if (!txt || typeof txt !== 'string') return '';
+    return txt.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+/**
+ * Filtra el listado de centros de salud según zona geográfica y texto de búsqueda.
  * @param {Array} centros
  * @param {string} filtroZona 'todos' | 'ciudad' | 'distritos'
  * @param {string} busquedaTexto
@@ -44,25 +56,25 @@ export function escaparHTML(str) {
  */
 export function filtrarCentros(centros, filtroZona = 'todos', busquedaTexto = '') {
     if (!Array.isArray(centros)) return [];
-    const q = (busquedaTexto || '').toLowerCase().trim();
+    const q = normalizarTexto(busquedaTexto);
 
     return centros.filter((centro) => {
         // 1. Filtro por Zona
         if (filtroZona === 'ciudad') {
-            const z = (centro.zona || '').toLowerCase();
+            const z = normalizarTexto(centro.zona);
             const esCiudad = z.includes('ciudad') || z.includes('barrio');
             if (!esCiudad) return false;
         } else if (filtroZona === 'distritos') {
-            const z = (centro.zona || '').toLowerCase();
+            const z = normalizarTexto(centro.zona);
             const esDistrito = z.includes('distrito');
             if (!esDistrito) return false;
         }
 
         // 2. Filtro por Búsqueda de texto libre
         if (q) {
-            const nombre = (centro.nombre || '').toLowerCase();
-            const direccion = (centro.direccion || '').toLowerCase();
-            const tipo = (centro.tipo || '').toLowerCase();
+            const nombre = normalizarTexto(centro.nombre);
+            const direccion = normalizarTexto(centro.direccion);
+            const tipo = normalizarTexto(centro.tipo);
             const capsNro = centro.caps_nro ? String(centro.caps_nro) : '';
             const coincide =
                 nombre.includes(q) ||
@@ -133,6 +145,20 @@ export function crearTarjetaCentroHTML(centro) {
            </a>`
         : '';
 
+    const redesHtml = (Array.isArray(centro.redes) && centro.redes.length > 0)
+        ? centro.redes.map((r) => {
+            if (r.plataforma === 'WhatsApp') {
+                return `<a href="${escaparHTML(r.url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 hover:underline" title="Contactar por WhatsApp">
+                     <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.698.077-2.228-.535-1.956-.783-3.213-2.78-3.31-2.909-.098-.128-.797-1.06-.797-2.022 0-.962.502-1.436.68-1.631.179-.196.39-.245.52-.245.13 0 .26.002.374.007.12.006.28-.046.438.334.162.391.551 1.343.6 1.441.049.098.082.213.016.342-.065.13-.098.212-.195.326-.098.114-.206.255-.295.343-.098.098-.2.205-.086.401.114.195.507.836 1.087 1.353.748.666 1.378.873 1.573.97.195.098.31.082.424-.049.114-.13.488-.57.618-.766.13-.195.26-.163.439-.098.179.065 1.139.537 1.334.635.195.098.325.147.374.228.049.082.049.473-.095.878z"/></svg>
+                     <span>WhatsApp</span>
+                   </a>`;
+            }
+            return `<a href="${escaparHTML(r.url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[11px] text-blue-700 hover:underline">
+                 <span>${escaparHTML(r.plataforma)}</span>
+               </a>`;
+        }).join('')
+        : '';
+
     const mapaEmbedHtml = formatearIframeEmbed(centro.map_embed);
 
     return `
@@ -164,11 +190,14 @@ export function crearTarjetaCentroHTML(centro) {
                     <span class="leading-relaxed">${direccion}</span>
                 </div>
 
-                <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 flex-wrap">
                     <div class="flex items-center gap-1.5">
                         ${telefonoHtml}
                     </div>
-                    ${webHtml}
+                    <div class="flex items-center gap-2">
+                        ${redesHtml}
+                        ${webHtml}
+                    </div>
                 </div>
             </div>
 

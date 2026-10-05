@@ -11,9 +11,9 @@ import {
 
 describe('Directorio de Centros de Salud de San Rafael', () => {
 
-    it('1. Dataset contiene exactamente 34 centros con estructura íntegra', () => {
+    it('1. Dataset contiene exactamente 38 centros con estructura íntegra', () => {
         assert.strictEqual(Array.isArray(CENTROS_SALUD), true);
-        assert.strictEqual(CENTROS_SALUD.length, 34, 'Deben existir exactamente 34 centros en el dataset');
+        assert.strictEqual(CENTROS_SALUD.length, 38, 'Deben existir exactamente 38 centros en el dataset');
 
         CENTROS_SALUD.forEach((c) => {
             assert.ok(c.id && typeof c.id === 'string', `El centro debe tener id válido: ${JSON.stringify(c)}`);
@@ -24,10 +24,18 @@ describe('Directorio de Centros de Salud de San Rafael', () => {
             assert.ok(c.map_url && c.map_url.startsWith('http'), `El centro ${c.id} debe tener map_url válido`);
             assert.ok(c.map_embed && c.map_embed.includes('<iframe'), `El centro ${c.id} debe incluir map_embed con iframe`);
         });
+
+        // Validar presencia de los nuevos sanatorios incorporados
+        const nuevosIds = ['hospital-eva-peron', 'hospital-espanol', 'fuesmen-sr', 'cms9-san-rafael'];
+        nuevosIds.forEach(id => {
+            const encontrado = CENTROS_SALUD.find(c => c.id === id);
+            assert.ok(encontrado, `Debe encontrarse el centro ${id}`);
+        });
     });
 
     it('2. sanitizarTelefono limpia correctamente números y maneja nulos con seguridad', () => {
         assert.strictEqual(sanitizarTelefono('+54 260 442-4000'), '+542604424000');
+        assert.strictEqual(sanitizarTelefono('+54 2625 49-5000'), '+542625495000');
         assert.strictEqual(sanitizarTelefono('(0260) 442-1234'), '02604421234');
         assert.strictEqual(sanitizarTelefono(null), null);
         assert.strictEqual(sanitizarTelefono(undefined), null);
@@ -44,25 +52,29 @@ describe('Directorio de Centros de Salud de San Rafael', () => {
 
     it('4. filtrarCentros clasifica correctamente por zona y búsqueda de texto', () => {
         const todos = filtrarCentros(CENTROS_SALUD, 'todos');
-        assert.strictEqual(todos.length, 34);
+        assert.strictEqual(todos.length, 38);
 
         const ciudad = filtrarCentros(CENTROS_SALUD, 'ciudad');
-        assert.strictEqual(ciudad.length, 13, 'Debe haber 13 centros de Ciudad y Barrios (1 Área Sanitaria + 12 CAPS)');
+        assert.strictEqual(ciudad.length, 16, 'Debe haber 16 centros de Ciudad y Barrios');
 
         const distritos = filtrarCentros(CENTROS_SALUD, 'distritos');
-        assert.strictEqual(distritos.length, 21, 'Debe haber 21 centros de Distritos');
+        assert.strictEqual(distritos.length, 22, 'Debe haber 22 centros de Distritos');
 
         // Suma de ambas zonas debe cubrir el total sin centros huérfanos
-        assert.strictEqual(ciudad.length + distritos.length, 34);
+        assert.strictEqual(ciudad.length + distritos.length, 38);
 
-        // Búsqueda por texto (ej. "Valle Grande" o número de CAPS "183")
+        // Búsqueda por texto (ej. "Eva Perón", "FUESMEN", o número de CAPS "183")
         const busquedaCaps = filtrarCentros(CENTROS_SALUD, 'todos', '183');
         assert.ok(busquedaCaps.length >= 1);
         assert.strictEqual(busquedaCaps[0].caps_nro, 183);
 
-        const busquedaNihuil = filtrarCentros(CENTROS_SALUD, 'todos', 'Nihuil');
-        assert.ok(busquedaNihuil.length >= 1);
-        assert.ok(busquedaNihuil[0].nombre.toLowerCase().includes('nihuil'));
+        const busquedaEva = filtrarCentros(CENTROS_SALUD, 'todos', 'Eva Peron');
+        assert.ok(busquedaEva.length >= 1);
+        assert.strictEqual(busquedaEva[0].id, 'hospital-eva-peron');
+
+        const busquedaFuesmen = filtrarCentros(CENTROS_SALUD, 'todos', 'FUESMEN');
+        assert.ok(busquedaFuesmen.length >= 1);
+        assert.strictEqual(busquedaFuesmen[0].id, 'fuesmen-sr');
     });
 
     it('5. formatearIframeEmbed asegura carga diferida y estilos adecuados', () => {
@@ -73,12 +85,14 @@ describe('Directorio de Centros de Salud de San Rafael', () => {
         assert.ok(formateado.includes('w-full'));
     });
 
-    it('6. crearTarjetaCentroHTML produce markup limpio sin null ni undefined', () => {
+    it('6. crearTarjetaCentroHTML produce markup limpio sin null ni undefined y renderiza WhatsApp', () => {
         const centroConTel = CENTROS_SALUD.find((c) => c.telefono !== null);
         const centroSinTel = CENTROS_SALUD.find((c) => c.telefono === null);
+        const centroConWhatsapp = CENTROS_SALUD.find((c) => c.id === 'hospital-espanol');
 
         assert.ok(centroConTel, 'Debe existir un centro con teléfono para la prueba');
         assert.ok(centroSinTel, 'Debe existir un centro sin teléfono para la prueba');
+        assert.ok(centroConWhatsapp, 'Debe existir Hospital Español con WhatsApp');
 
         const htmlConTel = crearTarjetaCentroHTML(centroConTel);
         assert.ok(!htmlConTel.includes('null'), 'No debe haber texto "null" en el HTML generado');
@@ -90,5 +104,9 @@ describe('Directorio de Centros de Salud de San Rafael', () => {
         assert.ok(!htmlSinTel.includes('null'));
         assert.ok(!htmlSinTel.includes('undefined'));
         assert.ok(htmlSinTel.includes('Sin teléfono registrado'), 'Debe mostrar texto informativo cuando no hay teléfono');
+
+        const htmlWhatsapp = crearTarjetaCentroHTML(centroConWhatsapp);
+        assert.ok(htmlWhatsapp.includes('WhatsApp'), 'Debe renderizar botón de WhatsApp');
+        assert.ok(htmlWhatsapp.includes('wa.me/5492604498763'), 'Debe contener el enlace a WhatsApp');
     });
 });
