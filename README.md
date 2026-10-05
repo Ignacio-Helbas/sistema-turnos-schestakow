@@ -132,15 +132,15 @@ npm test
 ## Estado del Proyecto y Próximos Pasos
 
 - **Estado actual:** Prototipo completo, funcional y probado para presentación en el Foro Tecnológico de Innovación y Desarrollo.
-- **Próximos pasos:** [COMPLETAR: Detallar futuras mejoras previstas, por ejemplo: integración con sistemas hospitalarios existentes o turnos para estudios complementarios].
+- **Próximos pasos:** [Integración con sistemas hospitalarios existentes o turnos para estudios complementarios].
 
 ---
 
 ## Autoría y Contexto Académico
 
-- **Autor:** Ignacio Helbas - [COMPLETAR: Carrera / Especialidad / Contacto]
+- **Autor:** Ignacio Helbas - [Carrera: Ingenieria / Especialidad: Electromecanica / Contacto: nachohelbas@gmail.com]
 - **Institución:** Universidad Tecnológica Nacional - Facultad Regional San Rafael (UTN FRSR)
-- **Ámbito:** [COMPLETAR: Cátedra, Proyecto Final o Foro Tecnológico de Ingeniería, Innovación y Desarrollo]
+- **Ámbito:** [Foro Tecnológico de Ingeniería, Innovación y Desarrollo]
 
 ---
 
