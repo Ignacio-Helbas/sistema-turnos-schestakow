@@ -236,6 +236,22 @@
                 </div>
             </div>
 
+            <!-- Selector de Sub-vistas del Consultorio: Atención vs Interconsultas -->
+            <div class="mb-5 border-b border-slate-200 flex items-center gap-2">
+                <button type="button" id="tab-consultorio-atencion" onclick="cambiarSubvistaDoctor('atencion')" class="px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer">
+                    <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span>Atención Clínica & Historia</span>
+                </button>
+                <button type="button" id="tab-consultorio-interconsultas" onclick="cambiarSubvistaDoctor('interconsultas')" class="px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer">
+                    <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    <span>Interconsultas Médicas</span>
+                    <span id="badge-interconsultas-no-leidas" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white">0</span>
+                </button>
+            </div>
+
+            <!-- CONTENEDOR 1: ATENCIÓN CLÍNICA Y AGENDA -->
+            <div id="subvista-doctor-atencion">
+
             <!-- Cabecera de Paciente Activo (Demografía y Resumen Clínico) -->
             <div id="cabecera-paciente-hc" class="hidden mb-6 bg-white/95 backdrop-blur rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5">
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-slate-100 pb-4 mb-4">
@@ -257,6 +273,10 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2 w-full lg:w-auto justify-end flex-wrap">
+                        <button id="btn-pedir-interconsulta" onclick="abrirModalNuevaInterconsultaDesdePaciente()" class="bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs px-3 py-2 rounded-lg transition border border-teal-800 flex items-center gap-1.5 shadow-sm" title="Solicitar interconsulta confidencial sobre este paciente">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                            <span>Pedir Interconsulta</span>
+                        </button>
                         <button id="btn-agendar-proxima-consulta" onclick="abrirModalProximaConsulta()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3 py-2 rounded-lg transition border border-emerald-800 flex items-center gap-1.5 shadow-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                             Agendar Próxima Consulta
@@ -454,6 +474,96 @@
                     </div>
                 </div>
             </div>
+            </div><!-- Fin subvista-doctor-atencion -->
+
+            <!-- SUB-VISTA 2: ESPACIO DE INTERCONSULTAS MÉDICAS CONFIDENCIALES -->
+            <div id="subvista-doctor-interconsultas" class="hidden space-y-4 animate-fade-in-up">
+                <!-- Barra superior de Interconsultas -->
+                <div class="bg-white/95 backdrop-blur p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2.5 bg-emerald-100 text-emerald-800 rounded-lg shrink-0">
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-base font-bold text-slate-800">Interconsultas Médicas Confidenciales</h3>
+                                <span class="badge-his bg-emerald-100 text-emerald-800 text-[10px]">Privado y Cifrado</span>
+                            </div>
+                            <p class="text-xs text-slate-500">Conversaciones clínicas seguras entre profesionales participantes sobre un paciente o turno.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <button type="button" onclick="abrirModalCrearInterconsulta()" class="btn-his-primary text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-xs font-bold w-full sm:w-auto justify-center cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            <span>Nueva Interconsulta</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Grilla Split-View (Bandeja / Chat) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <!-- Columna Izquierda: Bandeja de Interconsultas (Filtros, Búsqueda y Lista) -->
+                    <div id="interconsultas-col-lista" class="lg:col-span-5 bg-white/95 backdrop-blur rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[600px] lg:h-[730px]">
+                        <!-- Buscador y Filtros -->
+                        <div class="p-3.5 border-b border-slate-200 bg-slate-50/70 space-y-2.5 shrink-0">
+                            <div class="relative">
+                                <input type="text" id="input-buscar-interconsultas" placeholder="Buscar por código de turno, asunto..." class="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </div>
+                            <!-- Chips de filtro por estado -->
+                            <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
+                                <button type="button" id="btn-filtro-ic-todos" onclick="establecerFiltroEstadoInterconsultas('todos')" class="px-2.5 py-1 text-[11px] font-bold rounded bg-emerald-800 text-white shadow-xs transition cursor-pointer">Todos</button>
+                                <button type="button" id="btn-filtro-ic-pendiente" onclick="establecerFiltroEstadoInterconsultas('pendiente')" class="px-2.5 py-1 text-[11px] font-medium rounded bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition cursor-pointer">Pendientes</button>
+                                <button type="button" id="btn-filtro-ic-en_curso" onclick="establecerFiltroEstadoInterconsultas('en_curso')" class="px-2.5 py-1 text-[11px] font-medium rounded bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition cursor-pointer">En curso</button>
+                                <button type="button" id="btn-filtro-ic-respondida" onclick="establecerFiltroEstadoInterconsultas('respondida')" class="px-2.5 py-1 text-[11px] font-medium rounded bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition cursor-pointer">Respondidas</button>
+                                <button type="button" id="btn-filtro-ic-cerrada" onclick="establecerFiltroEstadoInterconsultas('cerrada')" class="px-2.5 py-1 text-[11px] font-medium rounded bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition cursor-pointer">Cerradas</button>
+                            </div>
+                        </div>
+
+                        <!-- Lista de Interconsultas -->
+                        <div id="interconsultas-lista-container" class="flex-grow overflow-y-auto p-3 space-y-2">
+                            <p class="text-xs text-slate-400 text-center py-8">Cargando conversaciones...</p>
+                        </div>
+                    </div>
+
+                    <!-- Columna Derecha: Vista de Conversación Activa -->
+                    <div id="interconsultas-col-chat" class="hidden lg:flex lg:col-span-7 bg-white/95 backdrop-blur rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-col h-[600px] lg:h-[730px]">
+                        <!-- Estado Vacío (Placeholder) -->
+                        <div id="interconsulta-chat-placeholder" class="flex-grow flex flex-col items-center justify-center p-8 text-center text-slate-400">
+                            <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-3 text-slate-300">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                            </div>
+                            <h4 class="text-sm font-bold text-slate-700">Seleccione una interconsulta</h4>
+                            <p class="text-xs text-slate-400 mt-1 max-w-sm">Elija una conversación del listado izquierdo para ver el hilo clínico o cree una nueva interconsulta para comunicarse con otro profesional.</p>
+                        </div>
+
+                        <!-- Contenedor del Chat Activo -->
+                        <div id="interconsulta-chat-contenido" class="hidden flex-grow flex flex-col h-full overflow-hidden">
+                            <!-- Encabezado de la conversación -->
+                            <div id="interconsulta-chat-header" class="p-3.5 bg-white border-b border-slate-200 shrink-0"></div>
+
+                            <!-- Mensajes con Scroll y accesibilidad aria-live -->
+                            <div id="interconsultas-mensajes-container" aria-live="polite" class="flex-grow p-4 overflow-y-auto space-y-3 bg-slate-50/70">
+                                <p class="text-xs text-slate-400 text-center py-8">Cargando mensajes...</p>
+                            </div>
+
+                            <!-- Formulario de Envío de Mensaje -->
+                            <form id="interconsulta-form-envio" onsubmit="event.preventDefault(); window.enviarMensajeInterconsultaActual();" class="p-3 bg-white border-t border-slate-200 shrink-0 space-y-2">
+                                <div class="relative">
+                                    <textarea id="interconsulta-input-mensaje" rows="2" maxlength="2000" placeholder="Escriba su mensaje profesional (Enter para enviar, Shift+Enter para salto de línea)..." class="w-full text-xs sm:text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none resize-none"></textarea>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span id="contador-caracteres-ic" class="text-[10px] font-mono text-slate-400">0 / 2000</span>
+                                    <button type="submit" id="btn-enviar-mensaje-ic" class="btn-his-primary text-xs px-4 py-1.5 flex items-center gap-1.5 shadow-xs font-bold cursor-pointer">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                                        <span>Enviar</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- Fin subvista-doctor-interconsultas -->
         </div>
 
         <!-- 3. VISTA ADMINISTRACIÓN -->
@@ -1636,6 +1746,125 @@
             </div>
         </div>
     </div>
+
+    <!-- MODAL: NUEVA INTERCONSULTA MÉDICA CONFIDENCIAL -->
+    <div id="modal-nueva-interconsulta" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="modal-box-his max-w-lg shadow-xl animate-fade-in-up flex flex-col border-t-4 border-emerald-700 bg-white">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 leading-tight">Solicitud de Interconsulta Médica</h3>
+                        <p class="text-xs text-slate-500">Canal confidencial entre profesionales de la salud</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModal('modal-nueva-interconsulta')" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 overflow-y-auto max-h-[70vh]">
+                <!-- Identificador del turno o paciente -->
+                <input type="hidden" id="input-ic-id-turno">
+                <div>
+                    <label class="label-his" for="input-ic-codigo-turno">Código de Turno / Referencia del Paciente</label>
+                    <input type="text" id="input-ic-codigo-turno" placeholder="Ej: SCH-ABC12345 o DNI..." class="input-his font-mono">
+                    <p class="text-[11px] text-slate-400 mt-0.5">Se utiliza para trazabilidad clínica sin exponer datos sensibles innecesarios.</p>
+                </div>
+
+                <!-- Filtrar por especialidad y seleccionar médico -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="label-his" for="input-ic-especialidad-filtro">Filtrar por Especialidad</label>
+                        <select id="input-ic-especialidad-filtro" onchange="window.actualizarSelectColegasPorEspecialidad()" class="input-his">
+                            <option value="">-- Todas las especialidades --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label-his" for="input-ic-colega-destino">Profesional Destinatario <span class="text-red-600 font-bold">*</span></label>
+                        <select id="input-ic-colega-destino" class="input-his">
+                            <option value="">-- Seleccione profesional --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Nivel de Prioridad -->
+                <div>
+                    <span class="label-his block mb-1">Nivel de Prioridad</span>
+                    <div class="flex items-center gap-4">
+                        <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                            <input type="radio" id="radio-ic-prioridad-normal" name="ic-prioridad" value="normal" checked class="text-emerald-700 focus:ring-emerald-500">
+                            <span>Normal (Consulta ordinaria)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 text-xs text-red-700 font-semibold cursor-pointer">
+                            <input type="radio" id="radio-ic-prioridad-urgente" name="ic-prioridad" value="urgente" class="text-red-600 focus:ring-red-500">
+                            <span>Urgente (Revisión prioritaria)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Asunto de la interconsulta -->
+                <div>
+                    <label class="label-his" for="input-ic-asunto">Asunto Breve <span class="text-red-600 font-bold">*</span> (máx. 120 caracteres)</label>
+                    <input type="text" id="input-ic-asunto" maxlength="120" placeholder="Ej: Evaluación cardiológica pre-quirúrgica, hallazgo en ECG..." class="input-his">
+                </div>
+
+                <!-- Motivo clínico detallado -->
+                <div>
+                    <label class="label-his" for="input-ic-motivo">Motivo Clínico / Pregunta Médica <span class="text-red-600 font-bold">*</span> (máx. 1000 caracteres)</label>
+                    <textarea id="input-ic-motivo" rows="4" maxlength="1000" placeholder="Describa la evolución, síntomas observados o consulta específica para el colega..." class="input-his"></textarea>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-2.5">
+                <button type="button" onclick="cerrarModal('modal-nueva-interconsulta')" class="btn-his-secondary text-xs cursor-pointer">Cancelar</button>
+                <button type="button" onclick="window.confirmarCrearNuevaInterconsulta()" class="btn-his-primary text-xs font-bold cursor-pointer">Crear Interconsulta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: AGREGAR COLEGA A INTERCONSULTA -->
+    <div id="modal-agregar-colega-ic" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="modal-box-his max-w-md shadow-xl animate-fade-in-up flex flex-col border-t-4 border-sky-600 bg-white">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-sky-100 text-sky-800 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 leading-tight">Sumar Colega a la Interconsulta</h3>
+                        <p class="text-xs text-slate-500">Incorporar a otro médico participante</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModal('modal-agregar-colega-ic')" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4">
+                <input type="hidden" id="input-agregar-colega-ic-id">
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    El colega seleccionado tendrá acceso de lectura y escritura en esta conversación confidencial y quedará registrado en el historial de auditoría.
+                </p>
+                <div>
+                    <label class="label-his" for="select-agregar-colega-uid">Seleccionar Médico Destino <span class="text-red-600 font-bold">*</span></label>
+                    <select id="select-agregar-colega-uid" class="input-his">
+                        <option value="">-- Seleccionar colega --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-2.5">
+                <button type="button" onclick="cerrarModal('modal-agregar-colega-ic')" class="btn-his-secondary text-xs cursor-pointer">Cancelar</button>
+                <button type="button" onclick="window.confirmarAgregarColega()" class="btn-his-primary text-xs font-bold cursor-pointer">Sumar a la Conversación</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Módulo de Interconsultas Médicas Confidenciales -->
+    <script type="module" src="js/interconsultas.js"></script>
 
     <!-- Script Orquestador del Panel Institucional -->
     <script type="module" src="js/panel.js"></script>

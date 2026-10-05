@@ -301,6 +301,9 @@ export function switchView(viewName) {
     }
     if (viewName === 'doctor') {
         cargarAgendaMedico();
+        window.inicializarModuloInterconsultas?.();
+    } else {
+        window.desmontarModuloInterconsultas?.();
     }
     if (viewName === 'admin') {
         cargarUsuariosAdmin('init');
