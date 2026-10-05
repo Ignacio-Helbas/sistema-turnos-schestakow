@@ -13,7 +13,7 @@ Plataforma web para autogestión de turnos médicos, admisión hospitalaria, his
 
 ## Captura de Pantalla
 
-[COMPLETAR: Insertar imagen o GIF demostrativo de la pantalla principal, por ejemplo: `![Pantalla Principal](docs/capturas/inicio.png)`]
+
 
 ---
 
