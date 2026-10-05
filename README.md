@@ -110,3 +110,5 @@ node scripts/migrar-historias.js --dry-run
    ```bash
    npx firebase deploy --only firestore:rules,hosting
    ```
+Link de la pagina 
+ https://ignacio-helbas.github.io/sistema-turnos-schestakow/
