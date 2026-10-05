@@ -6,7 +6,7 @@ useDefault = true
 [allowlist]
 description = "Permitir clave publica cliente de Firebase y archivos de auditoria"
 paths = [
-  '''docs/seguridad/.*''',
+  '''docs/.*''',
   '''tests/.*''',
   '''PLAN\.md''',
   '''README\.md''',
