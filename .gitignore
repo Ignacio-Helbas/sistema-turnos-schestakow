@@ -1,0 +1,41 @@
+# Dependencias de desarrollo
+node_modules/
+package-lock.json.bak
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Variables de entorno y credenciales locales
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Archivos del Sistema Operativo
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Editores y entornos de desarrollo
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+
+# Archivos temporales y reportes
+*.log
+*.tmp
+*.bak
+dist/
+build/
+coverage/
+
+# Firebase Emuladores y Diagnósticos
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
