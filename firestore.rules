@@ -31,7 +31,7 @@ service cloud.firestore {
     }
 
     function isMedico() {
-      return isStaff() && getUserRol() == 'Médico';
+      return isStaff() && getUserRol() in ['Médico', 'medico', 'Medico'];
     }
 
     function hasPacienteAcceso(pacienteId) {
@@ -278,9 +278,90 @@ service cloud.firestore {
         && request.resource.data.fecha == request.time
         && request.resource.data.keys().hasOnly([
           'actorUid', 'actorRol', 'accion', 'pacienteId',
-          'consultaId', 'fecha', 'detalle'
+          'consultaId', 'interconsultaId', 'fecha', 'detalle'
         ]);
       allow update, delete: if false;
+    }
+
+    // ==========================================
+    // REGLAS: INTERCONSULTAS MÉDICAS (CONFIDENCIAL)
+    // Solo médicos participantes. Recepción, administración y pacientes sin acceso.
+    // ==========================================
+    function isValidInterconsultaCreate() {
+      let data = request.resource.data;
+      let allowedKeys = [
+        'idTurno', 'codigoTurno', 'asunto', 'motivo', 'especialidadDestino',
+        'prioridad', 'estado', 'creadaPor', 'participantes', 'lecturas',
+        'creadaEn', 'actualizadaEn'
+      ];
+      return data.keys().hasOnly(allowedKeys)
+        && data.idTurno is string && data.idTurno.size() > 0 && data.idTurno.size() <= 128
+        && data.codigoTurno is string && data.codigoTurno.size() > 0 && data.codigoTurno.size() <= 64
+        && data.asunto is string && data.asunto.size() >= 1 && data.asunto.size() <= 120
+        && data.motivo is string && data.motivo.size() >= 1 && data.motivo.size() <= 1000
+        && data.especialidadDestino is string && data.especialidadDestino.size() > 0 && data.especialidadDestino.size() <= 100
+        && data.prioridad in ['normal', 'urgente']
+        && data.estado == 'pendiente'
+        && data.creadaPor == request.auth.uid
+        && data.participantes is list
+        && request.auth.uid in data.participantes
+        && data.participantes.size() >= 1 && data.participantes.size() <= 10
+        && data.lecturas is map
+        && data.creadaEn == request.time
+        && data.actualizadaEn == request.time;
+    }
+
+    function isValidInterconsultaUpdate() {
+      let diff = request.resource.data.diff(resource.data);
+      let allowedUpdateKeys = ['estado', 'participantes', 'lecturas', 'actualizadaEn'];
+      return diff.affectedKeys().hasOnly(allowedUpdateKeys)
+        && (!diff.affectedKeys().hasAny(['creadaPor', 'creadaEn', 'idTurno', 'codigoTurno', 'asunto', 'motivo', 'especialidadDestino', 'prioridad']))
+        && (!('estado' in diff.affectedKeys()) || request.resource.data.estado in ['pendiente', 'en_curso', 'respondida', 'cerrada'])
+        && (!('participantes' in diff.affectedKeys()) || (
+            request.resource.data.participantes is list
+            && resource.data.participantes.toSet().difference(request.resource.data.participantes.toSet()).size() == 0
+            && request.resource.data.participantes.size() <= 10
+        ))
+        && (!('lecturas' in diff.affectedKeys()) || (
+            request.resource.data.lecturas is map
+            && request.resource.data.lecturas.diff(resource.data.lecturas).affectedKeys().hasOnly([request.auth.uid])
+        ))
+        && request.resource.data.actualizadaEn == request.time;
+    }
+
+    match /interconsultas/{interconsultaId} {
+      // Lectura: solo médicos autenticados que figuren en la lista de participantes
+      allow read: if isMedico() && request.auth.uid in resource.data.participantes;
+
+      // Creación: solo médicos, creador incluido en participantes y datos validados
+      allow create: if isMedico() && isValidInterconsultaCreate();
+
+      // Actualización: solo médicos participantes y campos estrictamente controlados
+      allow update: if isMedico()
+        && request.auth.uid in resource.data.participantes
+        && isValidInterconsultaUpdate();
+
+      // Las interconsultas no se borran: se cierran cambiando el estado
+      allow delete: if false;
+
+      // Subcolección Mensajes: append-only, inmutables
+      match /mensajes/{mensajeId} {
+        allow read: if isMedico()
+          && request.auth.uid in get(/databases/$(database)/documents/interconsultas/$(interconsultaId)).data.participantes;
+
+        allow create: if isMedico()
+          && request.auth.uid in get(/databases/$(database)/documents/interconsultas/$(interconsultaId)).data.participantes
+          && request.resource.data.keys().hasOnly(['autorUid', 'texto', 'tipo', 'creadoEn'])
+          && request.resource.data.autorUid == request.auth.uid
+          && request.resource.data.texto is string
+          && request.resource.data.texto.size() >= 1
+          && request.resource.data.texto.size() <= 2000
+          && request.resource.data.tipo in ['mensaje', 'sistema']
+          && request.resource.data.creadoEn == request.time;
+
+        // Trazabilidad legal: los mensajes nunca se modifican ni se eliminan
+        allow update, delete: if false;
+      }
     }
 
     // ==========================================
