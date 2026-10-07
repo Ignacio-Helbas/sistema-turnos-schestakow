@@ -64,6 +64,8 @@ service cloud.firestore {
       let allowedKeys = [
         'especialidad', 'medico', 'medicoUid', 'fecha', 'horario',
         'pacienteNombre', 'pacienteDni', 'pacienteCelular', 'pacienteEmail',
+        'pacienteCobertura', 'pacienteFechaNacimiento',
+        'consentimientoLey25326', 'consentimientoLey26529',
         'codigoConfirmacion', 'canal', 'estado', 'timestamp', 'creadoEn',
         'creadoPor', 'llegadaEn', 'inicioConsultaEn', 'finConsultaEn',
         'canceladoPor', 'canceladoEn', 'reprogramadoDe'
@@ -78,13 +80,17 @@ service cloud.firestore {
         && data.pacienteDni is string && data.pacienteDni.matches('^[0-9]{6,10}$')
         && data.pacienteCelular is string && data.pacienteCelular.size() >= 6 && data.pacienteCelular.size() <= 25
         && data.pacienteEmail is string && data.pacienteEmail.size() <= 100
+        && (!('pacienteCobertura' in data) || (data.pacienteCobertura is string && data.pacienteCobertura.size() <= 100))
+        && (!('pacienteFechaNacimiento' in data) || (data.pacienteFechaNacimiento is string && (data.pacienteFechaNacimiento.size() == 0 || data.pacienteFechaNacimiento.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))))
+        && (!('consentimientoLey25326' in data) || data.consentimientoLey25326 is bool)
+        && (!('consentimientoLey26529' in data) || data.consentimientoLey26529 is bool)
         && data.codigoConfirmacion is string && data.codigoConfirmacion.size() >= 6 && data.codigoConfirmacion.size() <= 64
         && data.canal == 'Web'
         && data.estado == 'Confirmado'
         && (!('creadoPor' in data) || data.creadoPor == null)
         && (
-          ('creadoEn' in data && data.creadoEn == request.time) ||
-          ('timestamp' in data && data.timestamp == request.time)
+          ('creadoEn' in data && (data.creadoEn == request.time || data.creadoEn is timestamp)) ||
+          ('timestamp' in data && (data.timestamp == request.time || data.timestamp is timestamp))
         );
     }
 
@@ -93,6 +99,8 @@ service cloud.firestore {
       let allowedKeys = [
         'especialidad', 'medico', 'medicoUid', 'fecha', 'horario',
         'pacienteNombre', 'pacienteDni', 'pacienteCelular', 'pacienteEmail',
+        'pacienteCobertura', 'pacienteFechaNacimiento',
+        'consentimientoLey25326', 'consentimientoLey26529',
         'codigoConfirmacion', 'canal', 'estado', 'timestamp', 'creadoEn', 'pacienteId',
         'motivoCitacion', 'modoHorario', 'creadoPor', 'llegadaEn', 'inicioConsultaEn',
         'finConsultaEn', 'canceladoPor', 'canceladoEn', 'reprogramadoDe', 'esDemo', 'demo'

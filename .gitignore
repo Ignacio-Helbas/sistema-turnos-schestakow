@@ -41,3 +41,9 @@ firestore-debug.log*
 ui-debug.log*
 brag-output/
 
+# Materiales de presentación y capturas internas
+presentacion/
+presentacion-inversores/
+presentacion-publica/
+pdf-directorio/
+

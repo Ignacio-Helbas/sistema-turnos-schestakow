@@ -81,6 +81,12 @@ test('Matriz de Seguridad de Reglas de Firestore', async (t) => {
 
         // 11. Turnos: SuperAdmin creación con estados de demostración y auditoría
         assert.match(rulesContent, /Cancelado por Paciente/, 'SuperAdmin debe poder sembrar turnos en estado cancelado para auditoría y métricas');
+
+        // 12. Turnos Web: Inclusión de cobertura, fecha nacimiento y consentimientos legales
+        assert.match(rulesContent, /'pacienteCobertura'/, 'Debe permitir pacienteCobertura en isValidTurnoCreate');
+        assert.match(rulesContent, /'pacienteFechaNacimiento'/, 'Debe permitir pacienteFechaNacimiento en isValidTurnoCreate');
+        assert.match(rulesContent, /'consentimientoLey25326'/, 'Debe permitir consentimientoLey25326 en isValidTurnoCreate');
+        assert.match(rulesContent, /'consentimientoLey26529'/, 'Debe permitir consentimientoLey26529 en isValidTurnoCreate');
     });
 
     // Si está disponible el emulador en vivo, se ejecutan las pruebas de integración
