@@ -38,6 +38,7 @@ let bdMedicosDinamica = {};
 let duracionTurnoGlobal = 15;
 let modulacionPorMedico = {};
 let turnoEncontradoActivo = null;
+let ultimoUrlTurnoConfirmado = "";
 
 // Exponer funciones necesarias para interacción del DOM
 window.abrirModal = abrirModal;
@@ -52,6 +53,8 @@ window.cancelarTurnoFirebase = cancelarTurnoFirebase;
 window.abrirModalElegirHorarioCitacion = abrirModalElegirHorarioCitacion;
 window.seleccionarSlotCitacion = seleccionarSlotCitacion;
 window.confirmarHorarioCitacionPaciente = confirmarHorarioCitacionPaciente;
+window.renderizarCodigoQR = renderizarCodigoQR;
+window.copiarEnlaceTurno = copiarEnlaceTurno;
 
 /**
  * Genera un identificador largo criptográficamente impredecible (>= 20 caracteres)
@@ -258,6 +261,100 @@ export function seleccionarHorario(btnClickeado) {
     if (window.actualizarProgresoFormulario) window.actualizarProgresoFormulario();
 }
 
+/**
+ * Renderiza un código QR funcional real escaneable con la cámara de cualquier teléfono.
+ * Utiliza QRCode local en primer término (offline) y un fallback seguro de alta disponibilidad.
+ */
+export function renderizarCodigoQR(texto) {
+    const contenedor = document.getElementById('contenedor-qr-confirmacion');
+    if (!contenedor) return;
+    contenedor.innerHTML = '';
+
+    // Intento 1: Librería QRCode local (QRCode JS estándar Model 2)
+    try {
+        if (typeof QRCode !== 'undefined') {
+            new QRCode(contenedor, {
+                text: texto,
+                width: 128,
+                height: 128,
+                colorDark: "#002845",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+            return;
+        }
+    } catch (err) {
+        console.warn("Librería QRCode local no pudo instanciarse, utilizando fallback gráfico:", err);
+    }
+
+    // Intento 2: Fallback por imagen vectorial/raster remota garantizada
+    const img = document.createElement('img');
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(texto)}&color=002845`;
+    img.alt = "Código QR de Consulta y Verificación de Turno";
+    img.className = "w-[128px] h-[128px] object-contain rounded";
+    img.loading = "eager";
+    contenedor.appendChild(img);
+}
+
+/**
+ * Prepara el talón de comprobante oficial con los datos del paciente y el QR escaneable.
+ */
+export function prepararComprobanteExito({ turnoId, dni, nom, med, esp, fec, hor }) {
+    const urlVerificacion = `${window.location.origin}${window.location.pathname}?codigo=${encodeURIComponent(turnoId)}&dni=${encodeURIComponent(dni)}`;
+    ultimoUrlTurnoConfirmado = urlVerificacion;
+
+    const talon = document.getElementById('talon-comprobante-exito');
+    if (talon) talon.style.display = 'block';
+
+    const elNom = document.getElementById('talon-paciente-nom');
+    const elDni = document.getElementById('talon-paciente-dni');
+    const elMed = document.getElementById('talon-turno-med');
+    const elEsp = document.getElementById('talon-turno-esp');
+    const elFec = document.getElementById('talon-turno-fec');
+    const elHor = document.getElementById('talon-turno-hor');
+    const elCod = document.getElementById('talon-turno-cod');
+
+    if (elNom) elNom.textContent = nom || '--';
+    if (elDni) elDni.textContent = dni || '--';
+    if (elMed) elMed.textContent = med || '--';
+    if (elEsp) elEsp.textContent = esp || '--';
+    if (elFec) elFec.textContent = formatearFechaAR(fec);
+    if (elHor) elHor.textContent = hor || '--';
+    if (elCod) elCod.textContent = turnoId || '--';
+
+    renderizarCodigoQR(urlVerificacion);
+}
+
+/**
+ * Copia el enlace de consulta y verificación directa al portapapeles del dispositivo.
+ */
+export async function copiarEnlaceTurno() {
+    const urlACopiar = ultimoUrlTurnoConfirmado || window.location.href;
+    const txtSpan = document.getElementById('txt-copiar-link');
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(urlACopiar);
+        } else {
+            const temp = document.createElement('textarea');
+            temp.value = urlACopiar;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+        }
+        if (txtSpan) txtSpan.textContent = "¡Copiado al portapapeles!";
+        if (window.mostrarToast) {
+            mostrarToast("Enlace de consulta y verificación copiado", "success");
+        }
+        setTimeout(() => {
+            if (txtSpan) txtSpan.textContent = "Copiar link de consulta";
+        }, 2500);
+    } catch (e) {
+        console.error("Error al copiar enlace:", e);
+        if (txtSpan) txtSpan.textContent = "Error al copiar";
+    }
+}
+
 export async function confirmarTurnoFirebase() {
     const esp = document.getElementById('select-especialidad').value;
     const selectMed = document.getElementById('select-medico');
@@ -371,7 +468,17 @@ export async function confirmarTurnoFirebase() {
             email_destino: email, codigo_confirmacion: turnoId
         });
 
-        mostrarExito("¡Turno Confirmado!", `Tu código secreto de consulta y cancelación es: ${turnoId}. Guardalo para gestionar tu turno.`);
+        prepararComprobanteExito({
+            turnoId,
+            dni,
+            nom,
+            med,
+            esp,
+            fec,
+            hor
+        });
+
+        mostrarExito("¡Turno Confirmado!", `Tu código de reserva es: ${turnoId}. Guardalo o escaneá el código QR para verificarlo.`);
 
         document.getElementById('paciente-nombre').value = '';
         document.getElementById('paciente-dni').value = '';
@@ -648,6 +755,17 @@ export async function confirmarHorarioCitacionPaciente() {
         await batch.commit();
 
         cerrarModal('modal-elegir-horario-citacion');
+
+        prepararComprobanteExito({
+            turnoId: citaId,
+            dni: t.pacienteDni || '',
+            nom: t.pacienteNombre || '',
+            med: t.medico || '',
+            esp: t.especialidad || '',
+            fec: t.fecha,
+            hor: horario
+        });
+
         mostrarExito("¡Turno Confirmado!", `Tu consulta con ${t.medico} quedó confirmada para el día ${formatearFechaAR(t.fecha)} a las ${horario} hs.`);
 
         if (t.pacienteEmail) {
@@ -709,6 +827,9 @@ export async function cancelarTurnoFirebase(id) {
             });
         }
 
+        const talon = document.getElementById('talon-comprobante-exito');
+        if (talon) talon.style.display = 'none';
+
         mostrarExito("Turno Cancelado", "Tu turno ha sido cancelado exitosamente.");
         cerrarModal('modal-cancelar-paciente');
         generarHorariosPublicos();
@@ -729,5 +850,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     const citaIdParam = urlParams.get('cita');
     if (citaIdParam) {
         await abrirModalElegirHorarioCitacion(citaIdParam);
+    }
+
+    // Detección automática al escanear el QR del turno (?codigo=...&dni=...)
+    const codigoParam = urlParams.get('codigo') || urlParams.get('turno');
+    const dniParam = urlParams.get('dni');
+    if (codigoParam) {
+        const inputCod = document.getElementById('input-buscar-codigo');
+        const inputDni = document.getElementById('input-buscar-dni');
+        if (inputCod) inputCod.value = codigoParam;
+        if (inputDni && dniParam) inputDni.value = dniParam;
+
+        abrirModal('modal-cancelar-paciente');
+
+        if (dniParam) {
+            setTimeout(() => {
+                buscarTurnosPaciente();
+            }, 300);
+        }
     }
 });
