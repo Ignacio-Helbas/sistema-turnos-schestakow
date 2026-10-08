@@ -1,7 +1,7 @@
 // ==========================================
 // COMPONENTE: CALENDARIO HOSPITALARIO INTERACTIVO
-// Módulo institucional para reserva de turnos - Hospital Schestakow
-// Incluye Feriados Nacionales de la República Argentina
+// Módulo institucional para reserva de turnos y agendas - Hospital Schestakow
+// Incluye Feriados Nacionales de la República Argentina y soporte Multi-Panel
 // ==========================================
 
 const MESES = [
@@ -53,6 +53,13 @@ export const FERIADOS_MOVILES = {
 };
 
 /**
+ * Registro global de instancias para manejo dinámico de eventos en el DOM
+ */
+if (typeof window !== 'undefined') {
+    window._calendariosHospitalarios = window._calendariosHospitalarios || {};
+}
+
+/**
  * Consulta si una fecha específica (YYYY-MM-DD) es feriado nacional en Argentina
  */
 export function obtenerFeriadoNacional(fechaISO) {
@@ -68,9 +75,23 @@ export function obtenerFeriadoNacional(fechaISO) {
 }
 
 class CalendarioHospitalario {
-    constructor(contenedorId = 'contenedor-calendario-hospitalario', inputId = 'input-fecha-paciente') {
+    constructor(contenedorId = 'contenedor-calendario-hospitalario', inputId = 'input-fecha-paciente', opciones = {}) {
         this.contenedorId = contenedorId;
         this.inputId = inputId;
+        this.opciones = {
+            permitirPasados: false,
+            permitirFeriados: false,
+            deshabilitarFinesDeSemana: true,
+            diasMaximos: 60, // null para sin límite
+            mostrarLeyenda: true,
+            compacto: false,
+            bannerId: null,
+            textoBannerId: null,
+            textoDisplayId: null,
+            popoverId: null,
+            onSelect: null,
+            ...opciones
+        };
 
         const hoy = new Date();
         this.hoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
@@ -78,33 +99,45 @@ class CalendarioHospitalario {
         this.anioVisible = this.hoy.getFullYear();
         this.fechaSeleccionada = null; // String 'YYYY-MM-DD'
 
-        // Rango máximo permitido para reserva de turnos (60 días hacia adelante)
-        this.fechaMaxima = new Date(this.hoy);
-        this.fechaMaxima.setDate(this.fechaMaxima.getDate() + 60);
+        // Rango máximo permitido
+        if (this.opciones.diasMaximos) {
+            this.fechaMaxima = new Date(this.hoy);
+            this.fechaMaxima.setDate(this.fechaMaxima.getDate() + this.opciones.diasMaximos);
+        } else {
+            this.fechaMaxima = null;
+        }
+
+        if (typeof window !== 'undefined') {
+            window._calendariosHospitalarios = window._calendariosHospitalarios || {};
+            window._calendariosHospitalarios[this.contenedorId] = this;
+
+            // Mantener alias global histórico si es el contenedor principal
+            if (this.contenedorId === 'contenedor-calendario-hospitalario') {
+                window.calendarioHospitalario = this;
+            }
+        }
 
         this.init();
     }
 
     init() {
         const input = document.getElementById(this.inputId);
-        if (input && input.value) {
-            this.fechaSeleccionada = input.value;
-            const partes = input.value.split('-');
-            if (partes.length === 3) {
-                this.anioVisible = parseInt(partes[0], 10);
-                this.mesVisible = parseInt(partes[1], 10) - 1;
+        if (input) {
+            input._calendarioHospitalario = this;
+            if (input.value) {
+                this.establecerFecha(input.value, false);
             }
         }
 
         this.render();
+        this.actualizarBanner();
+        this.actualizarDisplayTexto();
 
         // Escuchar cambios externos en el input para sincronizar
         if (input) {
             input.addEventListener('change', () => {
                 if (input.value !== this.fechaSeleccionada) {
-                    this.fechaSeleccionada = input.value || null;
-                    this.render();
-                    this.actualizarBanner();
+                    this.establecerFecha(input.value || null, false);
                 }
             });
         }
@@ -122,10 +155,12 @@ class CalendarioHospitalario {
             nuevoAnio++;
         }
 
-        // Evitar retroceder a meses totalmente pasados
-        const primerDiaNuevoMes = new Date(nuevoAnio, nuevoMes + 1, 0);
-        if (primerDiaNuevoMes < this.hoy) {
-            return;
+        // Si no se permiten pasados, evitar navegar a meses donde todos los días ya pasaron
+        if (!this.opciones.permitirPasados) {
+            const primerDiaNuevoMes = new Date(nuevoAnio, nuevoMes + 1, 0);
+            if (primerDiaNuevoMes < this.hoy) {
+                return;
+            }
         }
 
         this.mesVisible = nuevoMes;
@@ -149,48 +184,102 @@ class CalendarioHospitalario {
         return obtenerFeriadoNacional(fechaISO);
     }
 
-    seleccionarFecha(fechaISO) {
-        // Bloqueo preventivo de feriados
-        const nombreFeriado = this.obtenerFeriado(fechaISO);
-        if (nombreFeriado) {
-            if (window.mostrarAlerta) {
-                window.mostrarAlerta("Feriado Nacional", `El día seleccionado es feriado (${nombreFeriado}). Los consultorios externos no atienden; sólo funciona la Guardia de Emergencias.`);
-            } else {
-                alert(`El día seleccionado es feriado (${nombreFeriado}).`);
+    establecerFecha(fechaISO, dispararEvento = true) {
+        this.fechaSeleccionada = fechaISO || null;
+        if (fechaISO) {
+            const partes = fechaISO.split('-');
+            if (partes.length === 3) {
+                this.anioVisible = parseInt(partes[0], 10);
+                this.mesVisible = parseInt(partes[1], 10) - 1;
             }
-            return;
         }
 
-        this.fechaSeleccionada = fechaISO;
         const input = document.getElementById(this.inputId);
-        if (input) {
-            input.value = fechaISO;
-            // Disparar evento change para ejecutar validarDiaHabil y generarHorariosPublicos
-            const evento = new Event('change', { bubbles: true });
-            input.dispatchEvent(evento);
+        if (input && input.value !== (fechaISO || '')) {
+            input.value = fechaISO || '';
+            if (dispararEvento) {
+                const evento = new Event('change', { bubbles: true });
+                input.dispatchEvent(evento);
+            }
         }
 
         this.render();
         this.actualizarBanner();
+        this.actualizarDisplayTexto();
+    }
 
-        if (window.actualizarProgresoFormulario) {
+    seleccionarFecha(fechaISO) {
+        // Bloqueo preventivo de feriados
+        if (!this.opciones.permitirFeriados) {
+            const nombreFeriado = this.obtenerFeriado(fechaISO);
+            if (nombreFeriado) {
+                if (typeof window !== 'undefined' && window.mostrarAlerta) {
+                    window.mostrarAlerta("Feriado Nacional", `El día seleccionado es feriado (${nombreFeriado}). Los consultorios externos no atienden; sólo funciona la Guardia de Emergencias.`);
+                } else if (typeof alert !== 'undefined') {
+                    alert(`El día seleccionado es feriado (${nombreFeriado}).`);
+                }
+                return;
+            }
+        }
+
+        this.establecerFecha(fechaISO, true);
+
+        if (this.opciones.onSelect && typeof this.opciones.onSelect === 'function') {
+            this.opciones.onSelect(fechaISO);
+        }
+
+        // Cerrar popover automáticamente si aplica
+        if (this.opciones.popoverId) {
+            const popover = document.getElementById(this.opciones.popoverId);
+            if (popover) {
+                popover.classList.add('hidden');
+            }
+        }
+
+        if (typeof window !== 'undefined' && window.actualizarProgresoFormulario) {
             window.actualizarProgresoFormulario();
         }
     }
 
     deseleccionar() {
-        this.fechaSeleccionada = null;
+        this.establecerFecha(null, true);
+    }
+
+    sincronizarConInput() {
         const input = document.getElementById(this.inputId);
         if (input) {
-            input.value = '';
+            this.establecerFecha(input.value || null, false);
         }
-        this.render();
-        this.actualizarBanner();
+    }
+
+    actualizarDisplayTexto() {
+        if (!this.opciones.textoDisplayId) return;
+        const display = document.getElementById(this.opciones.textoDisplayId);
+        if (!display) return;
+
+        if (!this.fechaSeleccionada) {
+            display.textContent = 'Seleccionar fecha...';
+            return;
+        }
+
+        const partes = this.fechaSeleccionada.split('-');
+        if (partes.length === 3) {
+            const anio = parseInt(partes[0], 10);
+            const mes = parseInt(partes[1], 10) - 1;
+            const dia = parseInt(partes[2], 10);
+            const fechaObj = new Date(anio, mes, dia);
+            const opciones = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+            let formateada = fechaObj.toLocaleDateString('es-AR', opciones);
+            formateada = formateada.charAt(0).toUpperCase() + formateada.slice(1);
+            display.textContent = formateada;
+        }
     }
 
     actualizarBanner() {
-        const banner = document.getElementById('banner-fecha-seleccionada');
-        const txt = document.getElementById('texto-fecha-seleccionada');
+        const bannerId = this.opciones.bannerId || 'banner-fecha-seleccionada';
+        const txtId = this.opciones.textoBannerId || 'texto-fecha-seleccionada';
+        const banner = document.getElementById(bannerId);
+        const txt = document.getElementById(txtId);
         if (!banner || !txt) return;
 
         if (!this.fechaSeleccionada) {
@@ -207,7 +296,6 @@ class CalendarioHospitalario {
             const fechaObj = new Date(anio, mes, dia);
             const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             const formateada = fechaObj.toLocaleDateString('es-AR', opciones);
-            // Capitalizar primera letra
             txt.textContent = formateada.charAt(0).toUpperCase() + formateada.slice(1);
             banner.classList.remove('hidden');
         }
@@ -226,37 +314,42 @@ class CalendarioHospitalario {
         let offsetDias = (diaInicioSemana === 0) ? 6 : diaInicioSemana - 1;
 
         const esMesActual = (this.mesVisible === this.hoy.getMonth() && this.anioVisible === this.hoy.getFullYear());
+        const esCompacto = this.opciones.compacto;
+        const instanciaKey = this.contenedorId;
+
+        const celdaHeight = esCompacto ? 'h-7 sm:h-8' : 'h-9 sm:h-10';
+        const fontSizeDia = esCompacto ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm';
 
         let html = `
             <div class="calendario-his select-none">
                 <!-- Cabecera de Navegación del Mes -->
-                <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-200">
+                <div class="flex items-center justify-between pb-2.5 mb-2 border-b border-slate-200">
                     <div class="flex items-center gap-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-[#007a78]"></span>
-                        <h3 class="text-sm sm:text-base font-bold text-[#002845] tracking-tight">
+                        <h3 class="${esCompacto ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'} font-bold text-[#002845] tracking-tight">
                             ${MESES[this.mesVisible]} <span class="text-slate-500 font-medium">${this.anioVisible}</span>
                         </h3>
                     </div>
 
                     <div class="flex items-center gap-1.5">
                         <button type="button" 
-                                onclick="window.calendarioHospitalario.irAHoy()" 
-                                class="px-2 py-1 text-[11px] font-semibold text-slate-600 hover:text-[#002845] bg-slate-100 hover:bg-slate-200 rounded transition cursor-pointer"
+                                onclick="window._calendariosHospitalarios['${instanciaKey}'].irAHoy()" 
+                                class="px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-slate-600 hover:text-[#002845] bg-slate-100 hover:bg-slate-200 rounded transition cursor-pointer"
                                 title="Volver al mes actual">
                             Hoy
                         </button>
                         <button type="button" 
-                                onclick="window.calendarioHospitalario.cambiarMes(-1)" 
-                                ${esMesActual ? 'disabled' : ''} 
-                                class="w-7 h-7 flex items-center justify-center rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+                                onclick="window._calendariosHospitalarios['${instanciaKey}'].cambiarMes(-1)" 
+                                ${(!this.opciones.permitirPasados && esMesActual) ? 'disabled' : ''} 
+                                class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
                                 aria-label="Mes anterior">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                         </button>
                         <button type="button" 
-                                onclick="window.calendarioHospitalario.cambiarMes(1)" 
-                                class="w-7 h-7 flex items-center justify-center rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                                onclick="window._calendariosHospitalarios['${instanciaKey}'].cambiarMes(1)" 
+                                class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition cursor-pointer"
                                 aria-label="Mes siguiente">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                         </button>
                     </div>
                 </div>
@@ -268,7 +361,7 @@ class CalendarioHospitalario {
         DIAS_SEMANA.forEach((dia, idx) => {
             const esFinde = (idx >= 5);
             html += `
-                <div class="text-[10px] sm:text-[11px] font-bold py-1 ${esFinde ? 'text-slate-400 bg-slate-50/50 rounded' : 'text-[#002845]'}" title="${esFinde ? 'Fin de semana (no laborable)' : 'Día de atención habitual'}">
+                <div class="text-[9px] sm:text-[10px] font-bold py-0.5 ${esFinde ? 'text-slate-400 bg-slate-50/50 rounded' : 'text-[#002845]'}" title="${esFinde ? 'Fin de semana (no laborable)' : 'Día de atención habitual'}">
                     ${dia}
                 </div>
             `;
@@ -278,7 +371,7 @@ class CalendarioHospitalario {
 
         // Espacios vacíos antes del 1° del mes
         for (let i = 0; i < offsetDias; i++) {
-            html += `<div class="h-9 sm:h-10"></div>`;
+            html += `<div class="${celdaHeight}"></div>`;
         }
 
         // Celdas de días del mes
@@ -286,8 +379,8 @@ class CalendarioHospitalario {
             const fechaDia = new Date(this.anioVisible, this.mesVisible, dia);
             const diaSemana = fechaDia.getDay(); // 0 = Domingo, 6 = Sábado
             const esFinde = (diaSemana === 0 || diaSemana === 6);
-            const esPasado = (fechaDia < this.hoy);
-            const esExcedido = (fechaDia > this.fechaMaxima);
+            const esPasado = (!this.opciones.permitirPasados && fechaDia < this.hoy);
+            const esExcedido = (this.fechaMaxima && fechaDia > this.fechaMaxima);
             const esHoy = (fechaDia.getTime() === this.hoy.getTime());
             const iso = this.formatearISO(this.anioVisible, this.mesVisible, dia);
             const estaSeleccionado = (this.fechaSeleccionada === iso);
@@ -296,10 +389,9 @@ class CalendarioHospitalario {
             if (nombreFeriado) {
                 // FERIADO NACIONAL: Destacado en rojo institucional
                 html += `
-                    <button type="button" disabled 
+                    <button type="button" ${!this.opciones.permitirFeriados ? 'disabled aria-disabled="true"' : `onclick="window._calendariosHospitalarios['${instanciaKey}'].seleccionarFecha('${iso}')"`}
                             title="Feriado Nacional: ${nombreFeriado} (Consultorios externos cerrados - Guardia activa)"
-                            class="w-full h-9 sm:h-10 rounded-md bg-rose-50 text-rose-700 border border-rose-300 text-xs sm:text-sm font-bold flex flex-col items-center justify-center cursor-not-allowed shadow-2xs group relative"
-                            aria-disabled="true">
+                            class="w-full ${celdaHeight} rounded-md bg-rose-50 text-rose-700 border border-rose-300 ${fontSizeDia} font-bold flex flex-col items-center justify-center ${!this.opciones.permitirFeriados ? 'cursor-not-allowed shadow-2xs' : 'cursor-pointer hover:bg-rose-100'} group relative">
                         <span>${dia}</span>
                         <span class="w-1.5 h-1.5 rounded-full bg-rose-500 -mt-0.5" title="${nombreFeriado}"></span>
                     </button>
@@ -308,90 +400,192 @@ class CalendarioHospitalario {
                 // Día anterior a hoy
                 html += `
                     <button type="button" disabled 
-                            class="w-full h-9 sm:h-10 rounded text-slate-300 text-xs flex items-center justify-center cursor-not-allowed line-through opacity-60">
+                            class="w-full ${celdaHeight} rounded text-slate-300 text-xs flex items-center justify-center cursor-not-allowed line-through opacity-60">
                         ${dia}
                     </button>
                 `;
-            } else if (esFinde) {
+            } else if (this.opciones.deshabilitarFinesDeSemana && esFinde) {
                 // Sábado o Domingo (no laborable en consultorios)
                 html += `
                     <button type="button" disabled 
                             title="No laborable para consultorios externos"
-                            class="w-full h-9 sm:h-10 rounded bg-slate-50/80 text-slate-400 text-xs flex items-center justify-center cursor-not-allowed border border-dashed border-slate-200">
+                            class="w-full ${celdaHeight} rounded bg-slate-50/80 text-slate-400 text-xs flex items-center justify-center cursor-not-allowed border border-dashed border-slate-200">
                         ${dia}
                     </button>
                 `;
             } else if (esExcedido) {
-                // Fuera del rango de 60 días
+                // Fuera del rango de días máximos
                 html += `
                     <button type="button" disabled 
                             title="Agenda aún no habilitada"
-                            class="w-full h-9 sm:h-10 rounded text-slate-300 text-xs flex items-center justify-center cursor-not-allowed">
+                            class="w-full ${celdaHeight} rounded text-slate-300 text-xs flex items-center justify-center cursor-not-allowed">
                         ${dia}
                     </button>
                 `;
             } else if (estaSeleccionado) {
-                // Día actualmente seleccionado por el paciente
+                // Día actualmente seleccionado
                 html += `
                     <button type="button" 
-                            onclick="window.calendarioHospitalario.seleccionarFecha('${iso}')"
-                            class="w-full h-9 sm:h-10 rounded-md bg-[#002845] text-white font-bold text-xs sm:text-sm flex flex-col items-center justify-center shadow-md ring-2 ring-[#007a78] border border-[#002845] cursor-pointer scale-[1.02] transition-transform"
+                            onclick="window._calendariosHospitalarios['${instanciaKey}'].seleccionarFecha('${iso}')"
+                            class="w-full ${celdaHeight} rounded-md bg-[#002845] text-white font-bold ${fontSizeDia} flex flex-col items-center justify-center shadow-md ring-2 ring-[#007a78] border border-[#002845] cursor-pointer scale-[1.02] transition-transform"
                             aria-selected="true"
                             title="Día seleccionado">
                         <span>${dia}</span>
-                        ${esHoy ? '<span class="text-[8px] uppercase tracking-wider text-teal-300 -mt-0.5 leading-none">Hoy</span>' : ''}
+                        ${esHoy ? '<span class="text-[7px] sm:text-[8px] uppercase tracking-wider text-teal-300 -mt-0.5 leading-none">Hoy</span>' : ''}
                     </button>
                 `;
             } else {
-                // Día hábil disponible para reservar
+                // Día hábil disponible
                 html += `
                     <button type="button" 
-                            onclick="window.calendarioHospitalario.seleccionarFecha('${iso}')"
-                            class="w-full h-9 sm:h-10 rounded-md bg-white hover:bg-teal-50 text-slate-800 hover:text-[#002845] hover:border-[#007a78] border border-slate-200 text-xs sm:text-sm font-semibold flex flex-col items-center justify-center shadow-2xs hover:shadow-sm transition-all cursor-pointer group"
+                            onclick="window._calendariosHospitalarios['${instanciaKey}'].seleccionarFecha('${iso}')"
+                            class="w-full ${celdaHeight} rounded-md bg-white hover:bg-teal-50 text-slate-800 hover:text-[#002845] hover:border-[#007a78] border border-slate-200 ${fontSizeDia} font-semibold flex flex-col items-center justify-center shadow-2xs hover:shadow-sm transition-all cursor-pointer group"
                             aria-selected="false"
                             title="Disponible para reserva">
                         <span class="group-hover:scale-110 transition-transform">${dia}</span>
-                        ${esHoy ? '<span class="text-[8px] uppercase tracking-wider text-emerald-600 font-bold -mt-0.5 leading-none">Hoy</span>' : ''}
+                        ${esHoy ? '<span class="text-[7px] sm:text-[8px] uppercase tracking-wider text-emerald-600 font-bold -mt-0.5 leading-none">Hoy</span>' : ''}
                     </button>
                 `;
             }
         }
 
-        html += `
-                </div>
+        html += `</div>`;
 
-                <!-- Leyenda de Referencias Hospitalarias -->
-                <div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between text-[11px] text-slate-500 gap-2">
-                    <div class="flex items-center gap-2.5 flex-wrap">
+        // Leyenda institucional
+        if (this.opciones.mostrarLeyenda) {
+            html += `
+                <div class="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-[10px] sm:text-[11px] text-slate-500 gap-1.5">
+                    <div class="flex items-center gap-2 flex-wrap">
                         <span class="inline-flex items-center gap-1">
-                            <span class="w-2.5 h-2.5 rounded bg-white border border-slate-300 inline-block"></span>
+                            <span class="w-2 h-2 rounded bg-white border border-slate-300 inline-block"></span>
                             <span>Disponible</span>
                         </span>
                         <span class="inline-flex items-center gap-1">
-                            <span class="w-2.5 h-2.5 rounded bg-[#002845] inline-block"></span>
+                            <span class="w-2 h-2 rounded bg-[#002845] inline-block"></span>
                             <span>Seleccionado</span>
                         </span>
                         <span class="inline-flex items-center gap-1">
-                            <span class="w-2.5 h-2.5 rounded bg-rose-100 border border-rose-300 inline-block"></span>
+                            <span class="w-2 h-2 rounded bg-rose-100 border border-rose-300 inline-block"></span>
                             <span class="text-rose-700 font-semibold">Feriado</span>
                         </span>
                         <span class="inline-flex items-center gap-1">
-                            <span class="w-2.5 h-2.5 rounded bg-slate-100 border border-dashed border-slate-200 inline-block"></span>
+                            <span class="w-2 h-2 rounded bg-slate-100 border border-dashed border-slate-200 inline-block"></span>
                             <span>No laborable</span>
                         </span>
                     </div>
-                    <span class="text-[10px] text-slate-400">Atención: Lun a Vie (07:00 a 13:00 hs)</span>
+                    <span class="text-[9px] sm:text-[10px] text-slate-400">Atención: Lun a Vie (07:00 a 13:00)</span>
                 </div>
-            </div>
-        `;
+            `;
+        }
+
+        html += `</div>`;
 
         contenedor.innerHTML = html;
     }
 }
 
-// Inicialización automática al cargar el DOM
-document.addEventListener("DOMContentLoaded", () => {
-    window.calendarioHospitalario = new CalendarioHospitalario();
-});
+/**
+ * Función para inicializar los calendarios específicos del panel administrativo/médico
+ */
+export function inicializarCalendariosPanel() {
+    // 1. Calendario de Recepción (Selector desplegable popover)
+    if (document.getElementById('contenedor-calendario-recepcion') && document.getElementById('input-fecha-recepcion')) {
+        window.calendarioRecepcion = new CalendarioHospitalario(
+            'contenedor-calendario-recepcion',
+            'input-fecha-recepcion',
+            {
+                compacto: true,
+                popoverId: 'popover-calendario-recepcion',
+                textoDisplayId: 'texto-fecha-recepcion-display',
+                onSelect: (fechaISO) => {
+                    const btn = document.getElementById('btn-selector-fecha-recepcion');
+                    if (btn) btn.focus();
+                }
+            }
+        );
+
+        // Preseleccionar hoy si el input está vacío
+        const inputRec = document.getElementById('input-fecha-recepcion');
+        if (inputRec && !inputRec.value) {
+            const hoy = new Date();
+            const y = hoy.getFullYear();
+            const m = String(hoy.getMonth() + 1).padStart(2, '0');
+            const d = String(hoy.getDate()).padStart(2, '0');
+            const fechaHoy = `${y}-${m}-${d}`;
+            // Si hoy no es fin de semana ni feriado, preasignarlo para agilidad de la recepción
+            if (hoy.getDay() !== 0 && hoy.getDay() !== 6 && !obtenerFeriadoNacional(fechaHoy)) {
+                window.calendarioRecepcion.establecerFecha(fechaHoy, false);
+            }
+        }
+    }
+
+    // 2. Calendario de Consultorio (Modal de Próxima Consulta / Citación)
+    if (document.getElementById('contenedor-calendario-consultorio') && document.getElementById('prox-consulta-fecha')) {
+        window.calendarioConsultorio = new CalendarioHospitalario(
+            'contenedor-calendario-consultorio',
+            'prox-consulta-fecha',
+            {
+                compacto: true,
+                textoDisplayId: 'display-fecha-prox-consulta',
+                onSelect: (fechaISO) => {
+                    const elFecha = document.getElementById('prox-consulta-fecha');
+                    if (elFecha && typeof window.cambioFechaProximaConsulta === 'function') {
+                        window.cambioFechaProximaConsulta(elFecha);
+                    }
+                }
+            }
+        );
+    }
+}
+
+/**
+ * Toggle del popover de fecha en Recepción
+ */
+export function toggleCalendarioRecepcion(forzarEstado = null) {
+    const popover = document.getElementById('popover-calendario-recepcion');
+    if (!popover) return;
+
+    if (forzarEstado !== null) {
+        if (forzarEstado) popover.classList.remove('hidden');
+        else popover.classList.add('hidden');
+        return;
+    }
+
+    popover.classList.toggle('hidden');
+}
+
+// Cerrar popovers al hacer click fuera
+if (typeof document !== 'undefined') {
+    document.addEventListener('click', (e) => {
+        const popover = document.getElementById('popover-calendario-recepcion');
+        const btn = document.getElementById('btn-selector-fecha-recepcion');
+        if (popover && !popover.classList.contains('hidden')) {
+            if (!popover.contains(e.target) && !btn?.contains(e.target)) {
+                popover.classList.add('hidden');
+            }
+        }
+    });
+}
+
+// Exponer funciones en window para invocación desde HTML
+if (typeof window !== 'undefined') {
+    window.inicializarCalendariosPanel = inicializarCalendariosPanel;
+    window.toggleCalendarioRecepcion = toggleCalendarioRecepcion;
+}
+
+// Inicialización automática según el DOM cargado
+if (typeof document !== 'undefined') {
+    document.addEventListener("DOMContentLoaded", () => {
+        // En index.html (Portal Público)
+        if (document.getElementById('contenedor-calendario-hospitalario')) {
+            window.calendarioHospitalario = new CalendarioHospitalario();
+        }
+
+        // En panel.html (Recepción y Consultorio)
+        if (document.getElementById('contenedor-calendario-recepcion') || document.getElementById('contenedor-calendario-consultorio')) {
+            inicializarCalendariosPanel();
+        }
+    });
+}
 
 export { CalendarioHospitalario };

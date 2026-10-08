@@ -155,9 +155,31 @@
                         <label class="label-his" for="reception-medico">Médico Asignado</label>
                         <select id="reception-medico" disabled class="select-his"></select>
                     </div>
-                    <div>
-                        <label class="label-his" for="input-fecha-recepcion">Fecha de Atención</label>
-                        <input type="date" id="input-fecha-recepcion" onchange="validarDiaHabil(this)" class="input-his">
+                    <div class="relative">
+                        <label class="label-his" for="btn-selector-fecha-recepcion">Fecha de Atención</label>
+                        <button type="button" id="btn-selector-fecha-recepcion" onclick="toggleCalendarioRecepcion()" class="w-full bg-white border border-slate-300 hover:border-[#007a78] rounded-md px-3 py-2 text-left text-xs sm:text-sm font-medium text-slate-800 shadow-2xs flex items-center justify-between transition focus:ring-2 focus:ring-[#007a78] focus:outline-none cursor-pointer">
+                            <span class="flex items-center gap-2 truncate">
+                                <svg class="w-4 h-4 text-[#007a78] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <span id="texto-fecha-recepcion-display">Seleccionar fecha...</span>
+                            </span>
+                            <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <!-- Input oculto sincronizado preservado para compatibilidad total -->
+                        <input type="hidden" id="input-fecha-recepcion" onchange="validarDiaHabil(this)" class="input-his">
+
+                        <!-- Popover flotante con Calendario Hospitalario Schestakow -->
+                        <div id="popover-calendario-recepcion" class="hidden absolute z-50 left-0 sm:right-0 sm:left-auto top-full mt-1.5 w-[310px] sm:w-[340px] bg-white border border-slate-200 rounded-xl shadow-2xl p-3 animate-fade-in-up">
+                            <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                                <span class="text-xs font-bold text-[#002845] flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-[#007a78]"></span>
+                                    Agenda Diaria Recepción
+                                </span>
+                                <button type="button" onclick="toggleCalendarioRecepcion(false)" class="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer text-xs" title="Cerrar calendario">✕</button>
+                            </div>
+                            <div id="contenedor-calendario-recepcion">
+                                <p class="text-xs text-slate-400 text-center py-4">Cargando calendario...</p>
+                            </div>
+                        </div>
                     </div>
                     <button onclick="buscarAgendaRecepcion()" class="btn-his-primary w-full py-2.5 text-sm font-bold shadow-xs">Cargar Agenda</button>
                 </div>
@@ -1582,11 +1604,23 @@
                     </div>
                 </div>
 
-                <!-- 1. Día de la Consulta (Fecha) -->
+                <!-- 1. Día de la Consulta (Fecha) con Calendario Hospitalario Schestakow -->
                 <div>
-                    <label class="label-his" for="prox-consulta-fecha">1. Fecha Asignada por el Médico <span class="text-red-600 font-bold">*</span></label>
-                    <input type="date" id="prox-consulta-fecha" onchange="cambioFechaProximaConsulta(this)" class="input-his">
-                    <p class="text-[11px] text-slate-500 mt-1">Días hábiles de lunes a viernes.</p>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="label-his mb-0" for="prox-consulta-fecha">1. Fecha Asignada por el Médico <span class="text-red-600 font-bold">*</span></label>
+                        <span id="display-fecha-prox-consulta" class="text-xs font-bold text-[#002845] bg-teal-50 px-2.5 py-0.5 rounded border border-teal-200">
+                            Fecha no seleccionada
+                        </span>
+                    </div>
+
+                    <!-- Contenedor del Calendario Visual en el Modal -->
+                    <div id="contenedor-calendario-consultorio" class="bg-white border border-slate-200 rounded-lg p-2.5 sm:p-3 shadow-2xs">
+                        <p class="text-xs text-slate-400 text-center py-4">Cargando calendario institucional...</p>
+                    </div>
+
+                    <!-- Input oculto preservado para retrocompatibilidad total con consultorio.js -->
+                    <input type="hidden" id="prox-consulta-fecha" onchange="cambioFechaProximaConsulta(this)" class="input-his">
+                    <p class="text-[11px] text-slate-500 mt-1.5">Días hábiles de lunes a viernes. Los feriados nacionales destacados en rojo no están disponibles para citación programada.</p>
                 </div>
 
                 <!-- 2. Modalidad de Asignación de Horario -->
@@ -1862,6 +1896,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Calendario Hospitalario Schestakow (Componente Multi-Panel) -->
+    <script type="module" src="js/calendario.js"></script>
 
     <!-- Módulo de Interconsultas Médicas Confidenciales -->
     <script type="module" src="js/interconsultas.js"></script>

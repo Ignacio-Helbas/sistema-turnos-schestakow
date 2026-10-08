@@ -996,6 +996,9 @@ export async function abrirModalProximaConsulta() {
     if (elFecha) {
         elFecha.min = mananaStr;
         elFecha.value = mananaStr;
+        if (window.calendarioConsultorio) {
+            window.calendarioConsultorio.establecerFecha(mananaStr, false);
+        }
     }
 
     const radioExacto = document.getElementById('modo-horario-exacto');

@@ -110,24 +110,39 @@ export function pedirConfirmacion(titulo, mensaje, textoBoton = "Aceptar") {
 }
 
 export function validarDiaHabil(inputElement) {
-    if (!inputElement || !inputElement.value) return;
+    if (!inputElement || !inputElement.value) return true;
     const fecha = new Date(inputElement.value + 'T00:00:00');
     const dia = fecha.getDay(); 
     if (dia === 0 || dia === 6) { 
         mostrarAlerta("Día No Laborable", "El hospital atiende de Lunes a Viernes. Seleccione un día hábil.");
         inputElement.value = '';
-        if (window.calendarioHospitalario) window.calendarioHospitalario.deseleccionar();
-        return;
-    }
-
-    if (window.calendarioHospitalario && typeof window.calendarioHospitalario.obtenerFeriado === 'function') {
-        const feriado = window.calendarioHospitalario.obtenerFeriado(inputElement.value);
-        if (feriado) {
-            mostrarAlerta("Feriado Nacional", `La fecha seleccionada corresponde a un feriado nacional (${feriado}). Los consultorios externos permanecen cerrados; sólo funciona la Guardia de Emergencias.`);
-            inputElement.value = '';
+        if (inputElement._calendarioHospitalario) {
+            inputElement._calendarioHospitalario.deseleccionar();
+        } else if (window.calendarioHospitalario) {
             window.calendarioHospitalario.deseleccionar();
         }
+        return false;
     }
+
+    let feriado = null;
+    if (inputElement._calendarioHospitalario && typeof inputElement._calendarioHospitalario.obtenerFeriado === 'function') {
+        feriado = inputElement._calendarioHospitalario.obtenerFeriado(inputElement.value);
+    } else if (window.calendarioHospitalario && typeof window.calendarioHospitalario.obtenerFeriado === 'function') {
+        feriado = window.calendarioHospitalario.obtenerFeriado(inputElement.value);
+    }
+
+    if (feriado) {
+        mostrarAlerta("Feriado Nacional", `La fecha seleccionada corresponde a un feriado nacional (${feriado}). Los consultorios externos permanecen cerrados; sólo funciona la Guardia de Emergencias.`);
+        inputElement.value = '';
+        if (inputElement._calendarioHospitalario) {
+            inputElement._calendarioHospitalario.deseleccionar();
+        } else if (window.calendarioHospitalario) {
+            window.calendarioHospitalario.deseleccionar();
+        }
+        return false;
+    }
+
+    return true;
 }
 
 export function establecerLimitesFecha(inputIds = ['input-fecha-paciente', 'input-fecha-recepcion']) {

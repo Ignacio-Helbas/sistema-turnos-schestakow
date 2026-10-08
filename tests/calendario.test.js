@@ -63,4 +63,23 @@ describe('Calendario Hospitalario Schestakow Interactivo', () => {
         assert.ok(contenido.includes('05-25'), 'El 25 de mayo debe ser feriado nacional');
         assert.ok(contenido.includes('07-09'), 'El 9 de julio debe ser feriado nacional');
     });
+
+    test('7. panel.html integra el calendario hospitalario interactivo en Recepción y Consultorio', () => {
+        const panelHtmlPath = path.join(rootDir, 'panel.html');
+        assert.ok(fs.existsSync(panelHtmlPath), 'panel.html debe existir');
+        const html = fs.readFileSync(panelHtmlPath, 'utf-8');
+
+        assert.ok(html.includes('src="js/calendario.js"'), 'panel.html debe cargar js/calendario.js');
+        assert.ok(html.includes('id="contenedor-calendario-recepcion"'), 'Debe existir #contenedor-calendario-recepcion');
+        assert.ok(html.includes('id="popover-calendario-recepcion"'), 'Debe existir popover de calendario en recepción');
+        assert.ok(html.includes('id="input-fecha-recepcion"'), 'Debe preservar #input-fecha-recepcion');
+        assert.ok(html.includes('id="contenedor-calendario-consultorio"'), 'Debe existir #contenedor-calendario-consultorio');
+        assert.ok(html.includes('id="prox-consulta-fecha"'), 'Debe preservar #prox-consulta-fecha');
+    });
+
+    test('8. index.html no contiene badges obsoletos de Agenda Habilitada ni Día Hábil Habilitado', () => {
+        const html = fs.readFileSync(indexHtmlPath, 'utf-8');
+        assert.ok(!html.includes('Agenda Habilitada en Consultorios'), 'No debe contener texto Agenda Habilitada en Consultorios');
+        assert.ok(!html.includes('Día Hábil Habilitado'), 'No debe contener badge Día Hábil Habilitado');
+    });
 });
