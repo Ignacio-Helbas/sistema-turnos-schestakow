@@ -55,13 +55,14 @@ window.seleccionarSlotCitacion = seleccionarSlotCitacion;
 window.confirmarHorarioCitacionPaciente = confirmarHorarioCitacionPaciente;
 window.renderizarCodigoQR = renderizarCodigoQR;
 window.copiarEnlaceTurno = copiarEnlaceTurno;
+window.generarCodigoTurno = generarCodigoTurno;
 
 /**
- * Genera un identificador largo criptográficamente impredecible (>= 20 caracteres)
- * para acceso por token-bearer seguro de los pacientes sin requerir listado de colección.
+ * Genera un código de turno alfanumérico criptográficamente seguro (Base62: 8 caracteres).
+ * Mezcla mayúsculas, minúsculas y números (62^8 = 218.340.105.584.896 combinaciones posibles).
  */
-function generarIdLargoCripto(longitud = 20) {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+export function generarCodigoTurno(longitud = 8) {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     const array = new Uint8Array(longitud);
     window.crypto.getRandomValues(array);
     let resultado = "";
@@ -70,6 +71,9 @@ function generarIdLargoCripto(longitud = 20) {
     }
     return resultado;
 }
+
+// Alias para preservar retrocompatibilidad
+export const generarIdLargoCripto = generarCodigoTurno;
 
 /**
  * Carga el catálogo público de profesionales desde medicos_publicos
@@ -420,8 +424,8 @@ export async function confirmarTurnoFirebase() {
             return;
         }
 
-        // Generar identificador de documento impredecible (20 caracteres criptográficos)
-        const turnoId = generarIdLargoCripto(20);
+        // Generar código de turno alfanumérico seguro (8 caracteres Base62: 218 billones de combinaciones)
+        const turnoId = generarCodigoTurno(8);
         const turnoRef = doc(db, "turnos", turnoId);
 
         // Escritura atómica en lote: Slot determinista + Turno detallado

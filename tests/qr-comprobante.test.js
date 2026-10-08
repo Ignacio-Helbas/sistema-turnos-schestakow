@@ -54,7 +54,7 @@ describe('Comprobante Oficial y Código QR Funcional de Turnos', () => {
     });
 
     test('5. La URL codificada para el QR contiene los parámetros exactos y seguros de verificación', () => {
-        const turnoIdFicticio = 'T-9876543210ABCDEF';
+        const turnoIdFicticio = 'k7W9x2Qp';
         const dniFicticio = '41234567';
         const dummyOrigin = 'https://ignacio-helbas.github.io';
         const dummyPath = '/sistema-turnos-schestakow/';
@@ -64,5 +64,21 @@ describe('Comprobante Oficial y Código QR Funcional de Turnos', () => {
 
         assert.equal(parsed.searchParams.get('codigo'), turnoIdFicticio);
         assert.equal(parsed.searchParams.get('dni'), dniFicticio);
+        assert.match(turnoIdFicticio, /^[a-zA-Z0-9]{8}$/, 'El código de prueba debe ser alfanumérico de 8 caracteres');
+    });
+
+    test('6. firestore.rules permite acceso y creación de turnos con identificador de 8 caracteres', () => {
+        const firestoreRulesPath = path.join(rootDir, 'firestore.rules');
+        const rules = fs.readFileSync(firestoreRulesPath, 'utf-8');
+
+        assert.ok(rules.includes('turnoId.size() >= 8'), 'firestore.rules debe exigir turnoId.size() >= 8 en vez de 16');
+        assert.doesNotMatch(rules, /turnoId\.size\(\)\s*>=\s*16/, 'No deben quedar restricciones residuales de >= 16 en turnos');
+    });
+
+    test('7. js/publico.js genera códigos de 8 caracteres alfanuméricos Base62', () => {
+        const publicoJs = fs.readFileSync(publicoJsPath, 'utf-8');
+
+        assert.ok(publicoJs.includes('export function generarCodigoTurno'), 'Debe exportar generarCodigoTurno');
+        assert.ok(publicoJs.includes('generarCodigoTurno(8)'), 'confirmarTurnoFirebase debe invocar generarCodigoTurno(8)');
     });
 });
