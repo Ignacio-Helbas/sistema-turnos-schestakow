@@ -493,6 +493,7 @@ export async function confirmarTurnoFirebase() {
         if (chkConsentimiento) chkConsentimiento.checked = false;
         if (chkLey26529) chkLey26529.checked = false;
         document.getElementById('input-fecha-paciente').value = '';
+        if (window.calendarioHospitalario) window.calendarioHospitalario.deseleccionar();
         document.getElementById('select-especialidad').value = '';
         document.getElementById('horarios-publicos').innerHTML = '<p class="text-xs text-slate-500 col-span-2 sm:col-span-4 text-center py-3">Seleccione Profesional y Fecha para ver horarios.</p>';
         document.getElementById('select-medico').innerHTML = '<option>Primero seleccione especialidad</option>';

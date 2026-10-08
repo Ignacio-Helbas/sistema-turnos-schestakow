@@ -131,10 +131,35 @@
                             2. Fecha y Horario de Atención
                         </h2>
 
+                        <!-- Calendario Hospitalario Schestakow Interactivo -->
                         <div>
-                            <label for="input-fecha-paciente" class="label-his text-xs font-semibold text-slate-700 mb-1 block">Fecha Deseada (Lunes a Viernes) *</label>
-                            <input type="date" id="input-fecha-paciente" onchange="validarDiaHabil(this); generarHorariosPublicos()" class="input-his">
-                            <p class="text-[11px] text-slate-500 mt-1">Los feriados y fines de semana no se ofrecen turnos de consultorios externos.</p>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="label-his text-xs font-semibold text-slate-700 block">
+                                    Fecha Deseada de Consulta (Lunes a Viernes) *
+                                </label>
+                                <span class="text-[11px] text-[#007a78] font-medium hidden sm:inline-flex items-center gap-1.5 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Agenda Habilitada en Consultorios
+                                </span>
+                            </div>
+
+                            <!-- Contenedor del Calendario Visual Schestakow -->
+                            <div id="contenedor-calendario-hospitalario" class="bg-white border border-slate-200 rounded-lg p-3 sm:p-4 shadow-xs">
+                                <p class="text-xs text-slate-400 text-center py-4">Cargando calendario hospitalario...</p>
+                            </div>
+
+                            <!-- Input original sincronizado (mantiene ID, clases y eventos para 100% retrocompatibilidad) -->
+                            <input type="hidden" id="input-fecha-paciente" onchange="validarDiaHabil(this); generarHorariosPublicos()" class="input-his">
+
+                            <!-- Banner de Fecha Seleccionada -->
+                            <div id="banner-fecha-seleccionada" class="hidden mt-2 p-2.5 bg-teal-50/90 border border-teal-200 rounded-lg text-xs flex items-center justify-between gap-2 text-slate-800 animate-fade-in-up">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-base">📅</span>
+                                    <span class="text-slate-600">Fecha seleccionada: <strong id="texto-fecha-seleccionada" class="text-[#002845] font-bold">--</strong></span>
+                                </div>
+                                <span class="badge-his badge-his-atendido text-[10px] shrink-0 font-semibold">Día Hábil Habilitado</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-1.5">Los feriados y fines de semana no se ofrecen turnos de consultorios externos.</p>
                         </div>
 
                         <div>
@@ -698,6 +723,7 @@
 
     <!-- Scripts del Portal Público Modular -->
     <script type="module" src="js/centros.js"></script>
+    <script type="module" src="js/calendario.js"></script>
     <script type="module" src="js/publico.js"></script>
 
 </body>
