@@ -44,4 +44,23 @@ describe('Calendario Hospitalario Schestakow Interactivo', () => {
         assert.equal(iso, '2026-10-14');
         assert.match(iso, /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/, 'Debe cumplir con el regex estándar de fechas ISO');
     });
+
+    test('5. El banner de fecha seleccionada no contiene emojis y usa icono vectorial limpio', () => {
+        const html = fs.readFileSync(indexHtmlPath, 'utf-8');
+        const bannerSnippet = html.substring(html.indexOf('id="banner-fecha-seleccionada"'), html.indexOf('id="banner-fecha-seleccionada"') + 400);
+
+        assert.doesNotMatch(bannerSnippet, /📅/, 'El banner no debe contener el emoji 📅');
+        assert.ok(bannerSnippet.includes('<svg'), 'El banner debe incluir un icono SVG vectorial institucional');
+    });
+
+    test('6. El calendario identifica y estiliza feriados nacionales de Argentina en rojo', () => {
+        const contenido = fs.readFileSync(calendarioJsPath, 'utf-8');
+
+        assert.ok(contenido.includes('obtenerFeriadoNacional'), 'Debe exportar obtenerFeriadoNacional');
+        assert.ok(contenido.includes('text-rose-700') || contenido.includes('text-red-700'), 'Debe estilizar los feriados en rojo/rose');
+        assert.ok(contenido.includes('bg-rose-50') || contenido.includes('bg-red-50'), 'Debe destacar el fondo del feriado');
+        assert.ok(contenido.includes('FERIADOS_FIJOS'), 'Debe contener el listado de feriados inamovibles');
+        assert.ok(contenido.includes('05-25'), 'El 25 de mayo debe ser feriado nacional');
+        assert.ok(contenido.includes('07-09'), 'El 9 de julio debe ser feriado nacional');
+    });
 });

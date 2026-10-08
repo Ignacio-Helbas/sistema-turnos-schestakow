@@ -1,6 +1,7 @@
 // ==========================================
 // COMPONENTE: CALENDARIO HOSPITALARIO INTERACTIVO
 // Módulo institucional para reserva de turnos - Hospital Schestakow
+// Incluye Feriados Nacionales de la República Argentina
 // ==========================================
 
 const MESES = [
@@ -9,6 +10,62 @@ const MESES = [
 ];
 
 const DIAS_SEMANA = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
+
+/**
+ * Feriados Nacionales Inamovibles de la República Argentina (MM-DD)
+ */
+export const FERIADOS_FIJOS = {
+    '01-01': 'Año Nuevo',
+    '03-24': 'Día Nacional de la Memoria por la Verdad y la Justicia',
+    '04-02': 'Día del Veterano y de los Caídos en Malvinas',
+    '05-01': 'Día del Trabajador',
+    '05-25': 'Día de la Revolución de Mayo',
+    '06-17': 'Paso a la Inmortalidad del Gral. Don Martín Miguel de Güemes',
+    '06-20': 'Paso a la Inmortalidad del Gral. Manuel Belgrano',
+    '07-09': 'Día de la Independencia',
+    '08-17': 'Paso a la Inmortalidad del Gral. José de San Martín',
+    '10-12': 'Día del Respeto a la Diversidad Cultural',
+    '11-20': 'Día de la Soberanía Nacional',
+    '12-08': 'Inmaculada Concepción de María',
+    '12-25': 'Navidad'
+};
+
+/**
+ * Feriados Móviles y Puentes Turísticos de Argentina (YYYY-MM-DD)
+ */
+export const FERIADOS_MOVILES = {
+    // Calendario 2026
+    '2026-02-16': 'Carnaval',
+    '2026-02-17': 'Carnaval',
+    '2026-03-23': 'Feriado Puente Turístico',
+    '2026-04-02': 'Jueves Santo / Día de Malvinas',
+    '2026-04-03': 'Viernes Santo',
+    '2026-07-10': 'Feriado Puente Turístico',
+    '2026-08-17': 'Paso a la Inmortalidad del Gral. San Martín',
+    '2026-10-12': 'Día del Respeto a la Diversidad Cultural',
+    '2026-11-23': 'Día de la Soberanía Nacional (Trasladado)',
+    '2026-12-07': 'Feriado Puente Turístico',
+    // Calendario 2027
+    '2027-02-08': 'Carnaval',
+    '2027-02-09': 'Carnaval',
+    '2027-03-25': 'Jueves Santo',
+    '2027-03-26': 'Viernes Santo'
+};
+
+/**
+ * Consulta si una fecha específica (YYYY-MM-DD) es feriado nacional en Argentina
+ */
+export function obtenerFeriadoNacional(fechaISO) {
+    if (!fechaISO) return null;
+    if (FERIADOS_MOVILES[fechaISO]) {
+        return FERIADOS_MOVILES[fechaISO];
+    }
+    const mmdd = fechaISO.substring(5); // 'MM-DD'
+    if (FERIADOS_FIJOS[mmdd]) {
+        return FERIADOS_FIJOS[mmdd];
+    }
+    return null;
+}
 
 class CalendarioHospitalario {
     constructor(contenedorId = 'contenedor-calendario-hospitalario', inputId = 'input-fecha-paciente') {
@@ -88,7 +145,22 @@ class CalendarioHospitalario {
         return `${anio}-${m}-${d}`;
     }
 
+    obtenerFeriado(fechaISO) {
+        return obtenerFeriadoNacional(fechaISO);
+    }
+
     seleccionarFecha(fechaISO) {
+        // Bloqueo preventivo de feriados
+        const nombreFeriado = this.obtenerFeriado(fechaISO);
+        if (nombreFeriado) {
+            if (window.mostrarAlerta) {
+                window.mostrarAlerta("Feriado Nacional", `El día seleccionado es feriado (${nombreFeriado}). Los consultorios externos no atienden; sólo funciona la Guardia de Emergencias.`);
+            } else {
+                alert(`El día seleccionado es feriado (${nombreFeriado}).`);
+            }
+            return;
+        }
+
         this.fechaSeleccionada = fechaISO;
         const input = document.getElementById(this.inputId);
         if (input) {
@@ -149,13 +221,10 @@ class CalendarioHospitalario {
         const ultimoDiaMes = new Date(this.anioVisible, this.mesVisible + 1, 0);
         const totalDias = ultimoDiaMes.getDate();
 
-        // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
-        // En Argentina la semana comienza el Lunes:
-        let diaInicioSemana = primerDiaMes.getDay(); // 0 a 6
+        // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado (En Argentina la semana empieza en Lunes)
+        let diaInicioSemana = primerDiaMes.getDay();
         let offsetDias = (diaInicioSemana === 0) ? 6 : diaInicioSemana - 1;
 
-        // Comprobar si se puede retroceder
-        const primerDiaMesVisible = new Date(this.anioVisible, this.mesVisible, 1);
         const esMesActual = (this.mesVisible === this.hoy.getMonth() && this.anioVisible === this.hoy.getFullYear());
 
         let html = `
@@ -222,8 +291,20 @@ class CalendarioHospitalario {
             const esHoy = (fechaDia.getTime() === this.hoy.getTime());
             const iso = this.formatearISO(this.anioVisible, this.mesVisible, dia);
             const estaSeleccionado = (this.fechaSeleccionada === iso);
+            const nombreFeriado = this.obtenerFeriado(iso);
 
-            if (esPasado) {
+            if (nombreFeriado) {
+                // FERIADO NACIONAL: Destacado en rojo institucional
+                html += `
+                    <button type="button" disabled 
+                            title="Feriado Nacional: ${nombreFeriado} (Consultorios externos cerrados - Guardia activa)"
+                            class="w-full h-9 sm:h-10 rounded-md bg-rose-50 text-rose-700 border border-rose-300 text-xs sm:text-sm font-bold flex flex-col items-center justify-center cursor-not-allowed shadow-2xs group relative"
+                            aria-disabled="true">
+                        <span>${dia}</span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 -mt-0.5" title="${nombreFeriado}"></span>
+                    </button>
+                `;
+            } else if (esPasado) {
                 // Día anterior a hoy
                 html += `
                     <button type="button" disabled 
@@ -281,7 +362,7 @@ class CalendarioHospitalario {
 
                 <!-- Leyenda de Referencias Hospitalarias -->
                 <div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between text-[11px] text-slate-500 gap-2">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2.5 flex-wrap">
                         <span class="inline-flex items-center gap-1">
                             <span class="w-2.5 h-2.5 rounded bg-white border border-slate-300 inline-block"></span>
                             <span>Disponible</span>
@@ -291,11 +372,15 @@ class CalendarioHospitalario {
                             <span>Seleccionado</span>
                         </span>
                         <span class="inline-flex items-center gap-1">
+                            <span class="w-2.5 h-2.5 rounded bg-rose-100 border border-rose-300 inline-block"></span>
+                            <span class="text-rose-700 font-semibold">Feriado</span>
+                        </span>
+                        <span class="inline-flex items-center gap-1">
                             <span class="w-2.5 h-2.5 rounded bg-slate-100 border border-dashed border-slate-200 inline-block"></span>
                             <span>No laborable</span>
                         </span>
                     </div>
-                    <span class="text-[10px] text-slate-400">Atención de Lun a Vie de 07:00 a 13:00 hs</span>
+                    <span class="text-[10px] text-slate-400">Atención: Lun a Vie (07:00 a 13:00 hs)</span>
                 </div>
             </div>
         `;
@@ -304,7 +389,7 @@ class CalendarioHospitalario {
     }
 }
 
-// Inicialización automática
+// Inicialización automática al cargar el DOM
 document.addEventListener("DOMContentLoaded", () => {
     window.calendarioHospitalario = new CalendarioHospitalario();
 });

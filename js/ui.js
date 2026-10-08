@@ -116,6 +116,17 @@ export function validarDiaHabil(inputElement) {
     if (dia === 0 || dia === 6) { 
         mostrarAlerta("Día No Laborable", "El hospital atiende de Lunes a Viernes. Seleccione un día hábil.");
         inputElement.value = '';
+        if (window.calendarioHospitalario) window.calendarioHospitalario.deseleccionar();
+        return;
+    }
+
+    if (window.calendarioHospitalario && typeof window.calendarioHospitalario.obtenerFeriado === 'function') {
+        const feriado = window.calendarioHospitalario.obtenerFeriado(inputElement.value);
+        if (feriado) {
+            mostrarAlerta("Feriado Nacional", `La fecha seleccionada corresponde a un feriado nacional (${feriado}). Los consultorios externos permanecen cerrados; sólo funciona la Guardia de Emergencias.`);
+            inputElement.value = '';
+            window.calendarioHospitalario.deseleccionar();
+        }
     }
 }
 
