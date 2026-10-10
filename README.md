@@ -1,6 +1,6 @@
-# Sistema de Turnos y Gestión Hospitalaria - Hospital Teodoro J. Schestakow
+# Prototipo de demostración académica: sistema de turnos y gestión hospitalaria (caso de estudio)
 
-Plataforma web para autogestión de turnos médicos, admisión hospitalaria, historias clínicas inmutables y analítica operativa.
+Plataforma web para autogestión de turnos médicos, admisión hospitalaria, registro clínico protegido contra edición por reglas de seguridad y analítica operativa.
 
 ---
 
@@ -36,7 +36,7 @@ El sistema cuenta con interfaces adaptadas a los distintos roles operativos de l
 ### 3. Módulo de Consultorio Médico (`panel.html`)
 - **Llamado de pacientes:** Notificación visual y atención de pacientes en espera.
 - **Registro de atención clínica:** Carga de motivo de consulta, diagnóstico, tratamiento y registro de signos vitales (presión arterial, frecuencia cardíaca, temperatura, saturación, peso y talla).
-- **Historia Clínica Electrónica inmutable:** Cumplimiento de trazabilidad legal donde las consultas no pueden modificarse ni eliminarse; las rectificaciones se registran como enmiendas vinculadas a la consulta original.
+- **Historia Clínica Electrónica:** Registro clínico protegido contra edición por reglas de seguridad donde las consultas no pueden modificarse ni eliminarse desde la aplicación; las rectificaciones se registran como enmiendas vinculadas a la consulta original.
 - **Ficha clínica del paciente:** Consulta de antecedentes, alergias y medicación habitual.
 - **Acceso de emergencia:** Mecanismo de apertura excepcional de historia clínica con justificación obligatoria y registro de auditoría.
 - **Impresión médica:** Generación de comprobante impreso formateado para el paciente.
@@ -121,7 +121,14 @@ Al ser una aplicación web estática modular con módulos JavaScript (`type="mod
   ```
 Abrir en el navegador: `http://localhost:8000` (o el puerto indicado).
 
-### 3. Ejecutar las pruebas automatizadas
+### 3. Modo Demostración Institucional (Foro Académico)
+Para habilitar las herramientas de demostración e inyección de datos de prueba (generación de turnos históricos, médicos ficticios y limpieza de datos simulados) en el panel de control administrativo, acceda con el rol de **Administración** añadiendo el parámetro `?dev=1` en la URL:
+```text
+http://localhost:8000/panel.html?dev=1
+```
+*(Sin el parámetro `?dev=1`, los botones de inyección y reinicio permanecen ocultos para mantener la interfaz operativa limpia).*
+
+### 4. Ejecutar las pruebas automatizadas
 Para validar las reglas de seguridad y los cálculos del módulo de métricas:
 ```bash
 npm test
@@ -131,8 +138,30 @@ npm test
 
 ## Estado del Proyecto y Próximos Pasos
 
-- **Estado actual:** Prototipo completo, funcional y probado para presentación en el Foro Tecnológico de Innovación y Desarrollo.
+- **Estado actual:** Prototipo funcional de demostración académica, con pruebas automatizadas parciales.
 - **Próximos pasos:** [Integración con sistemas hospitalarios existentes o turnos para estudios complementarios].
+
+## Alcance y Limitaciones
+
+> [!IMPORTANT]
+> **Aviso de Prototipo Demostrativo Académico:**
+> 1. Este proyecto es un **prototipo experimental desarrollado exclusivamente con fines educativos** para el Foro Tecnológico de la Universidad Tecnológica Nacional (Facultad Regional San Rafael).
+> 2. El Hospital Teodoro J. Schestakow se toma como **caso de estudio arquitectónico y de interfaz**; **no es una plataforma oficial ni autorizada** de dicha institución sanitaria ni del Ministerio de Salud.
+> 3. **No está validado clínica, técnica ni legalmente** para su uso con pacientes reales, historias clínicas vivas ni emergencias médicas.
+> 4. Todos los datos incluidos en el repositorio, pruebas y generadores de simulación son **estrictamente sintéticos y ficticios**.
+> 
+> **Cobertura actual de pruebas automatizadas:**
+> - **Qué cubren las pruebas actuales:** Análisis estático de sintaxis y directivas de seguridad en `firestore.rules`, algoritmos de cálculo de métricas de espera y consulta clínica (sin valores NaN), sanitización y filtrado de centros de salud, generación y auto-verificación de códigos Base62 / códigos QR, y componente interactivo del calendario hospitalario con feriados nacionales.
+> - **Qué NO cubren las pruebas actuales:** Pruebas dinámicas contra el emulador en vivo de Firebase (requieren entorno con Java JRE y Firebase CLI), pruebas end-to-end de interfaz con navegador, pruebas de carga concurrente y validación de interoperabilidad con historias clínicas oficiales.
+
+### Limitaciones conocidas del prototipo
+
+1. **Lectura de consultas clínicas por Administración:** En el prototipo, el perfil con rol `Administración` cuenta con permisos de lectura sobre las consultas de historia clínica mediante una vista explícita de supervisión académica. En un sistema hospitalario en producción, el personal administrativo no debe tener acceso a las evoluciones clínicas de los pacientes.
+2. **Liberación de slots de disponibilidad por clientes anónimos:** La colección `/disponibilidad` permite el borrado de documentos de slots por usuarios no autenticados para posibilitar la liberación de horarios cuando el paciente cancela un turno desde el navegador sin intermediación de un backend. En producción, la reserva y cancelación deben gestionarse mediante Cloud Functions (Firebase Admin SDK) o App Check.
+3. **Consulta de turnos por ID de documento:** El portal público permite la lectura puntual de un documento en `/turnos/{turnoId}` sin autenticación previa siempre que se proporcione el ID del turno (empleado para comprobante y cancelación). En un entorno asistencial definitivo, se requiere validar identidad del paciente (ej. autenticación, clave ciudadana o tokens de un solo uso).
+4. **Identificadores didácticos en simulación:** Los scripts de prueba y botones de demostración para el foro generan registros con identificadores predecibles (prefijo `TURNO_DEMO_` y pacientes sintéticos) que no deben coexistir con información operativa real.
+5. **Fallback de rol en cliente para usuarios sin asignación:** En la capa cliente (`js/firebase.js`), si un usuario autenticado carece de perfil en `/usuarios` o de custom claim, el frontend asume por defecto `"Recepción"` en su estado local de sesión. Aunque las reglas de seguridad de Firestore bloquean cualquier escritura o lectura restringida al verificar contra el documento real o claim en el servidor, en la interfaz visual dicho usuario observaría la vista de mostrador con denegaciones de permisos en sus operaciones.
+6. **Validación de rol en registros de auditoría:** Las reglas de seguridad de la colección `/auditoria` comprueban estrictamente que `actorUid` coincida con el usuario autenticado (`request.auth.uid`), pero no contrastan que el campo descriptivo `actorRol` coincida de forma unívoca con el rol almacenado en el perfil. En una arquitectura sin servidor de backend intermedio, un cliente autenticado podría teóricamente escribir un rol informativo discordante en su propio registro de auditoría, si bien su UID real e inalterable queda siempre asentado con marca de tiempo del servidor.
 
 ---
 

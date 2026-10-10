@@ -420,19 +420,24 @@ export async function verificarEntornoDemo() {
 
 export async function limpiarBaseDeDatos() {
     const sesionActual = obtenerSesionActual();
-    const esNacho = (sesionActual?.correo && sesionActual.correo.toLowerCase() === "nachohelbas@gmail.com");
 
-    if (!esNacho && sesionActual?.rol !== 'Administración') {
+    if (sesionActual?.rol !== 'Administración') {
         mostrarAlerta("Acceso Denegado", "Solo el Administrador General puede ejecutar la limpieza de la base de datos.");
         return;
     }
 
-    const confirm = await pedirConfirmacion(
-        "¿Limpiar Datos Inyectados?",
-        "Esta acción eliminará todos los turnos, disponibilidades, pacientes, historias clínicas y médicos demostrativos.\n\nSu cuenta de Administrador Supremo (Ignacio Helbas) quedará 100% protegida y conservada.",
-        "Sí, Limpiar Base de Datos"
+    const confirmacionPalabra = window.prompt(
+        "Esta acción eliminará todos los turnos, disponibilidades, pacientes, historias clínicas y médicos demostrativos.\n" +
+        "La cuenta del administrador en sesión quedará conservada y protegida.\n\n" +
+        "Para confirmar la eliminación total, escriba la palabra LIMPIAR en mayúsculas:"
     );
-    if (!confirm) return;
+
+    if (confirmacionPalabra !== "LIMPIAR") {
+        if (confirmacionPalabra !== null) {
+            mostrarAlerta("Operación Cancelada", "Debe escribir exactamente la palabra LIMPIAR para confirmar la eliminación.");
+        }
+        return;
+    }
 
     abrirModal('modal-progreso');
     const barra = document.getElementById('progreso-barra');
@@ -475,25 +480,22 @@ export async function limpiarBaseDeDatos() {
         }
         if (barra) barra.style.width = '80%';
 
-        if (texto) texto.innerText = "Limpiando personal demostrativo y protegiendo Administrador Supremo...";
+        if (texto) texto.innerText = "Limpiando personal demostrativo y protegiendo cuenta del Administrador...";
         const usuariosSnap = await getDocs(collection(db, "usuarios"));
         const promesasUsuarios = [];
         usuariosSnap.forEach(d => {
-            const u = d.data();
-            const esCuentaIgnacio = (u.correo && u.correo.toLowerCase() === "nachohelbas@gmail.com") ||
-                                    (u.nombre && u.nombre.toLowerCase().includes("ignacio helbas")) ||
-                                    (sesionActual && d.id === sesionActual.uid);
-            if (!esCuentaIgnacio) {
+            const esCuentaAdminActual = (sesionActual && d.id === sesionActual.uid);
+            if (!esCuentaAdminActual) {
                 promesasUsuarios.push(deleteDoc(doc(db, "usuarios", d.id)));
             }
         });
         await Promise.all(promesasUsuarios);
 
-        // Asegurar que la cuenta de Ignacio Helbas quede 100% activa e intacta
+        // Asegurar que la cuenta del administrador en sesión quede activa
         if (sesionActual?.uid) {
             await setDoc(doc(db, "usuarios", sesionActual.uid), {
-                nombre: "Ignacio Helbas",
-                correo: sesionActual.correo || "nachohelbas@gmail.com",
+                nombre: sesionActual.nombre || "Administrador",
+                correo: sesionActual.correo,
                 rol: "Administración",
                 activo: true,
                 actualizadoEn: serverTimestamp()
@@ -504,7 +506,7 @@ export async function limpiarBaseDeDatos() {
 
         if (barra) barra.style.width = '100%';
         cerrarModal('modal-progreso');
-        mostrarExito("Reinicio Exitoso", "Todos los datos inyectados fueron eliminados con éxito. Su cuenta de Administrador Supremo de Ignacio Helbas se mantiene 100% activa e intacta.");
+        mostrarExito("Reinicio Exitoso", "Todos los datos inyectados fueron eliminados con éxito. La cuenta del Administrador en sesión se mantiene activa e intacta.");
 
         cargarUsuariosAdmin('init');
         cargarEspecialistasFirebase();
@@ -605,18 +607,9 @@ export async function inyectarMedicosDePrueba() {
     cargarMetricas();
 }
 
-export function autocompletarNachoDemo() {
-    const inputUser = document.getElementById('login-user');
-    const inputPass = document.getElementById('login-pass');
-    if (inputUser) inputUser.value = 'nachohelbas@gmail.com';
-    if (inputPass) {
-        inputPass.focus();
-    }
-}
-
 export async function inyectarDemoCompletaForo() {
     const sesionActual = obtenerSesionActual();
-    if (!sesionActual || (sesionActual.rol !== 'Administración' && sesionActual.correo?.toLowerCase() !== 'nachohelbas@gmail.com')) {
+    if (!sesionActual || sesionActual.rol !== 'Administración') {
         mostrarAlerta("Acceso Denegado", "Solo el Administrador General puede ejecutar la inyección del escenario para el Foro.");
         return;
     }
@@ -636,9 +629,9 @@ export async function inyectarDemoCompletaForo() {
         if (texto) texto.innerText = "Preparando perfil de Administrador y catálogo médico...";
         if (barra) barra.style.width = '20%';
 
-        if (sesionActual?.uid && sesionActual.correo?.toLowerCase() === 'nachohelbas@gmail.com') {
+        if (sesionActual?.uid) {
             await setDoc(doc(db, "usuarios", sesionActual.uid), {
-                nombre: "Ignacio Helbas",
+                nombre: sesionActual.nombre || "Administrador",
                 correo: sesionActual.correo,
                 rol: "Administración",
                 activo: true,
@@ -914,7 +907,6 @@ window.verificarLimpiezaAnual = verificarLimpiezaAnual;
 window.ejecutarLimpiezaYDescarga = ejecutarLimpiezaYDescarga;
 window.limpiarBaseDeDatos = limpiarBaseDeDatos;
 window.inyectarMedicosDePrueba = inyectarMedicosDePrueba;
-window.autocompletarNachoDemo = autocompletarNachoDemo;
 window.inyectarDemoCompletaForo = inyectarDemoCompletaForo;
 window.generarTurnosHistoricosDemo = generarTurnosHistoricosDemo;
 window.cargarAuditoriaAdmin = cargarAuditoriaAdmin;

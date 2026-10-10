@@ -44,7 +44,7 @@ service cloud.firestore {
     match /usuarios/{uid} {
       allow get: if isStaff() && (request.auth.uid == uid || isSuperAdmin());
       allow list: if isSuperAdmin();
-      allow create: if isStaff() && (isSuperAdmin() || request.auth.uid == uid);
+      allow create: if isSuperAdmin();
       allow write: if isSuperAdmin();
     }
 
@@ -181,6 +181,10 @@ service cloud.firestore {
     // ==========================================
     // REGLAS: DISPONIBILIDAD
     // ==========================================
+    // [LIMITACIÓN CONOCIDA DE PROTOTIPO DEMO]: Se permite el borrado no autenticado de /disponibilidad/{slotId}
+    // para permitir que el paciente libere el horario al cancelar su turno en el navegador sin backend.
+    // En un despliegue de producción hospitalaria, la liberación de agenda debe realizarse exclusivamente
+    // mediante una Cloud Function con Firebase Admin SDK o una transacción con getAfter() atada a la cancelación.
     match /disponibilidad/{slotId} {
       allow read: if true;
       allow create: if !exists(/databases/$(database)/documents/disponibilidad/$(slotId))
@@ -197,20 +201,21 @@ service cloud.firestore {
     // 1. Pacientes (Solo datos demográficos)
     match /pacientes/{pacienteId} {
       // Recepción y médicos leen datos demográficos
-      allow read: if isStaff();
+      allow read: if isRecepcion() || isMedico() || isSuperAdmin();
       
       // Creación y edición demográfica por staff
-      allow create, update: if isStaff()
+      allow create, update: if (isRecepcion() || isMedico() || isSuperAdmin())
         && request.resource.data.keys().hasOnly([
           'dni', 'nombre', 'apellido', 'fechaNacimiento', 'sexo',
-          'contacto', 'creadoEn', 'creadoPor', 'esDemo', 'actualizadoEn'
+          'contacto', 'cobertura', 'creadoEn', 'creadoPor', 'esDemo', 'actualizadoEn'
         ])
         && request.resource.data.dni is string
         && request.resource.data.dni.matches('^[0-9]{6,10}$')
         && request.resource.data.nombre is string
         && request.resource.data.nombre.size() > 0
         && request.resource.data.apellido is string
-        && request.resource.data.apellido.size() > 0;
+        && request.resource.data.apellido.size() > 0
+        && (!('cobertura' in request.resource.data) || (request.resource.data.cobertura is string && request.resource.data.cobertura.size() <= 100));
 
       allow delete: if isSuperAdmin();
 
@@ -268,8 +273,8 @@ service cloud.firestore {
 
     // Índice determinista de unicidad de pacientes por DNI
     match /pacientes_por_dni/{dni} {
-      allow read: if isStaff();
-      allow create: if isStaff()
+      allow read: if isRecepcion() || isMedico() || isSuperAdmin();
+      allow create: if (isRecepcion() || isMedico() || isSuperAdmin())
         && !exists(/databases/$(database)/documents/pacientes_por_dni/$(dni))
         && request.resource.data.keys().hasOnly(['pacienteId', 'dni', 'creadoEn']);
       allow update: if isSuperAdmin();
@@ -281,7 +286,7 @@ service cloud.firestore {
     // ==========================================
     match /auditoria/{auditId} {
       allow read: if isSuperAdmin();
-      allow create: if isStaff()
+      allow create: if (isRecepcion() || isMedico() || isSuperAdmin())
         && request.resource.data.actorUid == request.auth.uid
         && request.resource.data.fecha == request.time
         && request.resource.data.keys().hasOnly([

@@ -233,7 +233,7 @@ export async function reprogramarTurnoRecepcion(idDoc, pacienteNombre, horaActua
         await updateDoc(doc(db, "turnos", idDoc), {
             estado: "Cancelado - Reprogramación",
             canceladoEn: serverTimestamp(),
-            canceladoPor: sesion ? sesion.uid : "recepcion"
+            canceladoPor: "recepcion"
         });
         mostrarToast("Turno liberado para su reprogramación", "info");
         generarAgendaRecepcion();

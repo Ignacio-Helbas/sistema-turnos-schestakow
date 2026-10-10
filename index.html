@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hospital Teodoro J. Schestakow - Portal de Turnos Online</title>
+    <title>Prototipo Demo: Hospital Schestakow - Portal de Turnos (Caso de Estudio)</title>
     <link rel="icon" type="image/png" href="img/LogoHospital.png">
-    <meta name="description" content="Hospital Teodoro J. Schestakow - Portal Oficial de Turnos Online y Gestión Sanitaria. San Rafael, Mendoza.">
+    <meta name="description" content="Prototipo de demostración académica para reserva de turnos hospitalarios. Caso de estudio universitario Schestakow.">
     <meta name="theme-color" content="#002845">
     
     <!-- Tipografías Oficiales del Sistema (Public Sans & IBM Plex Mono) -->
@@ -56,6 +56,14 @@
     </style>
 </head>
 <body class="pagina-publica text-slate-800 font-sans flex flex-col min-h-screen">
+
+    <!-- AVISO VISIBLE Y PERMANENTE DE PROTOTIPO ACADÉMICO (SIN EMOJIS) -->
+    <aside class="bg-amber-100 border-b border-amber-300 text-amber-950 px-3 py-1.5 text-center text-xs font-medium select-none z-50">
+        <div class="max-w-7xl mx-auto flex items-center justify-center gap-2">
+            <span class="inline-block px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 font-bold text-[10px] uppercase tracking-wider">Demostración Académica</span>
+            <span>Prototipo experimental con datos ficticios. Caso de estudio: Hospital Schestakow (Foro Universitario UTN). No es un sistema oficial.</span>
+        </div>
+    </aside>
 
     <!-- ==================================================================== -->
     <!-- CABECERA INSTITUCIONAL LIMPIA                                         -->
@@ -167,10 +175,15 @@
 
                     <!-- Etapa 3: Datos del Paciente -->
                     <div class="space-y-4 mb-6">
-                        <h2 class="text-xs sm:text-sm font-bold text-[#002845] uppercase tracking-wide flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 bg-[#002845] inline-block shrink-0"></span>
-                            3. Datos del Paciente
-                        </h2>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                            <h2 class="text-xs sm:text-sm font-bold text-[#002845] uppercase tracking-wide flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 bg-[#002845] inline-block shrink-0"></span>
+                                3. Datos del Paciente
+                            </h2>
+                            <span class="text-xs text-amber-800 font-semibold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                                No ingreses datos personales reales: usá datos ficticios
+                            </span>
+                        </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -209,33 +222,20 @@
 
                         <!-- Consentimientos Normativos y Sanitarios -->
                         <div class="pt-2 space-y-2.5">
-                            <!-- Checkbox 1: Ley 25.326 (Protección de Datos Personales) -->
+                            <!-- Checkbox 1: Consentimiento de Demostración y Datos Ficticios -->
                             <label class="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700 bg-slate-50 hover:bg-slate-100/70 p-3 rounded border border-slate-200 transition">
                                 <input type="checkbox" id="consentimiento-datos" class="mt-0.5 rounded border-slate-300 text-[#002845] focus:ring-[#007a78]">
                                 <span class="leading-relaxed">
-                                    Acepto el tratamiento de mis datos personales para la gestión de este turno sanitario de acuerdo a la <strong>Ley 25.326 de Protección de los Datos Personales</strong>.
+                                    Comprendo que este es un <strong>prototipo académico demostrativo</strong> con datos ficticios y acepto el registro simulado del turno para fines de evaluación universitaria.
                                 </span>
                             </label>
 
-                            <!-- Checkbox 2: Ley 26.529 (Derechos del Paciente, Fines Académicos e Historia Clínica Informatizada) -->
+                            <!-- Checkbox 2: Caso de Estudio y Fines Académicos -->
                             <label class="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700 bg-slate-50 hover:bg-slate-100/70 p-3 rounded border border-slate-200 transition">
                                 <input type="checkbox" id="consentimiento-ley26529" class="mt-0.5 rounded border-slate-300 text-[#002845] focus:ring-[#007a78]">
-                                <div class="space-y-1.5 leading-relaxed">
-                                    <div class="font-semibold text-slate-800">
-                                        Presto conformidad y consentimiento según los términos de la <strong>Ley 26.529</strong> (Derechos del Paciente, Historia Clínica y Consentimiento Informado):
-                                    </div>
-                                    <div class="text-[11px] text-slate-600 bg-white/90 p-2.5 rounded border border-slate-200/80 space-y-1.5 font-normal">
-                                        <p>
-                                            <strong>• Art. 8° (Exposición con fines académicos):</strong> Presto consentimiento previo ante exposiciones con fines formativos, docentes y universitarios vinculados a las actividades académicas del Hospital Escuela Schestakow, resguardando la dignidad y confidencialidad.
-                                        </p>
-                                        <p>
-                                            <strong>• Art. 12° (Definición y alcance de Historia Clínica):</strong> Tomo conocimiento de que la historia clínica constituye el documento médico obligatorio, cronológico y completo en el que constará toda actuación realizada por profesionales y auxiliares de la salud.
-                                        </p>
-                                        <p>
-                                            <strong>• Art. 13° (Historia clínica informatizada):</strong> Presto conformidad para la confección y archivo en soporte digital/informático bajo estándares que aseguran su integridad, autenticidad, inalterabilidad, accesos restringidos mediante claves y técnicas idóneas de seguridad.
-                                        </p>
-                                    </div>
-                                </div>
+                                <span class="leading-relaxed">
+                                    Presto conformidad para participar de este <strong>ejercicio académico universitario</strong>, reconociendo que no constituye una prestación médica asistencial real ni oficial.
+                                </span>
                             </label>
                         </div>
                     </div>
@@ -671,17 +671,17 @@
             }
             if (!chk1) {
                 if (window.mostrarAlerta) {
-                    window.mostrarAlerta("Consentimiento Requerido", "Debe aceptar el tratamiento de datos personales de acuerdo a la Ley 25.326 para continuar.");
+                    window.mostrarAlerta("Consentimiento Requerido", "Debe aceptar las condiciones del prototipo demostrativo para continuar.");
                 } else {
-                    alert("Debe aceptar el tratamiento de datos de acuerdo a la Ley 25.326.");
+                    alert("Debe aceptar las condiciones del prototipo demostrativo para continuar.");
                 }
                 return;
             }
             if (!chk2) {
                 if (window.mostrarAlerta) {
-                    window.mostrarAlerta("Consentimiento Requerido", "Debe prestar conformidad según la Ley 26.529 (fines académicos e historia clínica informatizada) para continuar.");
+                    window.mostrarAlerta("Consentimiento Requerido", "Debe confirmar la participación en el ejercicio académico para continuar.");
                 } else {
-                    alert("Debe prestar conformidad según la Ley 26.529.");
+                    alert("Debe confirmar la participación en el ejercicio académico para continuar.");
                 }
                 return;
             }

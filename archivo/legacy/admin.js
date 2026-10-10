@@ -154,7 +154,7 @@ onAuthStateChanged(auth, async (user) => {
         console.warn("No se pudo leer perfil desde Firestore:", e);
     }
 
-    if (user.email && user.email.toLowerCase() === "nachohelbas@gmail.com") {
+    if (user.email && user.email.toLowerCase() === "admin@example.com") {
         rol = "Administración";
         if (!nombre || nombre === user.email) nombre = "Ignacio Helbas (SuperAdmin)";
 
@@ -271,7 +271,7 @@ function aplicarPermisosVisuales(sesion) {
         btnLogout.innerText = `Cerrar Sesión (${sesion.nombre || sesion.correo})`;
     }
 
-    const esNacho = (sesion.correo && sesion.correo.toLowerCase() === "nachohelbas@gmail.com");
+    const esNacho = (sesion.correo && sesion.correo.toLowerCase() === "admin@example.com");
 
     if (esNacho) {
         // Exclusivo para Nacho (SuperAdmin del sistema): acceso y visibilidad total a todos los paneles
@@ -320,7 +320,7 @@ export function switchView(viewName) {
             return;
         }
 
-        const esNacho = (sesionActual.correo && sesionActual.correo.toLowerCase() === "nachohelbas@gmail.com");
+        const esNacho = (sesionActual.correo && sesionActual.correo.toLowerCase() === "admin@example.com");
         const rol = sesionActual.rol;
 
         let permitido = false;
@@ -831,7 +831,7 @@ export async function cargarAgendaMedico() {
 
     if (!container) return;
 
-    const esNacho = (sesionActual?.correo && sesionActual.correo.toLowerCase() === "nachohelbas@gmail.com");
+    const esNacho = (sesionActual?.correo && sesionActual.correo.toLowerCase() === "admin@example.com");
     const nombreMedico = sesionActual?.nombre || sesionActual?.correo;
     if (tituloContainer) tituloContainer.classList.remove('hidden');
     if (tituloDashboard) {
@@ -2664,7 +2664,7 @@ export function imprimirComprobanteCitacion() {
 export function autocompletarNachoDemo() {
     const inputUser = document.getElementById('login-user');
     const inputPass = document.getElementById('login-pass');
-    if (inputUser) inputUser.value = 'nachohelbas@gmail.com';
+    if (inputUser) inputUser.value = 'admin@example.com';
     if (inputPass) {
         inputPass.focus();
     }
@@ -2673,7 +2673,7 @@ export function autocompletarNachoDemo() {
 export { generarTurnosHistoricosDemo };
 
 export async function inyectarDemoCompletaForo() {
-    if (!sesionActual || (sesionActual.rol !== 'Administración' && sesionActual.correo?.toLowerCase() !== 'nachohelbas@gmail.com')) {
+    if (!sesionActual || (sesionActual.rol !== 'Administración' && sesionActual.correo?.toLowerCase() !== 'admin@example.com')) {
         mostrarAlerta("Acceso Denegado", "Solo el Administrador General puede ejecutar la inyección del escenario para el Foro.");
         return;
     }
@@ -2694,7 +2694,7 @@ export async function inyectarDemoCompletaForo() {
         if (barra) barra.style.width = '20%';
 
         // 0. Asegurar perfil de SuperAdmin en Firestore para validar reglas de seguridad
-        if (sesionActual?.uid && sesionActual.correo?.toLowerCase() === 'nachohelbas@gmail.com') {
+        if (sesionActual?.uid && sesionActual.correo?.toLowerCase() === 'admin@example.com') {
             await setDoc(doc(db, "usuarios", sesionActual.uid), {
                 nombre: "Ignacio Helbas",
                 correo: sesionActual.correo,

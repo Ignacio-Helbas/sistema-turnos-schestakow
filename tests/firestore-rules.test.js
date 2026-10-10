@@ -138,5 +138,9 @@ test('Matriz de Seguridad de Reglas de Firestore', async (t) => {
             const medDb = testEnv.authenticatedContext('med_1', { rol: 'Médico' }).firestore();
             await rulesTesting.assertFails(medDb.collection('usuarios').doc('nuevo_u').set({ nombre: 'Hack' }));
         });
+    } else {
+        await t.test('2. Pruebas dinámicas con emulador de Firestore', (context) => {
+            context.skip('Omitidas: Requiere emulador local de Firestore (FIRESTORE_EMULATOR_HOST no configurado o Java/firebase-tools no disponibles). Ejecute "npm run test:rules" en un entorno con Java y Firebase CLI.');
+        });
     }
 });

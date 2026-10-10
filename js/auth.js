@@ -146,24 +146,6 @@ export function inicializarAuth(onSessionReady) {
             console.warn("No se pudo leer perfil desde Firestore:", e);
         }
 
-        if (user.email && user.email.toLowerCase() === "nachohelbas@gmail.com") {
-            rol = "Administración";
-            if (!nombre || nombre === user.email) nombre = "Ignacio Helbas (SuperAdmin)";
-
-            try {
-                const userDocRef = doc(db, "usuarios", user.uid);
-                await setDoc(userDocRef, {
-                    nombre: "Ignacio Helbas",
-                    correo: user.email,
-                    rol: "Administración",
-                    activo: true,
-                    actualizadoEn: serverTimestamp()
-                }, { merge: true });
-            } catch (syncErr) {
-                console.warn("Aviso al sincronizar perfil SuperAdmin en Firestore:", syncErr);
-            }
-        }
-
         sesionActual = {
             uid: user.uid,
             correo: user.email,

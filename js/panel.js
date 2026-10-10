@@ -191,32 +191,23 @@ export function aplicarPermisosVisuales(sesion) {
         btnLogout.innerText = `Cerrar Sesión (${sesion.nombre || sesion.correo})`;
     }
 
-    const esNacho = (sesion.correo && sesion.correo.toLowerCase() === "nachohelbas@gmail.com");
-    const rolMostrar = esNacho ? 'Superadmin' : (sesion.rol || 'Personal');
+    const rolMostrar = sesion.rol || 'Personal';
 
     if (usuarioSesionInfo) usuarioSesionInfo.classList.remove('hidden');
     if (usuarioSesionNombre) usuarioSesionNombre.textContent = sesion.nombre || sesion.correo || 'Usuario Staff';
     if (usuarioSesionRol) {
         usuarioSesionRol.textContent = rolMostrar;
-        usuarioSesionRol.className = 'badge-his ' + (sesion.rol === 'Médico' ? 'badge-his-atendido' : (sesion.rol === 'Administración' || esNacho ? 'badge-his-admin' : 'badge-his-pendiente'));
+        usuarioSesionRol.className = 'badge-his ' + (sesion.rol === 'Médico' ? 'badge-his-atendido' : (sesion.rol === 'Administración' ? 'badge-his-admin' : 'badge-his-pendiente'));
     }
 
     const params = new URLSearchParams(window.location.search);
     const esModoDev = params.get('dev') === '1';
 
-    if (esNacho) {
+    if (sesion.rol === "Administración") {
         if (btnAdmin) btnAdmin.classList.remove('hidden');
         if (btnRec) btnRec.classList.remove('hidden');
         if (btnDoc) btnDoc.classList.remove('hidden');
-        if (btnDummies) btnDummies.classList.remove('hidden');
-        if (btnDemoForo) btnDemoForo.classList.remove('hidden');
-        if (btnReset) btnReset.classList.remove('hidden');
-        if (barraSuperadmin) barraSuperadmin.classList.remove('hidden');
 
-        sincronizarMedicosPublicos();
-        switchView('admin');
-    } else if (sesion.rol === "Administración") {
-        if (btnAdmin) btnAdmin.classList.remove('hidden');
         if (esModoDev) {
             if (btnDummies) btnDummies.classList.remove('hidden');
             if (btnDemoForo) btnDemoForo.classList.remove('hidden');
@@ -243,13 +234,10 @@ export function switchView(viewName) {
             return;
         }
 
-        const esNacho = (sesionActual.correo && sesionActual.correo.toLowerCase() === "nachohelbas@gmail.com");
         const rol = sesionActual.rol;
 
         let permitido = false;
-        if (esNacho) {
-            permitido = true;
-        } else if (viewName === 'admin' && rol === "Administración") {
+        if (rol === "Administración") {
             permitido = true;
         } else if (viewName === 'doctor' && rol === "Médico") {
             permitido = true;

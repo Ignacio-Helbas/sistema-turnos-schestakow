@@ -161,5 +161,9 @@ test('Matriz de Reglas de Seguridad - Módulo de Interconsultas', async (t) => {
                 creadoEn: new Date()
             }));
         });
+    } else {
+        await t.test('2. Pruebas dinámicas con emulador para Interconsultas', (context) => {
+            context.skip('Omitidas: Requiere emulador local de Firestore (FIRESTORE_EMULATOR_HOST no configurado o Java/firebase-tools no disponibles). Ejecute "npm run test:rules" en un entorno con Java y Firebase CLI.');
+        });
     }
 });

@@ -85,11 +85,13 @@ export async function cargarAgendaMedico() {
     if (!container) return;
 
     const sesionActual = obtenerSesionActual();
-    const esNacho = (sesionActual?.correo && sesionActual.correo.toLowerCase() === "nachohelbas@gmail.com");
+    const esAdmin = (sesionActual?.rol === "Administración");
     const nombreMedico = sesionActual?.nombre || sesionActual?.correo;
     if (tituloContainer) tituloContainer.classList.remove('hidden');
     if (tituloDashboard) {
-        tituloDashboard.innerText = esNacho ? `Consultorio Médico (Modo Foro - Nacho)` : `Consultorio: ${nombreMedico}`;
+        tituloDashboard.innerHTML = esAdmin 
+            ? `Consultorio Médico <span class="ml-2 inline-block text-[11px] bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded font-semibold align-middle">Vista de supervisión de demostración</span>` 
+            : `Consultorio: ${escaparHTML(nombreMedico)}`;
     }
 
     container.innerHTML = '<p class="text-sm text-slate-400 text-center mt-10">Cargando pacientes del día...</p>';
@@ -98,7 +100,7 @@ export async function cargarAgendaMedico() {
 
     try {
         let q;
-        if (esNacho || sesionActual?.rol === "Administración") {
+        if (esAdmin) {
             q = query(
                 collection(db, "turnos"),
                 where("fecha", "==", hoyStr)
@@ -189,13 +191,13 @@ export async function cargarAgendaMedico() {
 
 export async function llamarSiguientePaciente() {
     const sesionActual = obtenerSesionActual();
+    const esAdmin = (sesionActual?.rol === "Administración");
     const nombreMedico = sesionActual?.nombre || sesionActual?.correo;
-    const esNacho = (sesionActual?.correo && sesionActual.correo.toLowerCase() === "nachohelbas@gmail.com");
     const hoyStr = new Date().toISOString().split('T')[0];
 
     try {
         let q;
-        if (esNacho || sesionActual?.rol === "Administración") {
+        if (esAdmin) {
             q = query(collection(db, "turnos"), where("fecha", "==", hoyStr));
         } else {
             q = query(collection(db, "turnos"), where("medico", "==", nombreMedico), where("fecha", "==", hoyStr));
@@ -240,6 +242,10 @@ export async function buscarPacientePorDni(dniParam) {
     }
 
     const sesionActual = obtenerSesionActual();
+    if (!sesionActual || !sesionActual.uid || !sesionActual.rol) {
+        mostrarAlerta("Sesión Requerida", "Debe contar con una sesión activa con rol asignado para operar sobre historias clínicas.");
+        return;
+    }
 
     try {
         const dniDocSnap = await getDoc(doc(db, "pacientes_por_dni", dni));
@@ -268,26 +274,24 @@ export async function buscarPacientePorDni(dniParam) {
                 sexo: "No especificado",
                 contacto: { celular: "", email: "" },
                 creadoEn: serverTimestamp(),
-                creadoPor: sesionActual ? sesionActual.uid : "staff",
+                creadoPor: sesionActual.uid,
                 esDemo: true
             });
 
-            if (sesionActual) {
-                batch.set(doc(db, "pacientes", nuevoPacienteId, "acceso", sesionActual.uid), {
-                    medicoUid: sesionActual.uid,
-                    creadoEn: serverTimestamp(),
-                    motivoEmergencia: "Alta inicial de paciente por consultorio"
-                });
+            batch.set(doc(db, "pacientes", nuevoPacienteId, "acceso", sesionActual.uid), {
+                medicoUid: sesionActual.uid,
+                creadoEn: serverTimestamp(),
+                motivoEmergencia: "Alta inicial de paciente por consultorio"
+            });
 
-                batch.set(doc(collection(db, "auditoria")), {
-                    actorUid: sesionActual.uid,
-                    actorRol: sesionActual.rol || "Médico",
-                    accion: "ALTA_PACIENTE_HC",
-                    pacienteId: nuevoPacienteId,
-                    fecha: serverTimestamp(),
-                    detalle: `Alta demográfica para DNI ${dni}`
-                });
-            }
+            batch.set(doc(collection(db, "auditoria")), {
+                actorUid: sesionActual.uid,
+                actorRol: sesionActual.rol,
+                accion: "ALTA_PACIENTE_HC",
+                pacienteId: nuevoPacienteId,
+                fecha: serverTimestamp(),
+                detalle: `Alta demográfica para DNI ${dni}`
+            });
 
             await batch.commit();
             await abrirFichaPacienteHC(nuevoPacienteId);
@@ -303,6 +307,12 @@ export async function buscarPacientePorDni(dniParam) {
 }
 
 export async function abrirFichaPacienteHC(pacienteId, turnoId = null) {
+    const sesionActual = obtenerSesionActual();
+    if (!sesionActual || !sesionActual.uid || !sesionActual.rol) {
+        mostrarAlerta("Sesión Requerida", "Debe contar con una sesión activa con rol asignado para abrir historias clínicas.");
+        return;
+    }
+
     try {
         const pacSnap = await getDoc(doc(db, "pacientes", pacienteId));
         if (!pacSnap.exists()) {
@@ -313,27 +323,24 @@ export async function abrirFichaPacienteHC(pacienteId, turnoId = null) {
         const pacData = pacSnap.data();
         pacienteActivoHC = { id: pacienteId, ...pacData, turnoId };
 
-        const sesionActual = obtenerSesionActual();
-        if (sesionActual && sesionActual.uid) {
-            const accesoRef = doc(db, "pacientes", pacienteId, "acceso", sesionActual.uid);
-            const accesoSnap = await getDoc(accesoRef);
-            if (!accesoSnap.exists()) {
-                await setDoc(accesoRef, {
-                    medicoUid: sesionActual.uid,
-                    turnoId: turnoId || "consulta_directa",
-                    creadoEn: serverTimestamp()
-                });
-            }
-
-            await addDoc(collection(db, "auditoria"), {
-                actorUid: sesionActual.uid,
-                actorRol: sesionActual.rol || "Médico",
-                accion: "LECTURA_HISTORIA_CLINICA",
-                pacienteId: pacienteId,
-                fecha: serverTimestamp(),
-                detalle: `Apertura de historia clínica de ${pacData.nombre} ${pacData.apellido}`
-            }).catch(() => {});
+        const accesoRef = doc(db, "pacientes", pacienteId, "acceso", sesionActual.uid);
+        const accesoSnap = await getDoc(accesoRef);
+        if (!accesoSnap.exists()) {
+            await setDoc(accesoRef, {
+                medicoUid: sesionActual.uid,
+                turnoId: turnoId || "consulta_directa",
+                creadoEn: serverTimestamp()
+            });
         }
+
+        await addDoc(collection(db, "auditoria"), {
+            actorUid: sesionActual.uid,
+            actorRol: sesionActual.rol,
+            accion: "LECTURA_HISTORIA_CLINICA",
+            pacienteId: pacienteId,
+            fecha: serverTimestamp(),
+            detalle: `Apertura de historia clínica de ${pacData.nombre} ${pacData.apellido}`
+        }).catch(() => {});
 
         const cabecera = document.getElementById('cabecera-paciente-hc');
         if (cabecera) cabecera.classList.remove('hidden');
@@ -539,6 +546,10 @@ export async function guardarConsultaInmutable() {
     };
 
     const sesionActual = obtenerSesionActual();
+    if (!sesionActual || !sesionActual.uid || !sesionActual.rol) {
+        mostrarAlerta("Sesión Requerida", "Debe contar con una sesión activa con rol asignado para registrar consultas.");
+        return;
+    }
 
     try {
         const consultaId = generarIdCripto('CONS', 20);
@@ -547,8 +558,8 @@ export async function guardarConsultaInmutable() {
 
         batch.set(consultaRef, {
             turnoId: pacienteActivoHC.turnoId || '',
-            medicoUid: sesionActual ? sesionActual.uid : 'medico_demo',
-            medicoNombre: sesionActual ? sesionActual.nombre : 'Profesional Médico',
+            medicoUid: sesionActual.uid,
+            medicoNombre: sesionActual.nombre || 'Profesional Médico',
             fecha: serverTimestamp(),
             motivo: motivo,
             diagnostico: diagnostico,
@@ -571,8 +582,8 @@ export async function guardarConsultaInmutable() {
 
         const auditRef = doc(collection(db, "auditoria"));
         batch.set(auditRef, {
-            actorUid: sesionActual ? sesionActual.uid : 'anon',
-            actorRol: sesionActual ? sesionActual.rol : 'Médico',
+            actorUid: sesionActual.uid,
+            actorRol: sesionActual.rol,
             accion: "CONSULTA_MEDICA_REGISTRADA",
             pacienteId: pacienteActivoHC.id,
             consultaId: consultaId,
@@ -641,6 +652,10 @@ export async function guardarRectificacionInmutable() {
     if (!confirmado) return;
 
     const sesionActual = obtenerSesionActual();
+    if (!sesionActual || !sesionActual.uid || !sesionActual.rol) {
+        mostrarAlerta("Sesión Requerida", "Debe contar con una sesión activa con rol asignado para rectificar consultas.");
+        return;
+    }
 
     try {
         const nuevaConsultaId = generarIdCripto('CONS_RECT', 20);
@@ -649,8 +664,8 @@ export async function guardarRectificacionInmutable() {
 
         batch.set(consultaRef, {
             turnoId: '',
-            medicoUid: sesionActual ? sesionActual.uid : 'medico_demo',
-            medicoNombre: sesionActual ? sesionActual.nombre : 'Profesional Médico',
+            medicoUid: sesionActual.uid,
+            medicoNombre: sesionActual.nombre || 'Profesional Médico',
             fecha: serverTimestamp(),
             motivo: `[Rectificación] ${motivo}`,
             diagnostico: 'Rectificación de consulta previa',
@@ -663,8 +678,8 @@ export async function guardarRectificacionInmutable() {
 
         const auditRef = doc(collection(db, "auditoria"));
         batch.set(auditRef, {
-            actorUid: sesionActual ? sesionActual.uid : 'anon',
-            actorRol: sesionActual ? sesionActual.rol : 'Médico',
+            actorUid: sesionActual.uid,
+            actorRol: sesionActual.rol,
             accion: "CONSULTA_RECTIFICADA",
             pacienteId: pacienteActivoHC.id,
             consultaId: originalId,
@@ -698,7 +713,10 @@ export function abrirModalEditarResumen() {
 }
 
 export async function guardarResumenClinico() {
-    if (!pacienteActivoHC) return;
+    if (!pacienteActivoHC) {
+        mostrarAlerta("Paciente Requerido", "Debe tener una historia clínica seleccionada para actualizar el resumen clínico.");
+        return;
+    }
     const alergias = document.getElementById('modal-input-alergias')?.value.trim();
     const antecedentes = document.getElementById('modal-input-antecedentes')?.value.trim();
     const medicacion = document.getElementById('modal-input-medicacion')?.value.trim();
@@ -710,6 +728,10 @@ export async function guardarResumenClinico() {
     }
 
     const sesionActual = obtenerSesionActual();
+    if (!sesionActual || !sesionActual.uid || !sesionActual.rol) {
+        mostrarAlerta("Sesión Requerida", "Debe contar con una sesión activa con rol asignado para actualizar el resumen clínico.");
+        return;
+    }
 
     try {
         const batch = writeBatch(db);
@@ -724,8 +746,8 @@ export async function guardarResumenClinico() {
 
         const auditRef = doc(collection(db, "auditoria"));
         batch.set(auditRef, {
-            actorUid: sesionActual ? sesionActual.uid : 'anon',
-            actorRol: sesionActual ? sesionActual.rol : 'Médico',
+            actorUid: sesionActual.uid,
+            actorRol: sesionActual.rol,
             accion: "ACTUALIZAR_RESUMEN_CLINICO",
             pacienteId: pacienteActivoHC.id,
             fecha: serverTimestamp(),
@@ -757,6 +779,10 @@ export async function ejecutarAccesoEmergencia() {
     }
 
     const sesionActual = obtenerSesionActual();
+    if (!sesionActual || !sesionActual.uid || !sesionActual.rol) {
+        mostrarAlerta("Sesión Requerida", "Debe contar con una sesión activa con rol asignado para habilitar accesos de emergencia.");
+        return;
+    }
 
     try {
         let pacienteId;
@@ -775,7 +801,7 @@ export async function ejecutarAccesoEmergencia() {
                 sexo: "No especificado",
                 contacto: {},
                 creadoEn: serverTimestamp(),
-                creadoPor: sesionActual ? sesionActual.uid : 'emergencia',
+                creadoPor: sesionActual.uid,
                 esDemo: true
             });
             await batchCrear.commit();
@@ -792,7 +818,7 @@ export async function ejecutarAccesoEmergencia() {
         const auditRef = doc(collection(db, "auditoria"));
         batch.set(auditRef, {
             actorUid: sesionActual.uid,
-            actorRol: sesionActual.rol || "Médico",
+            actorRol: sesionActual.rol,
             accion: "ACCESO_EMERGENCIA",
             pacienteId: pacienteId,
             fecha: serverTimestamp(),
@@ -818,16 +844,19 @@ export async function exportarHistoriaClinica() {
     }
 
     const sesionActual = obtenerSesionActual();
-    if (sesionActual) {
-        await addDoc(collection(db, "auditoria"), {
-            actorUid: sesionActual.uid,
-            actorRol: sesionActual.rol || "Médico",
-            accion: "EXPORTAR_HISTORIA_CLINICA",
-            pacienteId: pacienteActivoHC.id,
-            fecha: serverTimestamp(),
-            detalle: `Impresión/Exportación de ficha de ${pacienteActivoHC.nombre} ${pacienteActivoHC.apellido}`
-        }).catch(() => {});
+    if (!sesionActual || !sesionActual.uid || !sesionActual.rol) {
+        mostrarAlerta("Sesión Requerida", "Debe contar con una sesión activa con rol asignado para exportar historias clínicas.");
+        return;
     }
+
+    await addDoc(collection(db, "auditoria"), {
+        actorUid: sesionActual.uid,
+        actorRol: sesionActual.rol,
+        accion: "EXPORTAR_HISTORIA_CLINICA",
+        pacienteId: pacienteActivoHC.id,
+        fecha: serverTimestamp(),
+        detalle: `Impresión/Exportación de ficha de ${pacienteActivoHC.nombre} ${pacienteActivoHC.apellido}`
+    }).catch(() => {});
 
     window.print();
 }
@@ -847,11 +876,18 @@ export function cerrarFichaPacienteHC() {
 export async function llamarPaciente(idDoc) {
     try {
         const snap = await getDoc(doc(db, "turnos", idDoc));
-        if (!snap.exists()) return;
+        if (!snap.exists()) {
+            mostrarAlerta("Turno No Encontrado", "El turno seleccionado ya no existe o fue eliminado.");
+            return;
+        }
         const turnoData = snap.data();
 
         let pacienteId = turnoData.pacienteId;
         const sesionActual = obtenerSesionActual();
+        if (!sesionActual || !sesionActual.uid || !sesionActual.rol) {
+            mostrarAlerta("Sesión Requerida", "Debe contar con una sesión activa con rol asignado para llamar a un paciente.");
+            return;
+        }
 
         if (!pacienteId && turnoData.pacienteDni) {
             const dni = turnoData.pacienteDni.trim();
@@ -878,7 +914,7 @@ export async function llamarPaciente(idDoc) {
                         email: turnoData.pacienteEmail || ''
                     },
                     creadoEn: serverTimestamp(),
-                    creadoPor: sesionActual ? sesionActual.uid : 'recepcion',
+                    creadoPor: sesionActual.uid,
                     esDemo: true
                 });
                 await batchAlta.commit();
@@ -1150,8 +1186,13 @@ export async function guardarProximaConsultaMedico() {
 
     const motivo = document.getElementById('prox-consulta-motivo')?.value.trim() || 'Control y Seguimiento';
     const sesionActual = obtenerSesionActual();
-    const nombreMed = sesionActual?.nombre || 'Médico Asignado';
-    const medUid = sesionActual?.uid || 'medico_demo';
+    if (!sesionActual || !sesionActual.uid || !sesionActual.rol) {
+        mostrarAlerta("Sesión Requerida", "Debe contar con una sesión activa con rol asignado para agendar próximas consultas.");
+        return;
+    }
+
+    const nombreMed = sesionActual.nombre || 'Médico Asignado';
+    const medUid = sesionActual.uid;
 
     let especialidadMed = "Consulta Médica";
     for (const [esp, medList] of Object.entries(bdMedicosDinamica)) {
@@ -1181,6 +1222,25 @@ export async function guardarProximaConsultaMedico() {
         const batch = writeBatch(db);
         const turnoRef = doc(db, "turnos", turnoId);
 
+        // Extracción segura de contacto telefónico del paciente:
+        // Las reglas de Firestore (isValidTurnoStaffCreate) exigen string de longitud entre 6 y 25 caracteres.
+        // Si el paciente no posee celular demográfico registrado (ej. alta rápida de emergencia),
+        // se emplea el marcador numérico hospitalario "2604000000" (San Rafael demo, ver metricas.js L990)
+        // para asegurar integridad de esquema sin bloquear la citación clínica ni romper validaciones.
+        let celularRaw = '';
+        if (typeof pacienteActivoHC.contacto === 'object' && pacienteActivoHC.contacto !== null) {
+            celularRaw = (pacienteActivoHC.contacto.celular || '').trim();
+        } else if (typeof pacienteActivoHC.contacto === 'string') {
+            celularRaw = pacienteActivoHC.contacto.trim();
+        }
+        const pacienteCelularValido = (typeof celularRaw === 'string' && celularRaw.length >= 6 && celularRaw.length <= 25)
+            ? celularRaw
+            : '2604000000';
+
+        const emailRaw = (typeof pacienteActivoHC.contacto === 'object' && pacienteActivoHC.contacto !== null)
+            ? (pacienteActivoHC.contacto.email || '')
+            : (pacienteActivoHC.email || '');
+
         const turnoData = {
             especialidad: especialidadMed,
             medico: nombreMed,
@@ -1189,8 +1249,10 @@ export async function guardarProximaConsultaMedico() {
             horario: horario,
             pacienteNombre: nombreCompleto,
             pacienteDni: pacienteActivoHC.dni,
-            pacienteCelular: pacienteActivoHC.contacto || '',
-            pacienteEmail: pacienteActivoHC.email || '',
+            pacienteCelular: pacienteCelularValido,
+            pacienteEmail: typeof emailRaw === 'string' ? emailRaw.substring(0, 100) : '',
+            pacienteCobertura: pacienteActivoHC.cobertura || 'Sin Obra Social',
+            pacienteFechaNacimiento: pacienteActivoHC.fechaNacimiento || '1990-01-01',
             pacienteId: pacienteActivoHC.id,
             codigoConfirmacion: turnoId,
             canal: "Consultorio",
@@ -1198,7 +1260,7 @@ export async function guardarProximaConsultaMedico() {
             motivoCitacion: motivo,
             modoHorario: esExacto ? "exacto" : "paciente",
             creadoEn: serverTimestamp(),
-            creadoPor: sesionActual?.uid || null,
+            creadoPor: sesionActual.uid,
             llegadaEn: null,
             inicioConsultaEn: null,
             finConsultaEn: null,
@@ -1221,8 +1283,8 @@ export async function guardarProximaConsultaMedico() {
         }
 
         batch.set(doc(collection(db, "auditoria")), {
-            actorUid: sesionActual ? sesionActual.uid : "medico",
-            actorRol: sesionActual ? sesionActual.rol : "Médico",
+            actorUid: sesionActual.uid,
+            actorRol: sesionActual.rol,
             accion: "CITACION_PROXIMA_CONSULTA",
             pacienteId: pacienteActivoHC.id,
             detalle: `Citación agendada para ${fecha} (${esExacto ? horario + ' hs' : 'Horario a elección del paciente'}) - Motivo: ${motivo}`,
