@@ -33,4 +33,4 @@ jobs:
 
       - name: 5. Ejecutar suite de pruebas con Emulador de Firestore
         run: |
-          firebase emulators:exec --only firestore "npm test"
+          firebase emulators:exec --project demo-turnos-schestakow --only firestore "npm test"

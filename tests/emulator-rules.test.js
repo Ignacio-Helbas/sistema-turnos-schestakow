@@ -70,7 +70,8 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
     // Caso 3: Superadmin puede crear documento en /usuarios
     await suite.test('3. Superadmin puede crear documento en /usuarios', async () => {
         await testEnv.withSecurityRulesDisabled(async (context) => {
-            await context.firestore().collection('usuarios').doc('admin_root').set({
+            const db = context.firestore();
+            await db.collection('usuarios').doc('admin_root').set({
                 rol: 'Administración',
                 activo: true
             });
@@ -124,7 +125,8 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
     // Caso 6: Paciente puede leer su turno específico conociendo el ID
     await suite.test('6. Paciente puede leer su turno específico conociendo el ID', async () => {
         await testEnv.withSecurityRulesDisabled(async (context) => {
-            await context.firestore().collection('turnos').doc('TURNO_SECRETO_987').set({
+            const db = context.firestore();
+            await db.collection('turnos').doc('TURNO_SECRETO_987').set({
                 pacienteNombre: 'Paciente Simulado',
                 estado: 'Confirmado'
             });
@@ -142,11 +144,12 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
         const pacienteId = 'pac_12345';
 
         await testEnv.withSecurityRulesDisabled(async (context) => {
-            await context.firestore().collection('usuarios').doc(medicoUid).set({
+            const db = context.firestore();
+            await db.collection('usuarios').doc(medicoUid).set({
                 rol: 'Médico',
                 activo: true
             });
-            await context.firestore().collection('pacientes').doc(pacienteId).collection('acceso').doc(medicoUid).set({
+            await db.collection('pacientes').doc(pacienteId).collection('acceso').doc(medicoUid).set({
                 medicoUid: medicoUid,
                 turnoId: 'TURNO_WEB_12345',
                 concedidoEn: serverTimestamp()
@@ -179,11 +182,12 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
         const pacienteId = 'pac_12345';
 
         await testEnv.withSecurityRulesDisabled(async (context) => {
-            await context.firestore().collection('usuarios').doc(medicoUid).set({
+            const db = context.firestore();
+            await db.collection('usuarios').doc(medicoUid).set({
                 rol: 'Médico',
                 activo: true
             });
-            await context.firestore().collection('pacientes').doc(pacienteId).collection('consultas').doc('cons_asentada').set({
+            await db.collection('pacientes').doc(pacienteId).collection('consultas').doc('cons_asentada').set({
                 turnoId: 'TURNO_WEB_12345',
                 medicoUid: medicoUid,
                 evolucion: 'Evolución original asentada en historia clínica'
@@ -216,7 +220,8 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
     // Caso 10: Usuario autenticado sin rol no puede modificar turnos
     await suite.test('10. Usuario autenticado sin rol no puede modificar turnos', async () => {
         await testEnv.withSecurityRulesDisabled(async (context) => {
-            await context.firestore().collection('turnos').doc('TURNO_TEST_10').set({
+            const db = context.firestore();
+            await db.collection('turnos').doc('TURNO_TEST_10').set({
                 estado: 'Confirmado',
                 creadoEn: serverTimestamp(),
                 creadoPor: null
@@ -234,7 +239,8 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
     // Caso 11: Usuario autenticado sin rol no puede leer perfil de otro usuario en /usuarios ni listar
     await suite.test('11. Usuario autenticado sin rol no puede leer perfil de otro usuario en /usuarios ni listar', async () => {
         await testEnv.withSecurityRulesDisabled(async (context) => {
-            await context.firestore().collection('usuarios').doc('admin_target').set({
+            const db = context.firestore();
+            await db.collection('usuarios').doc('admin_target').set({
                 rol: 'Administración',
                 nombre: 'Admin Privado'
             });
@@ -288,12 +294,13 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
     // Caso 13: Cuenta sin rol NO puede leer, crear ni modificar /pacientes ni /pacientes_por_dni
     await suite.test('13. Cuenta sin rol no puede leer, crear ni modificar /pacientes ni /pacientes_por_dni', async () => {
         await testEnv.withSecurityRulesDisabled(async (context) => {
-            await context.firestore().collection('pacientes').doc('pac_existente').set({
+            const db = context.firestore();
+            await db.collection('pacientes').doc('pac_existente').set({
                 nombre: 'Carlos',
                 apellido: 'Gomez',
                 dni: '28111222'
             });
-            await context.firestore().collection('pacientes_por_dni').doc('28111222').set({
+            await db.collection('pacientes_por_dni').doc('28111222').set({
                 pacienteId: 'pac_existente',
                 dni: '28111222',
                 creadoEn: serverTimestamp()
@@ -335,7 +342,8 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
     await suite.test('14. Recepción puede crear un paciente válido', async () => {
         const recepUid = 'recep_01';
         await testEnv.withSecurityRulesDisabled(async (context) => {
-            await context.firestore().collection('usuarios').doc(recepUid).set({
+            const db = context.firestore();
+            await db.collection('usuarios').doc(recepUid).set({
                 rol: 'Recepción',
                 activo: true
             });
@@ -360,11 +368,12 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
     await suite.test('15. Médico puede leer un paciente', async () => {
         const medUid = 'med_lector_01';
         await testEnv.withSecurityRulesDisabled(async (context) => {
-            await context.firestore().collection('usuarios').doc(medUid).set({
+            const db = context.firestore();
+            await db.collection('usuarios').doc(medUid).set({
                 rol: 'Médico',
                 activo: true
             });
-            await context.firestore().collection('pacientes').doc('pac_para_medico').set({
+            await db.collection('pacientes').doc('pac_para_medico').set({
                 dni: '31222333',
                 nombre: 'Esteban',
                 apellido: 'Rivas'
@@ -381,7 +390,8 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
     await suite.test('16. Recepción puede crear auditoría solo con actorUid igual a su uid', async () => {
         const recepUid = 'recep_auditor';
         await testEnv.withSecurityRulesDisabled(async (context) => {
-            await context.firestore().collection('usuarios').doc(recepUid).set({
+            const db = context.firestore();
+            await db.collection('usuarios').doc(recepUid).set({
                 rol: 'Recepción',
                 activo: true
             });
@@ -420,15 +430,16 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
         const recepUid = 'recep_no_auditor';
 
         await testEnv.withSecurityRulesDisabled(async (context) => {
-            await context.firestore().collection('usuarios').doc(adminUid).set({
+            const db = context.firestore();
+            await db.collection('usuarios').doc(adminUid).set({
                 rol: 'Administración',
                 activo: true
             });
-            await context.firestore().collection('usuarios').doc(recepUid).set({
+            await db.collection('usuarios').doc(recepUid).set({
                 rol: 'Recepción',
                 activo: true
             });
-            await context.firestore().collection('auditoria').doc('aud_evento_1').set({
+            await db.collection('auditoria').doc('aud_evento_1').set({
                 actorUid: adminUid,
                 actorRol: 'Administración',
                 accion: 'configuracion_agenda',
