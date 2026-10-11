@@ -81,4 +81,13 @@ describe('Comprobante Oficial y Código QR Funcional de Turnos', () => {
         assert.ok(publicoJs.includes('export function generarCodigoTurno'), 'Debe exportar generarCodigoTurno');
         assert.ok(publicoJs.includes('generarCodigoTurno(8)'), 'confirmarTurnoFirebase debe invocar generarCodigoTurno(8)');
     });
+
+    test('8. index.html define estilos @media print que aíslan el talón y ocultan el resto de la página', () => {
+        const html = fs.readFileSync(indexHtmlPath, 'utf-8');
+
+        assert.ok(html.includes('@media print'), 'index.html debe contener una sección @media print');
+        assert.ok(html.includes('#talon-comprobante-exito'), 'El talón debe estar explícitamente configurado en los estilos de impresión');
+        assert.ok(html.includes('print-color-adjust: exact'), 'Debe habilitar print-color-adjust: exact para preservar el QR y fondos');
+        assert.ok(html.includes('display: none !important'), 'Debe ocultar elementos fuera del comprobante con display: none');
+    });
 });

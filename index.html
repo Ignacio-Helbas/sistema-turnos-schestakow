@@ -54,6 +54,104 @@
             body { background-attachment: scroll; }
         }
     </style>
+
+    <!-- Estilos de Impresión Exclusivos del Portal Público (Aislamiento del Comprobante) -->
+    <style id="estilos-impresion-portal">
+        @media print {
+            @page {
+                margin: 12mm;
+                size: auto;
+            }
+
+            html, body {
+                height: auto !important;
+                min-height: 0 !important;
+                overflow: visible !important;
+                background-color: #ffffff !important;
+                background-image: none !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            /* Ocultar toda la estructura externa del portal público al imprimir */
+            aside,
+            header,
+            main,
+            footer,
+            nav,
+            .view,
+            #view-public,
+            #view-centros,
+            #toast-container,
+            #modal-cancelar-paciente,
+            #modal-resumen-turno,
+            #modal-alerta,
+            #modal-confirmacion,
+            #modal-elegir-horario-citacion {
+                display: none !important;
+            }
+
+            /* Contenedor del modal de comprobante sin overlay ni fijación */
+            #modal-exito {
+                display: block !important;
+                position: static !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                overflow: visible !important;
+            }
+
+            #modal-exito .modal-box-his {
+                position: static !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                overflow: visible !important;
+                animation: none !important;
+            }
+
+            /* Ocultar elementos decorativos, textos informativos y botones del modal */
+            #modal-exito .modal-box-his > div:first-child,
+            #exito-titulo,
+            #exito-mensaje,
+            #modal-exito button,
+            #btn-copiar-link-turno {
+                display: none !important;
+            }
+
+            /* Talón oficial limpio, compacto y garantizado en la primera página */
+            #talon-comprobante-exito {
+                display: block !important;
+                position: static !important;
+                width: 100% !important;
+                max-width: 600px !important;
+                margin: 0 auto !important;
+                padding: 14px !important;
+                background-color: #ffffff !important;
+                border: 1px solid #cbd5e1 !important;
+                border-radius: 8px !important;
+                box-shadow: none !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                print-color-adjust: exact !important;
+                -webkit-print-color-adjust: exact !important;
+            }
+
+            #talon-comprobante-exito * {
+                print-color-adjust: exact !important;
+                -webkit-print-color-adjust: exact !important;
+            }
+        }
+    </style>
 </head>
 <body class="pagina-publica text-slate-800 font-sans flex flex-col min-h-screen">
 
@@ -524,6 +622,11 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Pie institucional del talón para pantalla e impresión -->
+                <div class="pt-2 border-t border-slate-200/80 text-center">
+                    <p class="text-[9px] text-slate-500 font-medium">Prototipo académico. Datos ficticios. Hospital Schestakow.</p>
+                </div>
             </div>
 
             <div class="flex gap-2">
@@ -706,8 +809,13 @@
         }
 
         function imprimirTalonWeb() {
+            document.body.classList.add('imprimiendo-comprobante');
             window.print();
         }
+
+        window.addEventListener('afterprint', () => {
+            document.body.classList.remove('imprimiendo-comprobante');
+        });
 
         function copiarEnlaceTurno() {
             if (window.copiarEnlaceTurno) {
