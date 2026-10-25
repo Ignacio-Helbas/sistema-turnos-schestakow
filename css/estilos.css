@@ -496,8 +496,9 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
         display: flex !important;
     }
 
-    body.modo-dev-mobile .banner-test-dev {
-        display: block !important;
+    body.modo-dev-mobile[data-view="doctor"] footer,
+    body.modo-dev-mobile[data-view="admin"] footer {
+        display: none !important;
     }
 }
 
