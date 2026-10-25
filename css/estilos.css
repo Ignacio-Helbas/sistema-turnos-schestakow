@@ -208,12 +208,8 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
     cursor: pointer;
-}
-.btn-his-primary:hover {
-    background-color: var(--his-primary-hover);
-    border-color: var(--his-primary-hover);
 }
 .btn-his-primary:focus-visible {
     outline: 2px solid var(--his-primary);
@@ -232,13 +228,8 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.05s ease;
     cursor: pointer;
-}
-.btn-his-secondary:hover {
-    background-color: var(--his-bg);
-    border-color: var(--his-border-strong);
-    color: var(--his-text);
 }
 
 .btn-his-success {
@@ -253,12 +244,8 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    transition: background-color 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
     cursor: pointer;
-}
-.btn-his-success:hover {
-    background-color: var(--his-secondary-hover);
-    border-color: var(--his-secondary-hover);
 }
 
 .btn-his-danger {
@@ -273,12 +260,8 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
     cursor: pointer;
-}
-.btn-his-danger:hover {
-    background-color: var(--his-status-ausente-bg);
-    border-color: var(--his-status-ausente);
 }
 
 .btn-his-text {
@@ -290,15 +273,66 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     padding: 0.5rem 0.75rem;
     border-radius: var(--his-radius-sm);
     cursor: pointer;
-    transition: color 0.15s ease, background-color 0.15s ease;
+    transition: color 0.15s ease, background-color 0.15s ease, transform 0.05s ease;
 }
-.btn-his-text:hover {
-    color: var(--his-primary);
-    background-color: var(--his-primary-light);
+
+/* Estados de interacción y accesibilidad para todos los botones clínicos */
+.btn-his-primary:disabled,
+.btn-his-secondary:disabled,
+.btn-his-success:disabled,
+.btn-his-danger:disabled,
+.btn-his-text:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    box-shadow: none !important;
+}
+
+.btn-his-primary[aria-busy="true"],
+.btn-his-secondary[aria-busy="true"],
+.btn-his-success[aria-busy="true"],
+.btn-his-danger[aria-busy="true"],
+.btn-his-text[aria-busy="true"] {
+    cursor: wait !important;
+    pointer-events: none !important;
+    opacity: 0.75 !important;
+}
+
+.btn-his-primary:active:not(:disabled),
+.btn-his-secondary:active:not(:disabled),
+.btn-his-success:active:not(:disabled),
+.btn-his-danger:active:not(:disabled),
+.btn-his-text:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+/* Hover condicionado a dispositivos con cursor real (evita hover 'pegado' en pantallas táctiles) */
+@media (hover: hover) {
+    .btn-his-primary:hover:not(:disabled) {
+        background-color: var(--his-primary-hover);
+        border-color: var(--his-primary-hover);
+    }
+    .btn-his-secondary:hover:not(:disabled) {
+        background-color: var(--his-bg);
+        border-color: var(--his-border-strong);
+        color: var(--his-text);
+    }
+    .btn-his-success:hover:not(:disabled) {
+        background-color: var(--his-secondary-hover);
+        border-color: var(--his-secondary-hover);
+    }
+    .btn-his-danger:hover:not(:disabled) {
+        background-color: var(--his-status-ausente-bg);
+        border-color: var(--his-status-ausente);
+    }
+    .btn-his-text:hover:not(:disabled) {
+        color: var(--his-primary);
+        background-color: var(--his-primary-light);
+    }
 }
 
 /* Campos de Formulario (Inputs y Selects) */
-.input-his, .select-his {
+.input-his {
     width: 100%;
     background-color: var(--his-surface);
     border: 1px solid var(--his-border);
@@ -309,16 +343,50 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
     outline: none;
 }
-.input-his:focus, .select-his:focus {
+.input-his:focus {
     border-color: var(--his-primary);
     box-shadow: 0 0 0 2px var(--his-primary-light);
 }
-.input-his:disabled, .select-his:disabled {
+.input-his:disabled {
     background-color: var(--his-bg);
     color: var(--his-text-muted);
     cursor: not-allowed;
     border-color: var(--his-border-subtle);
 }
+
+/* Listas desplegables estilizadas con flecha propia y aspecto nativo unificado */
+.select-his, select.input-his {
+    width: 100%;
+    background-color: var(--his-surface);
+    border: 1px solid var(--his-border);
+    border-radius: var(--his-radius-sm);
+    padding: 0.5rem 2.25rem 0.5rem 0.75rem;
+    min-height: 2.5rem;
+    font-size: 0.875rem;
+    color: var(--his-text);
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23475569' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.25rem 1.25rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.select-his:focus, select.input-his:focus {
+    border-color: var(--his-primary);
+    box-shadow: 0 0 0 2px var(--his-primary-light);
+}
+.select-his:disabled, select.input-his:disabled {
+    background-color: var(--his-bg);
+    color: var(--his-text-muted);
+    cursor: not-allowed;
+    border-color: var(--his-border-subtle);
+    opacity: 0.75;
+}
+
 .label-his {
     display: block;
     font-size: 0.8125rem;
@@ -394,8 +462,10 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     border-bottom: 1px solid var(--his-border-subtle);
     color: var(--his-text);
 }
-.table-his tr:hover td {
-    background-color: rgba(248, 250, 252, 0.8);
+@media (hover: hover) {
+    .table-his tr:hover td {
+        background-color: rgba(248, 250, 252, 0.8);
+    }
 }
 
 /* Cajas Modales Sobrias */
@@ -426,6 +496,13 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
 @keyframes skeletonLoading {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .skeleton-his {
+        animation: none !important;
+        background: #e2e8f0;
+    }
 }
 
 /* --------------------------------------------------------------------------
@@ -584,4 +661,14 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
 
 .impresion-solo-print {
     display: none;
+}
+
+/* Prevención de zoom automático molesto en móviles (iOS / Android <= 640px) */
+@media (max-width: 640px) {
+    .select-his,
+    .input-his,
+    select.input-his,
+    input.input-his {
+        font-size: 16px !important;
+    }
 }

@@ -44,6 +44,8 @@ import {
     iniciarModuloMetricasUI
 } from "./metricas-ui.js";
 
+import { ejecutarUnaVez } from "./guardia.js";
+
 import {
     generarTurnosHistoricosDemo
 } from "./metricas.js";
@@ -152,10 +154,21 @@ export function abrirModalUsuarioNulo() {
     document.getElementById('input-usuario-id').value = '';
     document.getElementById('input-usuario-nombre').value = '';
     document.getElementById('input-usuario-rol').value = 'Administración';
-    document.getElementById('input-usuario-pass').value = '';
+    const inputPass = document.getElementById('input-usuario-pass');
+    if (inputPass) inputPass.value = '';
     document.getElementById('input-usuario-tel').value = '';
     document.getElementById('input-usuario-correo').value = '';
     document.getElementById('input-usuario-matricula').value = '';
+
+    // Modo Alta: Mostrar campo de contraseña, ocultar botón de restablecimiento
+    const divPass = document.getElementById('div-usuario-pass');
+    const divReset = document.getElementById('div-usuario-reset-pass');
+    if (divPass) divPass.classList.remove('hidden');
+    if (divReset) divReset.classList.add('hidden');
+
+    const modalTitulo = document.getElementById('modal-usuario-titulo');
+    if (modalTitulo) modalTitulo.textContent = 'Registrar Nuevo Usuario';
+
     toggleCamposMedico();
     abrirModal('modal-usuario');
 }
@@ -169,11 +182,19 @@ export async function editarUsuarioAdmin(id) {
         document.getElementById('input-usuario-id').value = id;
         document.getElementById('input-usuario-nombre').value = u.nombre || '';
         document.getElementById('input-usuario-rol').value = u.rol || 'Administración';
-        document.getElementById('input-usuario-pass').value = '';
         document.getElementById('input-usuario-tel').value = u.tel || '';
         document.getElementById('input-usuario-correo').value = u.correo || '';
         document.getElementById('input-usuario-matricula').value = u.matricula || '';
         if (u.especialidad) document.getElementById('input-usuario-especialidad').value = u.especialidad;
+
+        // Modo Edición: Ocultar campo de contraseña, mostrar botón de restablecimiento
+        const divPass = document.getElementById('div-usuario-pass');
+        const divReset = document.getElementById('div-usuario-reset-pass');
+        if (divPass) divPass.classList.add('hidden');
+        if (divReset) divReset.classList.remove('hidden');
+
+        const modalTitulo = document.getElementById('modal-usuario-titulo');
+        if (modalTitulo) modalTitulo.textContent = 'Editar Usuario';
 
         toggleCamposMedico();
         abrirModal('modal-usuario');
@@ -213,58 +234,62 @@ export async function guardarUsuarioAdminFirebase() {
         activo: true
     };
 
-    try {
-        let uidFinal = id;
-        if (id) {
-            await updateDoc(doc(db, "usuarios", id), {
-                ...payload,
-                actualizadoEn: serverTimestamp()
-            });
-        } else {
-            try {
-                uidFinal = await crearCuentaAuthSecundaria(cor, pass);
-            } catch (authErr) {
-                console.error("Error al registrar cuenta Auth:", authErr);
-                let msg = "No se pudo registrar la cuenta en Authentication.";
-                if (authErr.code === 'auth/email-already-in-use') {
-                    msg = "El correo electrónico ya se encuentra registrado en el sistema.";
-                } else if (authErr.code === 'auth/weak-password') {
-                    msg = "La contraseña es muy débil (debe tener al menos 6 caracteres).";
-                } else if (authErr.code === 'auth/invalid-email') {
-                    msg = "El formato del correo electrónico es inválido.";
+    const boton = document.querySelector('#modal-usuario button.btn-his-primary') || document.querySelector('#modal-usuario button[type="submit"]');
+
+    return await ejecutarUnaVez('guardar-usuario-admin', async () => {
+        try {
+            let uidFinal = id;
+            if (id) {
+                await updateDoc(doc(db, "usuarios", id), {
+                    ...payload,
+                    actualizadoEn: serverTimestamp()
+                });
+            } else {
+                try {
+                    uidFinal = await crearCuentaAuthSecundaria(cor, pass);
+                } catch (authErr) {
+                    console.error("Error al registrar cuenta Auth:", authErr);
+                    let msg = "No se pudo registrar la cuenta en Authentication.";
+                    if (authErr.code === 'auth/email-already-in-use') {
+                        msg = "El correo electrónico ya se encuentra registrado en el sistema.";
+                    } else if (authErr.code === 'auth/weak-password') {
+                        msg = "La contraseña es muy débil (debe tener al menos 6 caracteres).";
+                    } else if (authErr.code === 'auth/invalid-email') {
+                        msg = "El formato del correo electrónico es inválido.";
+                    }
+                    mostrarAlerta("Error al Registrar", msg);
+                    return;
                 }
-                mostrarAlerta("Error al Registrar", msg);
-                return;
+
+                await setDoc(doc(db, "usuarios", uidFinal), {
+                    ...payload,
+                    uid: uidFinal,
+                    creadoEn: serverTimestamp()
+                });
             }
 
-            await setDoc(doc(db, "usuarios", uidFinal), {
-                ...payload,
-                uid: uidFinal,
-                creadoEn: serverTimestamp()
-            });
+            if (rol === 'Médico') {
+                await setDoc(doc(db, "medicos_publicos", uidFinal), {
+                    medicoUid: uidFinal,
+                    nombre: nom,
+                    especialidad: esp,
+                    activo: true
+                }, { merge: true });
+            }
+
+            mostrarExito(
+                id ? "Actualizado" : "Guardado",
+                id ? "Los datos se guardaron correctamente." : "Usuario registrado y habilitado para iniciar sesión."
+            );
+
+            cerrarModal('modal-usuario');
+            cargarUsuariosAdmin('init');
+            cargarEspecialistasFirebase();
+        } catch (error) {
+            console.error(error);
+            mostrarAlerta("Error", "Fallo al comunicar con la base de datos.");
         }
-
-        if (rol === 'Médico') {
-            await setDoc(doc(db, "medicos_publicos", uidFinal), {
-                medicoUid: uidFinal,
-                nombre: nom,
-                especialidad: esp,
-                activo: true
-            }, { merge: true });
-        }
-
-        mostrarExito(
-            id ? "Actualizado" : "Guardado",
-            id ? "Los datos se guardaron correctamente." : "Usuario registrado y habilitado para iniciar sesión."
-        );
-
-        cerrarModal('modal-usuario');
-        cargarUsuariosAdmin('init');
-        cargarEspecialistasFirebase();
-    } catch (error) {
-        console.error(error);
-        mostrarAlerta("Error", "Fallo al comunicar con la base de datos.");
-    }
+    }, { boton });
 }
 
 export async function eliminarUsuarioAdmin(id) {
@@ -283,13 +308,53 @@ export async function eliminarUsuarioAdmin(id) {
     }
 }
 
+export async function enviarResetPasswordDesdeModal() {
+    const correo = document.getElementById('input-usuario-correo')?.value?.trim();
+    if (!correo) {
+        mostrarAlerta("Correo Requerido", "El usuario debe tener un correo electrónico válido para enviar el restablecimiento.");
+        return;
+    }
+    const boton = document.getElementById('btn-enviar-reset-pass');
+    if (boton) {
+        if (boton.disabled) return;
+        boton.disabled = true;
+        boton.setAttribute('aria-busy', 'true');
+    }
+    try {
+        await enviarResetPasswordUsuario(correo);
+    } finally {
+        if (boton) {
+            boton.disabled = false;
+            boton.removeAttribute('aria-busy');
+        }
+    }
+}
+
 export async function enviarResetPasswordUsuario(correo) {
+    if (!correo) {
+        mostrarAlerta("Correo Requerido", "Ingrese o seleccione un correo electrónico válido.");
+        return;
+    }
+
     try {
         await sendPasswordResetEmail(auth, correo);
-        mostrarToast(`Se envió un correo a ${correo} para restablecer su clave.`, "info");
+        mostrarExito(
+            "Correo Enviado",
+            `Se envió un correo a ${correo} para que el empleado defina su nueva contraseña.`
+        );
     } catch (error) {
-        console.error(error);
-        mostrarAlerta("Error", "No se pudo enviar el correo de restablecimiento.");
+        console.error("Error al enviar email de restablecimiento:", error);
+        let mensaje = "No se pudo enviar el correo de restablecimiento.";
+        if (error.code === 'auth/user-not-found') {
+            mensaje = `No se encontró ninguna cuenta de autenticación registrada con el correo ${correo}.`;
+        } else if (error.code === 'auth/invalid-email') {
+            mensaje = "El formato del correo electrónico es inválido.";
+        } else if (error.code === 'auth/too-many-requests') {
+            mensaje = "Demasiadas solicitudes recientes. Espere unos minutos antes de reintentar.";
+        } else if (error.message) {
+            mensaje += ` (${error.message})`;
+        }
+        mostrarAlerta("Error al Restablecer", mensaje);
     }
 }
 
@@ -899,6 +964,7 @@ window.editarUsuarioAdmin = editarUsuarioAdmin;
 window.guardarUsuarioAdminFirebase = guardarUsuarioAdminFirebase;
 window.eliminarUsuarioAdmin = eliminarUsuarioAdmin;
 window.enviarResetPasswordUsuario = enviarResetPasswordUsuario;
+window.enviarResetPasswordDesdeModal = enviarResetPasswordDesdeModal;
 window.toggleCamposMedico = toggleCamposMedico;
 window.togglePasswordVisibility = togglePasswordVisibility;
 window.iniciarGuardadoModulacion = iniciarGuardadoModulacion;

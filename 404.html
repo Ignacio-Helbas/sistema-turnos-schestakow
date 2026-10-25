@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>404 - Página No Encontrada | Hospital Teodoro J. Schestakow</title>
+    <style>
+        :root {
+            --his-primary: #002845;
+            --his-secondary: #007a78;
+            --his-bg: #f8fafc;
+            --his-surface: #ffffff;
+            --his-border: #cbd5e1;
+            --his-text: #0f172a;
+            --his-text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--his-bg);
+            color: var(--his-text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.5;
+        }
+
+        /* Banner de Prototipo Académico Institucional */
+        .banner-prototipo {
+            background-color: #fef3c7;
+            border-bottom: 1px solid #fde68a;
+            color: #92400e;
+            padding: 0.5rem 1rem;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .header-simple {
+            background-color: var(--his-surface);
+            border-bottom: 3px solid var(--his-primary);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        }
+
+        .header-logo-icon {
+            width: 2.25rem;
+            height: 2.25rem;
+            background-color: var(--his-primary);
+            color: #ffffff;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.125rem;
+        }
+
+        .header-title {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            color: var(--his-primary);
+            line-height: 1.2;
+        }
+
+        .header-subtitle {
+            font-size: 0.75rem;
+            color: var(--his-text-muted);
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+        }
+
+        .error-card {
+            background-color: var(--his-surface);
+            border: 1px solid var(--his-border);
+            border-radius: 6px;
+            box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08);
+            max-width: 32rem;
+            width: 100%;
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+
+        .badge-codigo {
+            display: inline-block;
+            background-color: #fee2e2;
+            color: #991b1b;
+            font-family: ui-monospace, Consolas, monospace;
+            font-size: 0.8125rem;
+            font-weight: 700;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            margin-bottom: 1.25rem;
+            border: 1px solid #fecaca;
+        }
+
+        .error-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--his-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .error-desc {
+            font-size: 0.875rem;
+            color: var(--his-text-muted);
+            margin-bottom: 1.75rem;
+            line-height: 1.6;
+        }
+
+        .btn-volver {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background-color: var(--his-primary);
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 0.625rem 1.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--his-primary);
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+
+        .btn-volver:hover {
+            background-color: #001c31;
+            border-color: #001c31;
+        }
+
+        .btn-volver:focus-visible {
+            outline: 2px solid var(--his-primary);
+            outline-offset: 2px;
+        }
+
+        .footer-simple {
+            padding: 1rem 1.5rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--his-text-muted);
+            border-top: 1px solid #e2e8f0;
+            background-color: var(--his-surface);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Banner Prototipo Institucional -->
+    <div class="banner-prototipo" role="status">
+        PROTOTIPO EXPERIMENTAL / ACADÉMICO &bull; Hospital Teodoro J. Schestakow (San Rafael, Mendoza) &bull; Sin fines comerciales
+    </div>
+
+    <!-- Encabezado Sobrio HIS -->
+    <header class="header-simple">
+        <div class="header-logo-icon" aria-hidden="true">+</div>
+        <div>
+            <h1 class="header-title">Hospital Teodoro J. Schestakow</h1>
+            <p class="header-subtitle">Sistema Hospitalario y Gestión de Turnos (HIS)</p>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal de Error 404 -->
+    <main class="main-container">
+        <section class="error-card" aria-labelledby="titulo-error">
+            <span class="badge-codigo">ERROR 404 &bull; RECURSO NO ENCONTRADO</span>
+            <h2 id="titulo-error" class="error-title">Página o Documento No Disponible</h2>
+            <p class="error-desc">
+                La dirección solicitada no existe, fue movida o el identificador del recurso no es válido en el servidor hospitalario.
+            </p>
+            <a id="btn-retorno-portal" href="/" class="btn-volver">
+                &larr; Volver al Portal de Turnos
+            </a>
+        </section>
+    </main>
+
+    <!-- Pie Institucional -->
+    <footer class="footer-simple">
+        &copy; 2026 Hospital Teodoro J. Schestakow &bull; Dirección de Sistemas y Bioestadística
+    </footer>
+
+    <!-- Cálculo Dinámico de Enlace Base según Entorno (GitHub Pages / Firebase Hosting / Localhost) -->
+    <script>
+        (function() {
+            var esGitHubPages = window.location.hostname.indexOf('github.io') !== -1;
+            var rutaDestino = esGitHubPages ? '/sistema-turnos-schestakow/' : '/';
+            var enlace = document.getElementById('btn-retorno-portal');
+            if (enlace) {
+                enlace.setAttribute('href', rutaDestino);
+            }
+        })();
+    </script>
+</body>
+</html>

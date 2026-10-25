@@ -36,6 +36,8 @@ import {
     obtenerSesionActual
 } from "./auth.js";
 
+import { ejecutarUnaVez } from "./guardia.js";
+
 let pacienteActivoHC = null;
 let consultasHistoriaClinica = [];
 let ultimaCitacionGenerada = null;
@@ -465,7 +467,7 @@ export async function cargarCronologiaConsultas(pacienteId) {
                             ${esRectificada ? `<span class="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Rectificada por entrada posterior</span>` : ''}
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="text-[11px] bg-slate-100 text-slate-500 font-semibold px-2 py-0.5 rounded">Inmutable</span>
+                            <span class="text-[11px] bg-slate-100 text-slate-500 font-semibold px-2 py-0.5 rounded">No editable</span>
                             <button onclick="abrirModalRectificar('${c.id}')" class="text-xs text-emerald-700 hover:text-emerald-900 font-bold border border-emerald-200 px-2 py-1 rounded bg-emerald-50/50 hover:bg-emerald-100 transition">
                                 Rectificar
                             </button>
@@ -530,9 +532,9 @@ export async function guardarConsultaInmutable() {
     }
 
     const confirmado = await pedirConfirmacion(
-        "Confirmar Consulta Inmutable",
-        "Conforme a la Ley 26.529, esta consulta quedará asentada de forma permanente y NO podrá ser editada ni eliminada. ¿Desea registrarla definitivamente?",
-        "Sí, Registrar Inmutable"
+        "Confirmar Consulta",
+        "Por reglas de seguridad de Firestore, esta consulta no podrá ser editada ni eliminada una vez guardada. Toda corrección posterior se asentará como adenda. ¿Desea registrarla definitivamente?",
+        "Sí, Registrar Consulta"
     );
     if (!confirmado) return;
 
@@ -551,68 +553,72 @@ export async function guardarConsultaInmutable() {
         return;
     }
 
-    try {
-        const consultaId = generarIdCripto('CONS', 20);
-        const consultaRef = doc(db, "pacientes", pacienteActivoHC.id, "consultas", consultaId);
-        const batch = writeBatch(db);
+    const boton = document.getElementById('btn-guardar-consulta-hc') || document.querySelector('#btn-guardar-consulta-hc');
 
-        batch.set(consultaRef, {
-            turnoId: pacienteActivoHC.turnoId || '',
-            medicoUid: sesionActual.uid,
-            medicoNombre: sesionActual.nombre || 'Profesional Médico',
-            fecha: serverTimestamp(),
-            motivo: motivo,
-            diagnostico: diagnostico,
-            diagnosticoCodigo: '',
-            evolucion: evolucion,
-            indicaciones: indicaciones,
-            signosVitales: signosVitales,
-            corrige: null
-        });
+    return await ejecutarUnaVez(`guardar-consulta-${pacienteActivoHC.id}`, async () => {
+        try {
+            const consultaId = generarIdCripto('CONS', 20);
+            const consultaRef = doc(db, "pacientes", pacienteActivoHC.id, "consultas", consultaId);
+            const batch = writeBatch(db);
 
-        if (pacienteActivoHC.turnoId) {
-            const turnoRef = doc(db, "turnos", pacienteActivoHC.turnoId);
-            batch.update(turnoRef, {
-                estado: "Atendido",
-                atendidoEn: serverTimestamp(),
-                finConsultaEn: serverTimestamp(),
-                pacienteId: pacienteActivoHC.id
+            batch.set(consultaRef, {
+                turnoId: pacienteActivoHC.turnoId || '',
+                medicoUid: sesionActual.uid,
+                medicoNombre: sesionActual.nombre || 'Profesional Médico',
+                fecha: serverTimestamp(),
+                motivo: motivo,
+                diagnostico: diagnostico,
+                diagnosticoCodigo: '',
+                evolucion: evolucion,
+                indicaciones: indicaciones,
+                signosVitales: signosVitales,
+                corrige: null
             });
+
+            if (pacienteActivoHC.turnoId) {
+                const turnoRef = doc(db, "turnos", pacienteActivoHC.turnoId);
+                batch.update(turnoRef, {
+                    estado: "Atendido",
+                    atendidoEn: serverTimestamp(),
+                    finConsultaEn: serverTimestamp(),
+                    pacienteId: pacienteActivoHC.id
+                });
+            }
+
+            const auditRef = doc(collection(db, "auditoria"));
+            batch.set(auditRef, {
+                actorUid: sesionActual.uid,
+                actorRol: sesionActual.rol,
+                accion: "CONSULTA_MEDICA_REGISTRADA",
+                pacienteId: pacienteActivoHC.id,
+                consultaId: consultaId,
+                fecha: serverTimestamp(),
+                detalle: `Consulta registrada: ${motivo}`
+            });
+
+            await batch.commit();
+
+            mostrarExito("Consulta Asentada", "La consulta fue incorporada a la historia clínica de forma inmutable.");
+
+            document.getElementById('input-motivo-consulta').value = '';
+            document.getElementById('input-diagnostico-consulta').value = '';
+            document.getElementById('texto-evolucion').value = '';
+            document.getElementById('texto-indicaciones').value = '';
+            document.getElementById('sv-ta').value = '';
+            document.getElementById('sv-fc').value = '';
+            document.getElementById('sv-temp').value = '';
+            document.getElementById('sv-sat').value = '';
+            document.getElementById('sv-peso').value = '';
+            document.getElementById('sv-talla').value = '';
+
+            await cargarCronologiaConsultas(pacienteActivoHC.id);
+            cargarAgendaMedico();
+
+        } catch (e) {
+            console.error("Error guardando consulta:", e);
+            mostrarAlerta("Error al Guardar", "No se pudo registrar la consulta médica. Verifique permisos.");
         }
-
-        const auditRef = doc(collection(db, "auditoria"));
-        batch.set(auditRef, {
-            actorUid: sesionActual.uid,
-            actorRol: sesionActual.rol,
-            accion: "CONSULTA_MEDICA_REGISTRADA",
-            pacienteId: pacienteActivoHC.id,
-            consultaId: consultaId,
-            fecha: serverTimestamp(),
-            detalle: `Consulta registrada: ${motivo}`
-        });
-
-        await batch.commit();
-
-        mostrarExito("Consulta Asentada", "La consulta fue incorporada a la historia clínica de forma inmutable.");
-
-        document.getElementById('input-motivo-consulta').value = '';
-        document.getElementById('input-diagnostico-consulta').value = '';
-        document.getElementById('texto-evolucion').value = '';
-        document.getElementById('texto-indicaciones').value = '';
-        document.getElementById('sv-ta').value = '';
-        document.getElementById('sv-fc').value = '';
-        document.getElementById('sv-temp').value = '';
-        document.getElementById('sv-sat').value = '';
-        document.getElementById('sv-peso').value = '';
-        document.getElementById('sv-talla').value = '';
-
-        await cargarCronologiaConsultas(pacienteActivoHC.id);
-        cargarAgendaMedico();
-
-    } catch (e) {
-        console.error("Error guardando consulta:", e);
-        mostrarAlerta("Error al Guardar", "No se pudo registrar la consulta médica. Verifique permisos.");
-    }
+    }, { boton });
 }
 
 export function abrirModalRectificar(consultaId) {
@@ -657,45 +663,49 @@ export async function guardarRectificacionInmutable() {
         return;
     }
 
-    try {
-        const nuevaConsultaId = generarIdCripto('CONS_RECT', 20);
-        const consultaRef = doc(db, "pacientes", pacienteActivoHC.id, "consultas", nuevaConsultaId);
-        const batch = writeBatch(db);
+    const boton = document.querySelector('#modal-rectificar-consulta button.btn-his-primary') || document.querySelector('#modal-rectificar-consulta button[type="submit"]');
 
-        batch.set(consultaRef, {
-            turnoId: '',
-            medicoUid: sesionActual.uid,
-            medicoNombre: sesionActual.nombre || 'Profesional Médico',
-            fecha: serverTimestamp(),
-            motivo: `[Rectificación] ${motivo}`,
-            diagnostico: 'Rectificación de consulta previa',
-            diagnosticoCodigo: '',
-            evolucion: evolucion,
-            indicaciones: indicaciones,
-            signosVitales: {},
-            corrige: originalId
-        });
+    return await ejecutarUnaVez(`rectificar-consulta-${originalId}`, async () => {
+        try {
+            const nuevaConsultaId = generarIdCripto('CONS_RECT', 20);
+            const consultaRef = doc(db, "pacientes", pacienteActivoHC.id, "consultas", nuevaConsultaId);
+            const batch = writeBatch(db);
 
-        const auditRef = doc(collection(db, "auditoria"));
-        batch.set(auditRef, {
-            actorUid: sesionActual.uid,
-            actorRol: sesionActual.rol,
-            accion: "CONSULTA_RECTIFICADA",
-            pacienteId: pacienteActivoHC.id,
-            consultaId: originalId,
-            fecha: serverTimestamp(),
-            detalle: `Rectificación de consulta ${originalId}: ${motivo}`
-        });
+            batch.set(consultaRef, {
+                turnoId: '',
+                medicoUid: sesionActual.uid,
+                medicoNombre: sesionActual.nombre || 'Profesional Médico',
+                fecha: serverTimestamp(),
+                motivo: `[Rectificación] ${motivo}`,
+                diagnostico: 'Rectificación de consulta previa',
+                diagnosticoCodigo: '',
+                evolucion: evolucion,
+                indicaciones: indicaciones,
+                signosVitales: {},
+                corrige: originalId
+            });
 
-        await batch.commit();
+            const auditRef = doc(collection(db, "auditoria"));
+            batch.set(auditRef, {
+                actorUid: sesionActual.uid,
+                actorRol: sesionActual.rol,
+                accion: "CONSULTA_RECTIFICADA",
+                pacienteId: pacienteActivoHC.id,
+                consultaId: originalId,
+                fecha: serverTimestamp(),
+                detalle: `Rectificación de consulta ${originalId}: ${motivo}`
+            });
 
-        cerrarModal('modal-rectificar-consulta');
-        mostrarExito("Rectificación Asentada", "La rectificación fue registrada de forma inmutable.");
-        await cargarCronologiaConsultas(pacienteActivoHC.id);
-    } catch (e) {
-        console.error("Error al rectificar:", e);
-        mostrarAlerta("Error", "No se pudo registrar la rectificación.");
-    }
+            await batch.commit();
+
+            cerrarModal('modal-rectificar-consulta');
+            mostrarExito("Rectificación Asentada", "La rectificación fue registrada de forma inmutable.");
+            await cargarCronologiaConsultas(pacienteActivoHC.id);
+        } catch (e) {
+            console.error("Error al rectificar:", e);
+            mostrarAlerta("Error", "No se pudo registrar la rectificación.");
+        }
+    }, { boton });
 }
 
 export function abrirModalEditarResumen() {
@@ -1211,100 +1221,104 @@ export async function guardarProximaConsultaMedico() {
     const ok = await pedirConfirmacion("Confirmar Citación", msgConfirm, "Sí, Agendar");
     if (!ok) return;
 
-    try {
-        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-        const arr = new Uint8Array(20);
-        window.crypto.getRandomValues(arr);
-        let randStr = '';
-        for (let i = 0; i < 20; i++) randStr += chars[arr[i] % chars.length];
-        const turnoId = `TUR_${randStr}`;
+    const boton = document.querySelector('#modal-proxima-consulta button.btn-his-primary') || document.querySelector('#modal-proxima-consulta button[type="submit"]');
 
-        const batch = writeBatch(db);
-        const turnoRef = doc(db, "turnos", turnoId);
+    return await ejecutarUnaVez(`citacion-medico-${pacienteActivoHC.id}`, async () => {
+        try {
+            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+            const arr = new Uint8Array(20);
+            window.crypto.getRandomValues(arr);
+            let randStr = '';
+            for (let i = 0; i < 20; i++) randStr += chars[arr[i] % chars.length];
+            const turnoId = `TUR_${randStr}`;
 
-        // Extracción segura de contacto telefónico del paciente:
-        // Las reglas de Firestore (isValidTurnoStaffCreate) exigen string de longitud entre 6 y 25 caracteres.
-        // Si el paciente no posee celular demográfico registrado (ej. alta rápida de emergencia),
-        // se emplea el marcador numérico hospitalario "2604000000" (San Rafael demo, ver metricas.js L990)
-        // para asegurar integridad de esquema sin bloquear la citación clínica ni romper validaciones.
-        let celularRaw = '';
-        if (typeof pacienteActivoHC.contacto === 'object' && pacienteActivoHC.contacto !== null) {
-            celularRaw = (pacienteActivoHC.contacto.celular || '').trim();
-        } else if (typeof pacienteActivoHC.contacto === 'string') {
-            celularRaw = pacienteActivoHC.contacto.trim();
-        }
-        const pacienteCelularValido = (typeof celularRaw === 'string' && celularRaw.length >= 6 && celularRaw.length <= 25)
-            ? celularRaw
-            : '2604000000';
+            const batch = writeBatch(db);
+            const turnoRef = doc(db, "turnos", turnoId);
 
-        const emailRaw = (typeof pacienteActivoHC.contacto === 'object' && pacienteActivoHC.contacto !== null)
-            ? (pacienteActivoHC.contacto.email || '')
-            : (pacienteActivoHC.email || '');
+            // Extracción segura de contacto telefónico del paciente:
+            // Las reglas de Firestore (isValidTurnoStaffCreate) exigen string de longitud entre 6 y 25 caracteres.
+            // Si el paciente no posee celular demográfico registrado (ej. alta rápida de emergencia),
+            // se emplea el marcador numérico hospitalario "2604000000" (San Rafael demo, ver metricas.js L990)
+            // para asegurar integridad de esquema sin bloquear la citación clínica ni romper validaciones.
+            let celularRaw = '';
+            if (typeof pacienteActivoHC.contacto === 'object' && pacienteActivoHC.contacto !== null) {
+                celularRaw = (pacienteActivoHC.contacto.celular || '').trim();
+            } else if (typeof pacienteActivoHC.contacto === 'string') {
+                celularRaw = pacienteActivoHC.contacto.trim();
+            }
+            const pacienteCelularValido = (typeof celularRaw === 'string' && celularRaw.length >= 6 && celularRaw.length <= 25)
+                ? celularRaw
+                : '2604000000';
 
-        const turnoData = {
-            especialidad: especialidadMed,
-            medico: nombreMed,
-            medicoUid: medUid,
-            fecha: fecha,
-            horario: horario,
-            pacienteNombre: nombreCompleto,
-            pacienteDni: pacienteActivoHC.dni,
-            pacienteCelular: pacienteCelularValido,
-            pacienteEmail: typeof emailRaw === 'string' ? emailRaw.substring(0, 100) : '',
-            pacienteCobertura: pacienteActivoHC.cobertura || 'Sin Obra Social',
-            pacienteFechaNacimiento: pacienteActivoHC.fechaNacimiento || '1990-01-01',
-            pacienteId: pacienteActivoHC.id,
-            codigoConfirmacion: turnoId,
-            canal: "Consultorio",
-            estado: esExacto ? "Confirmado Presencial" : "Pendiente de Horario",
-            motivoCitacion: motivo,
-            modoHorario: esExacto ? "exacto" : "paciente",
-            creadoEn: serverTimestamp(),
-            creadoPor: sesionActual.uid,
-            llegadaEn: null,
-            inicioConsultaEn: null,
-            finConsultaEn: null,
-            canceladoPor: null,
-            canceladoEn: null,
-            reprogramadoDe: null,
-            timestamp: serverTimestamp()
-        };
+            const emailRaw = (typeof pacienteActivoHC.contacto === 'object' && pacienteActivoHC.contacto !== null)
+                ? (pacienteActivoHC.contacto.email || '')
+                : (pacienteActivoHC.email || '');
 
-        batch.set(turnoRef, turnoData);
-
-        if (esExacto) {
-            const slotId = `${medUid}_${fecha}_${horario.replace(':', '')}`;
-            batch.set(doc(db, "disponibilidad", slotId), {
+            const turnoData = {
+                especialidad: especialidadMed,
+                medico: nombreMed,
                 medicoUid: medUid,
                 fecha: fecha,
                 horario: horario,
-                creadoEn: serverTimestamp()
+                pacienteNombre: nombreCompleto,
+                pacienteDni: pacienteActivoHC.dni,
+                pacienteCelular: pacienteCelularValido,
+                pacienteEmail: typeof emailRaw === 'string' ? emailRaw.substring(0, 100) : '',
+                pacienteCobertura: pacienteActivoHC.cobertura || 'Sin Obra Social',
+                pacienteFechaNacimiento: pacienteActivoHC.fechaNacimiento || '1990-01-01',
+                pacienteId: pacienteActivoHC.id,
+                codigoConfirmacion: turnoId,
+                canal: "Consultorio",
+                estado: esExacto ? "Confirmado Presencial" : "Pendiente de Horario",
+                motivoCitacion: motivo,
+                modoHorario: esExacto ? "exacto" : "paciente",
+                creadoEn: serverTimestamp(),
+                creadoPor: sesionActual.uid,
+                llegadaEn: null,
+                inicioConsultaEn: null,
+                finConsultaEn: null,
+                canceladoPor: null,
+                canceladoEn: null,
+                reprogramadoDe: null,
+                timestamp: serverTimestamp()
+            };
+
+            batch.set(turnoRef, turnoData);
+
+            if (esExacto) {
+                const slotId = `${medUid}_${fecha}_${horario.replace(':', '')}`;
+                batch.set(doc(db, "disponibilidad", slotId), {
+                    medicoUid: medUid,
+                    fecha: fecha,
+                    horario: horario,
+                    creadoEn: serverTimestamp()
+                });
+            }
+
+            batch.set(doc(collection(db, "auditoria")), {
+                actorUid: sesionActual.uid,
+                actorRol: sesionActual.rol,
+                accion: "CITACION_PROXIMA_CONSULTA",
+                pacienteId: pacienteActivoHC.id,
+                detalle: `Citación agendada para ${fecha} (${esExacto ? horario + ' hs' : 'Horario a elección del paciente'}) - Motivo: ${motivo}`,
+                fecha: serverTimestamp()
             });
+
+            await batch.commit();
+
+            ultimaCitacionGenerada = {
+                id: turnoId,
+                ...turnoData
+            };
+
+            cerrarModal('modal-proxima-consulta');
+            mostrarComprobanteCitacion(ultimaCitacionGenerada);
+
+        } catch (e) {
+            console.error("Error al agendar próxima consulta:", e);
+            mostrarAlerta("Error al Agendar", "No se pudo registrar la citación. Verifique los datos ingresados.");
         }
-
-        batch.set(doc(collection(db, "auditoria")), {
-            actorUid: sesionActual.uid,
-            actorRol: sesionActual.rol,
-            accion: "CITACION_PROXIMA_CONSULTA",
-            pacienteId: pacienteActivoHC.id,
-            detalle: `Citación agendada para ${fecha} (${esExacto ? horario + ' hs' : 'Horario a elección del paciente'}) - Motivo: ${motivo}`,
-            fecha: serverTimestamp()
-        });
-
-        await batch.commit();
-
-        ultimaCitacionGenerada = {
-            id: turnoId,
-            ...turnoData
-        };
-
-        cerrarModal('modal-proxima-consulta');
-        mostrarComprobanteCitacion(ultimaCitacionGenerada);
-
-    } catch (e) {
-        console.error("Error al agendar próxima consulta:", e);
-        mostrarAlerta("Error al Agendar", "No se pudo registrar la citación. Verifique los datos ingresados.");
-    }
+    }, { boton });
 }
 
 function mostrarComprobanteCitacion(cita) {

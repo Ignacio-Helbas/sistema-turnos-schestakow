@@ -34,6 +34,8 @@ import {
     EMAILJS_TEMPLATE_CANCELACION
 } from "./ui.js";
 
+import { ejecutarUnaVez } from "./guardia.js";
+
 let bdMedicosDinamica = {};
 let duracionTurnoGlobal = 15;
 let modulacionPorMedico = {};
@@ -125,9 +127,25 @@ export async function cargarEspecialistasPublico() {
             opcionesHtml += `</optgroup>`;
         }
 
-        if (selectEspPublico) selectEspPublico.innerHTML = opcionesHtml;
+        if (selectEspPublico) {
+            selectEspPublico.innerHTML = opcionesHtml;
+            const avisoPrevio = document.getElementById('aviso-error-especialidades');
+            if (avisoPrevio) avisoPrevio.remove();
+        }
     } catch (e) {
         console.warn("No se pudieron cargar especialistas públicos:", e);
+        const selectEspPublico = document.getElementById('select-especialidad');
+        if (selectEspPublico) {
+            selectEspPublico.innerHTML = '<option value="">Error al cargar especialidades. Intente recargar.</option>';
+            let avisoError = document.getElementById('aviso-error-especialidades');
+            if (!avisoError && selectEspPublico.parentNode) {
+                avisoError = document.createElement('p');
+                avisoError.id = 'aviso-error-especialidades';
+                avisoError.className = 'text-xs text-rose-600 mt-1.5 flex items-center gap-1 font-medium';
+                avisoError.innerHTML = '<span>⚠️ No se pudieron cargar las especialidades disponibles. Verifique su conexión o recargue la página.</span>';
+                selectEspPublico.parentNode.appendChild(avisoError);
+            }
+        }
     }
 }
 
@@ -412,98 +430,102 @@ export async function confirmarTurnoFirebase() {
     const selectedOption = selectMed.options[selectMed.selectedIndex];
     const medicoUid = selectedOption ? (selectedOption.getAttribute('data-uid') || 'medico_demo') : 'medico_demo';
 
-    try {
-        const slotId = `${medicoUid}_${fec}_${hor.replace(':', '')}`;
-        const slotRef = doc(db, "disponibilidad", slotId);
+    const boton = document.querySelector('#modal-resumen-turno button.btn-his-primary') || document.getElementById('btn-confirmar-turno');
 
-        // Verificación previa del slot determinista
-        const slotSnap = await getDoc(slotRef);
-        if (slotSnap.exists()) {
-            mostrarAlerta("Horario No Disponible", "El horario seleccionado ya fue reservado. Por favor elija otro.");
-            generarHorariosPublicos();
-            return;
+    return await ejecutarUnaVez('confirmar-turno-web', async () => {
+        try {
+            const slotId = `${medicoUid}_${fec}_${hor.replace(':', '')}`;
+            const slotRef = doc(db, "disponibilidad", slotId);
+
+            // Verificación previa del slot determinista
+            const slotSnap = await getDoc(slotRef);
+            if (slotSnap.exists()) {
+                mostrarAlerta("Horario No Disponible", "El horario seleccionado ya fue reservado. Por favor elija otro.");
+                generarHorariosPublicos();
+                return;
+            }
+
+            // Generar código de turno alfanumérico seguro (8 caracteres Base62: 218 billones de combinaciones)
+            const turnoId = generarCodigoTurno(8);
+            const turnoRef = doc(db, "turnos", turnoId);
+
+            // Escritura atómica en lote: Slot determinista + Turno detallado
+            const batch = writeBatch(db);
+
+            batch.set(slotRef, {
+                medicoUid: medicoUid,
+                fecha: fec,
+                horario: hor,
+                creadoEn: serverTimestamp()
+            });
+
+            batch.set(turnoRef, {
+                especialidad: esp,
+                medico: med,
+                medicoUid: medicoUid,
+                fecha: fec,
+                horario: hor,
+                pacienteNombre: nom,
+                pacienteDni: dni,
+                pacienteCelular: cel,
+                pacienteEmail: email || "",
+                pacienteCobertura: cobertura,
+                pacienteFechaNacimiento: fechaNacimiento,
+                codigoConfirmacion: turnoId,
+                canal: "Web",
+                estado: "Confirmado",
+                consentimientoLey25326: true,
+                consentimientoLey26529: true,
+                creadoEn: serverTimestamp(),
+                creadoPor: null,
+                llegadaEn: null,
+                inicioConsultaEn: null,
+                finConsultaEn: null,
+                canceladoPor: null,
+                canceladoEn: null,
+                reprogramadoDe: null
+            });
+
+            await batch.commit();
+
+            enviarCorreoNotificacion(EMAILJS_TEMPLATE_CONFIRMACION, {
+                nombre_paciente: nom, medico: med, especialidad: esp, fecha: fec, hora: hor,
+                email_destino: email, codigo_confirmacion: turnoId
+            });
+
+            prepararComprobanteExito({
+                turnoId,
+                dni,
+                nom,
+                med,
+                esp,
+                fec,
+                hor
+            });
+
+            mostrarExito("¡Turno Confirmado!", `Tu código de reserva es: ${turnoId}. Guardalo o escaneá el código QR para verificarlo.`);
+
+            document.getElementById('paciente-nombre').value = '';
+            document.getElementById('paciente-dni').value = '';
+            document.getElementById('paciente-celular').value = '';
+            document.getElementById('paciente-email').value = '';
+            if (document.getElementById('paciente-cobertura')) document.getElementById('paciente-cobertura').value = 'Sin Cobertura (Pública)';
+            if (document.getElementById('paciente-fecha-nacimiento')) document.getElementById('paciente-fecha-nacimiento').value = '';
+            if (chkConsentimiento) chkConsentimiento.checked = false;
+            if (chkLey26529) chkLey26529.checked = false;
+            document.getElementById('input-fecha-paciente').value = '';
+            if (window.calendarioHospitalario) window.calendarioHospitalario.deseleccionar();
+            document.getElementById('select-especialidad').value = '';
+            document.getElementById('horarios-publicos').innerHTML = '<p class="text-xs text-slate-500 col-span-2 sm:col-span-4 text-center py-3">Seleccione Profesional y Fecha para ver horarios.</p>';
+            document.getElementById('select-medico').innerHTML = '<option>Primero seleccione especialidad</option>';
+            document.getElementById('select-medico').disabled = true;
+            if (window.actualizarProgresoFormulario) window.actualizarProgresoFormulario();
+
+        } catch (error) {
+            console.error("Error al confirmar turno:", error);
+            mostrarAlerta("Error al Registrar", "Hubo un error al registrar el turno. Intente nuevamente.");
         }
-
-        // Generar código de turno alfanumérico seguro (8 caracteres Base62: 218 billones de combinaciones)
-        const turnoId = generarCodigoTurno(8);
-        const turnoRef = doc(db, "turnos", turnoId);
-
-        // Escritura atómica en lote: Slot determinista + Turno detallado
-        const batch = writeBatch(db);
-
-        batch.set(slotRef, {
-            medicoUid: medicoUid,
-            fecha: fec,
-            horario: hor,
-            creadoEn: serverTimestamp()
-        });
-
-        batch.set(turnoRef, {
-            especialidad: esp,
-            medico: med,
-            medicoUid: medicoUid,
-            fecha: fec,
-            horario: hor,
-            pacienteNombre: nom,
-            pacienteDni: dni,
-            pacienteCelular: cel,
-            pacienteEmail: email || "",
-            pacienteCobertura: cobertura,
-            pacienteFechaNacimiento: fechaNacimiento,
-            codigoConfirmacion: turnoId,
-            canal: "Web",
-            estado: "Confirmado",
-            consentimientoLey25326: true,
-            consentimientoLey26529: true,
-            creadoEn: serverTimestamp(),
-            creadoPor: null,
-            llegadaEn: null,
-            inicioConsultaEn: null,
-            finConsultaEn: null,
-            canceladoPor: null,
-            canceladoEn: null,
-            reprogramadoDe: null
-        });
-
-        await batch.commit();
-
-        enviarCorreoNotificacion(EMAILJS_TEMPLATE_CONFIRMACION, {
-            nombre_paciente: nom, medico: med, especialidad: esp, fecha: fec, hora: hor,
-            email_destino: email, codigo_confirmacion: turnoId
-        });
-
-        prepararComprobanteExito({
-            turnoId,
-            dni,
-            nom,
-            med,
-            esp,
-            fec,
-            hor
-        });
-
-        mostrarExito("¡Turno Confirmado!", `Tu código de reserva es: ${turnoId}. Guardalo o escaneá el código QR para verificarlo.`);
-
-        document.getElementById('paciente-nombre').value = '';
-        document.getElementById('paciente-dni').value = '';
-        document.getElementById('paciente-celular').value = '';
-        document.getElementById('paciente-email').value = '';
-        if (document.getElementById('paciente-cobertura')) document.getElementById('paciente-cobertura').value = 'Sin Cobertura (Pública)';
-        if (document.getElementById('paciente-fecha-nacimiento')) document.getElementById('paciente-fecha-nacimiento').value = '';
-        if (chkConsentimiento) chkConsentimiento.checked = false;
-        if (chkLey26529) chkLey26529.checked = false;
-        document.getElementById('input-fecha-paciente').value = '';
-        if (window.calendarioHospitalario) window.calendarioHospitalario.deseleccionar();
-        document.getElementById('select-especialidad').value = '';
-        document.getElementById('horarios-publicos').innerHTML = '<p class="text-xs text-slate-500 col-span-2 sm:col-span-4 text-center py-3">Seleccione Profesional y Fecha para ver horarios.</p>';
-        document.getElementById('select-medico').innerHTML = '<option>Primero seleccione especialidad</option>';
-        document.getElementById('select-medico').disabled = true;
-        if (window.actualizarProgresoFormulario) window.actualizarProgresoFormulario();
-
-    } catch (error) {
-        console.error("Error al confirmar turno:", error);
-        mostrarAlerta("Error al Registrar", "Hubo un error al registrar el turno. Intente nuevamente.");
-    }
+    }, { boton });
 }
 
 /**
@@ -719,130 +741,139 @@ export async function confirmarHorarioCitacionPaciente() {
     if (!ok) return;
 
     const btnConfirmar = document.getElementById('btn-confirmar-horario-citacion');
-    if (btnConfirmar) {
-        btnConfirmar.disabled = true;
-        btnConfirmar.innerText = "Guardando...";
-    }
 
-    try {
-        const snap = await getDoc(doc(db, "turnos", citaId));
-        if (!snap.exists()) {
-            mostrarAlerta("Error", "No se encontró el turno.");
-            return;
-        }
-
-        const t = snap.data();
-        if (t.estado !== "Pendiente de Horario") {
-            mostrarAlerta("Atención", "Este turno ya no se encuentra pendiente de horario.");
-            cerrarModal('modal-elegir-horario-citacion');
-            return;
-        }
-
-        const slotId = `${t.medicoUid}_${t.fecha}_${horario.replace(':', '')}`;
-        const batch = writeBatch(db);
-
-        // 1. Reservar slot en disponibilidad
-        batch.set(doc(db, "disponibilidad", slotId), {
-            medicoUid: t.medicoUid,
-            fecha: t.fecha,
-            horario: horario,
-            creadoEn: serverTimestamp()
-        });
-
-        // 2. Actualizar turno
-        const turnoRef = doc(db, "turnos", citaId);
-        batch.update(turnoRef, {
-            horario: horario,
-            estado: "Confirmado",
-            confirmadoEn: serverTimestamp()
-        });
-
-        await batch.commit();
-
-        cerrarModal('modal-elegir-horario-citacion');
-
-        prepararComprobanteExito({
-            turnoId: citaId,
-            dni: t.pacienteDni || '',
-            nom: t.pacienteNombre || '',
-            med: t.medico || '',
-            esp: t.especialidad || '',
-            fec: t.fecha,
-            hor: horario
-        });
-
-        mostrarExito("¡Turno Confirmado!", `Tu consulta con ${t.medico} quedó confirmada para el día ${formatearFechaAR(t.fecha)} a las ${horario} hs.`);
-
-        if (t.pacienteEmail) {
-            enviarCorreoNotificacion(EMAILJS_TEMPLATE_CONFIRMACION, {
-                nombre_paciente: t.pacienteNombre,
-                medico: t.medico,
-                especialidad: t.especialidad,
-                fecha: t.fecha,
-                hora: horario,
-                codigo_turno: citaId,
-                email_destino: t.pacienteEmail
-            });
-        }
-
-        const inputCodigo = document.getElementById('consulta-codigo-turno');
-        if (inputCodigo && inputCodigo.value === citaId) {
-            buscarTurnosPaciente();
-        }
-    } catch (e) {
-        console.error("Error al confirmar horario de citación:", e);
-        mostrarAlerta("Error al Confirmar", "No se pudo confirmar el horario seleccionado. Es posible que otro paciente lo haya ocupado recién.");
-    } finally {
+    return await ejecutarUnaVez(`citacion-horario-${citaId}`, async () => {
         if (btnConfirmar) {
-            btnConfirmar.disabled = false;
-            btnConfirmar.innerText = "Confirmar Horario";
+            btnConfirmar.innerText = "Guardando...";
         }
-    }
+
+        try {
+            const snap = await getDoc(doc(db, "turnos", citaId));
+            if (!snap.exists()) {
+                mostrarAlerta("Error", "No se encontró el turno.");
+                return;
+            }
+
+            const t = snap.data();
+            if (t.estado !== "Pendiente de Horario") {
+                mostrarAlerta("Atención", "Este turno ya no se encuentra pendiente de horario.");
+                cerrarModal('modal-elegir-horario-citacion');
+                return;
+            }
+
+            const slotId = `${t.medicoUid}_${t.fecha}_${horario.replace(':', '')}`;
+            const batch = writeBatch(db);
+
+            // 1. Reservar slot en disponibilidad
+            batch.set(doc(db, "disponibilidad", slotId), {
+                medicoUid: t.medicoUid,
+                fecha: t.fecha,
+                horario: horario,
+                creadoEn: serverTimestamp()
+            });
+
+            // 2. Actualizar turno
+            const turnoRef = doc(db, "turnos", citaId);
+            batch.update(turnoRef, {
+                horario: horario,
+                estado: "Confirmado",
+                confirmadoEn: serverTimestamp()
+            });
+
+            await batch.commit();
+
+            cerrarModal('modal-elegir-horario-citacion');
+
+            prepararComprobanteExito({
+                turnoId: citaId,
+                dni: t.pacienteDni || '',
+                nom: t.pacienteNombre || '',
+                med: t.medico || '',
+                esp: t.especialidad || '',
+                fec: t.fecha,
+                hor: horario
+            });
+
+            mostrarExito("¡Turno Confirmado!", `Tu consulta con ${t.medico} quedó confirmada para el día ${formatearFechaAR(t.fecha)} a las ${horario} hs.`);
+
+            if (t.pacienteEmail) {
+                enviarCorreoNotificacion(EMAILJS_TEMPLATE_CONFIRMACION, {
+                    nombre_paciente: t.pacienteNombre,
+                    medico: t.medico,
+                    especialidad: t.especialidad,
+                    fecha: t.fecha,
+                    hora: horario,
+                    codigo_turno: citaId,
+                    email_destino: t.pacienteEmail
+                });
+            }
+
+            const inputCodigo = document.getElementById('consulta-codigo-turno');
+            if (inputCodigo && inputCodigo.value === citaId) {
+                buscarTurnosPaciente();
+            }
+        } catch (e) {
+            console.error("Error al confirmar horario de citación:", e);
+            mostrarAlerta("Error al Confirmar", "No se pudo confirmar el horario seleccionado. Es posible que otro paciente lo haya ocupado recién.");
+        } finally {
+            if (btnConfirmar) {
+                btnConfirmar.innerText = "Confirmar Horario";
+            }
+        }
+    }, { boton: btnConfirmar });
 }
+
+export const confirmarCitacionHorario = confirmarHorarioCitacionPaciente;
 
 export async function cancelarTurnoFirebase(id) {
     const confirmado = await pedirConfirmacion("¿Cancelar este turno?", "Se cancelará la reserva y se enviará un correo notificando la cancelación.", "Sí, cancelar turno");
     if (!confirmado) return;
 
-    try {
-        const batch = writeBatch(db);
-        const turnoRef = doc(db, "turnos", id);
+    const boton = document.getElementById('btn-cancelar-turno-paciente') || document.querySelector('#modal-cancelar-paciente button.btn-his-primary') || document.querySelector('#modal-confirmacion-accion button.btn-his-primary');
 
-        batch.update(turnoRef, {
-            estado: "Cancelado por Paciente",
-            canceladoEn: serverTimestamp(),
-            canceladoPor: "paciente"
-        });
+    return await ejecutarUnaVez(`cancelar-turno-publico-${id}`, async () => {
+        try {
+            const batch = writeBatch(db);
+            const turnoRef = doc(db, "turnos", id);
 
-        if (turnoEncontradoActivo && turnoEncontradoActivo.medicoUid && turnoEncontradoActivo.fecha && turnoEncontradoActivo.horario) {
-            const slotId = `${turnoEncontradoActivo.medicoUid}_${turnoEncontradoActivo.fecha}_${turnoEncontradoActivo.horario.replace(':', '')}`;
-            batch.delete(doc(db, "disponibilidad", slotId));
-        }
-
-        await batch.commit();
-
-        if (turnoEncontradoActivo) {
-            enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
-                nombre_paciente: turnoEncontradoActivo.pacienteNombre,
-                medico: turnoEncontradoActivo.medico,
-                especialidad: turnoEncontradoActivo.especialidad,
-                fecha: turnoEncontradoActivo.fecha,
-                hora: turnoEncontradoActivo.horario,
-                email_destino: turnoEncontradoActivo.pacienteEmail
+            batch.update(turnoRef, {
+                estado: "Cancelado por Paciente",
+                canceladoEn: serverTimestamp(),
+                canceladoPor: "paciente"
             });
+
+            if (turnoEncontradoActivo && turnoEncontradoActivo.medicoUid && turnoEncontradoActivo.fecha && turnoEncontradoActivo.horario) {
+                const slotId = `${turnoEncontradoActivo.medicoUid}_${turnoEncontradoActivo.fecha}_${turnoEncontradoActivo.horario.replace(':', '')}`;
+                batch.delete(doc(db, "disponibilidad", slotId));
+            }
+
+            await batch.commit();
+
+            if (turnoEncontradoActivo) {
+                enviarCorreoNotificacion(EMAILJS_TEMPLATE_CANCELACION, {
+                    nombre_paciente: turnoEncontradoActivo.pacienteNombre,
+                    medico: turnoEncontradoActivo.medico,
+                    especialidad: turnoEncontradoActivo.especialidad,
+                    fecha: turnoEncontradoActivo.fecha,
+                    hora: turnoEncontradoActivo.horario,
+                    email_destino: turnoEncontradoActivo.pacienteEmail
+                });
+            }
+
+            const talon = document.getElementById('talon-comprobante-exito');
+            if (talon) talon.style.display = 'none';
+
+            mostrarExito("Turno Cancelado", "Tu turno ha sido cancelado exitosamente.");
+            cerrarModal('modal-cancelar-paciente');
+            generarHorariosPublicos();
+        } catch (error) {
+            console.error(error);
+            mostrarAlerta("Error", "No se pudo cancelar el turno.");
         }
-
-        const talon = document.getElementById('talon-comprobante-exito');
-        if (talon) talon.style.display = 'none';
-
-        mostrarExito("Turno Cancelado", "Tu turno ha sido cancelado exitosamente.");
-        cerrarModal('modal-cancelar-paciente');
-        generarHorariosPublicos();
-    } catch (error) {
-        console.error(error);
-        mostrarAlerta("Error", "No se pudo cancelar el turno.");
-    }
+    }, { boton });
 }
+
+export const cancelarTurnoPublico = cancelarTurnoFirebase;
 
 // Inicialización automática al cargar el DOM
 document.addEventListener("DOMContentLoaded", async () => {

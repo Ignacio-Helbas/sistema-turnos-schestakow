@@ -46,6 +46,14 @@
     <style>
         body { 
             background-image: url('img/COVID-19-LABORATORIO-HOSPITAL-SCHESTAKOW-6714.jpg');
+            background-image: -webkit-image-set(
+                url('img/COVID-19-LABORATORIO-HOSPITAL-SCHESTAKOW-6714.webp') 1x,
+                url('img/COVID-19-LABORATORIO-HOSPITAL-SCHESTAKOW-6714.jpg') 1x
+            );
+            background-image: image-set(
+                url('img/COVID-19-LABORATORIO-HOSPITAL-SCHESTAKOW-6714.webp') type('image/webp'),
+                url('img/COVID-19-LABORATORIO-HOSPITAL-SCHESTAKOW-6714.jpg') type('image/jpeg')
+            );
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -171,7 +179,10 @@
             <div class="flex justify-between items-center h-16 sm:h-20 gap-4">
                 <!-- Logo institucional (Doble clic para acceso institucional a panel.html) -->
                 <div ondblclick="window.location.href='panel.html'" class="flex items-center select-none cursor-pointer" title="Hospital Teodoro J. Schestakow (Doble clic para acceso institucional)">
-                    <img src="img/LogoHospitalSolo.png" alt="Hospital Teodoro J. Schestakow" class="h-10 sm:h-12 w-auto object-contain">
+                    <picture>
+                        <source srcset="img/LogoHospitalSolo-header.webp" type="image/webp">
+                        <img src="img/LogoHospitalSolo-header.png" alt="Hospital Teodoro J. Schestakow" width="163" height="48" class="h-10 sm:h-12 w-auto object-contain">
+                    </picture>
                 </div>
 
                 <!-- Navegación Pública: Turnos Online vs Directorio de Centros de Salud -->
@@ -562,7 +573,10 @@
             <div id="talon-comprobante-exito" class="bg-slate-50 border border-slate-200 rounded-lg p-3.5 sm:p-4 text-left text-xs mb-4 space-y-3">
                 <div class="flex justify-between items-center border-b border-slate-200 pb-2">
                     <div class="flex items-center gap-2">
-                        <img src="img/LogoHospitalSolo.png" alt="Hospital Schestakow" class="h-5 w-auto object-contain">
+                        <picture>
+                            <source srcset="img/LogoHospitalSolo-sm.webp" type="image/webp">
+                            <img src="img/LogoHospitalSolo-sm.png" alt="Hospital Schestakow" width="68" height="20" loading="lazy" class="h-5 w-auto object-contain">
+                        </picture>
                         <span class="font-bold text-[#002845] uppercase text-[11px] tracking-wide">Comprobante de Turno Oficial</span>
                     </div>
                     <span class="badge-his badge-his-atendido text-[10px] font-semibold">Confirmado</span>

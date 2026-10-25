@@ -34,6 +34,8 @@ import {
     obtenerPacienteActivoHC
 } from "./consultorio.js";
 
+import { ejecutarUnaVez } from "./guardia.js";
+
 // Estado interno del módulo
 let interconsultasCargadas = [];
 let interconsultaSeleccionadaId = null;
@@ -645,29 +647,33 @@ export async function confirmarCrearNuevaInterconsulta() {
         return;
     }
 
-    try {
-        const idCreada = await crearInterconsulta({
-            idTurno: idTurno || "turno-manual",
-            codigoTurno: codigoTurno || "MANUAL",
-            asunto: asunto,
-            motivo: motivo,
-            especialidadDestino: especialidad || "Medicina",
-            prioridad: prioridad,
-            participanteDestinoUid: colegaUid
-        });
+    const boton = document.querySelector('#modal-nueva-interconsulta button.btn-his-primary') || document.querySelector('#modal-nueva-interconsulta button[type="submit"]');
 
-        cerrarModal("modal-nueva-interconsulta");
-        mostrarExito("Interconsulta Iniciada", "La interconsulta fue creada y notificada al profesional de forma confidencial.");
+    return await ejecutarUnaVez('crear-interconsulta', async () => {
+        try {
+            const idCreada = await crearInterconsulta({
+                idTurno: idTurno || "turno-manual",
+                codigoTurno: codigoTurno || "MANUAL",
+                asunto: asunto,
+                motivo: motivo,
+                especialidadDestino: especialidad || "Medicina",
+                prioridad: prioridad,
+                participanteDestinoUid: colegaUid
+            });
 
-        // Cambiar a la pestaña de interconsultas y abrirla
-        cambiarSubvistaDoctor("interconsultas");
-        setTimeout(() => {
-            seleccionarInterconsulta(idCreada);
-        }, 300);
-    } catch (e) {
-        console.error("Error al crear interconsulta:", e);
-        mostrarAlerta("Error al Crear", e.message || "No se pudo crear la interconsulta.");
-    }
+            cerrarModal("modal-nueva-interconsulta");
+            mostrarExito("Interconsulta Iniciada", "La interconsulta fue creada y notificada al profesional de forma confidencial.");
+
+            // Cambiar a la pestaña de interconsultas y abrirla
+            cambiarSubvistaDoctor("interconsultas");
+            setTimeout(() => {
+                seleccionarInterconsulta(idCreada);
+            }, 300);
+        } catch (e) {
+            console.error("Error al crear interconsulta:", e);
+            mostrarAlerta("Error al Crear", e.message || "No se pudo crear la interconsulta.");
+        }
+    }, { boton });
 }
 
 /**

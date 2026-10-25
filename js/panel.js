@@ -17,7 +17,9 @@ import {
 import {
     mostrarAlerta,
     escaparHTML,
-    establecerLimitesFecha
+    establecerLimitesFecha,
+    mostrarOverlayCargaPanel,
+    ocultarOverlayCargaPanel
 } from "./ui.js";
 
 import {
@@ -341,9 +343,14 @@ function iniciarRelojHospitalario() {
 }
 
 // Inicialización de la sesión y módulos del panel
-inicializarAuth((sesion) => {
-    aplicarPermisosVisuales(sesion);
-    iniciarModuloStaff();
+inicializarAuth(async (sesion) => {
+    mostrarOverlayCargaPanel("Cargando módulos institucionales...");
+    try {
+        aplicarPermisosVisuales(sesion);
+        await iniciarModuloStaff();
+    } finally {
+        ocultarOverlayCargaPanel();
+    }
 });
 
 if (document.readyState === 'loading') {

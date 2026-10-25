@@ -195,6 +195,22 @@ export function formatearHoraAR(horaVal) {
 /**
  * Notificación Toast flotante, accesible y discreta para operaciones rutinarias
  */
+export function mostrarOverlayCargaPanel(mensaje = "Cargando panel...") {
+    const overlay = document.getElementById('overlay-carga-panel');
+    const texto = document.getElementById('overlay-carga-texto');
+    if (texto && mensaje) texto.textContent = mensaje;
+    if (overlay) {
+        overlay.classList.remove('hidden');
+    }
+}
+
+export function ocultarOverlayCargaPanel() {
+    const overlay = document.getElementById('overlay-carga-panel');
+    if (overlay) {
+        overlay.classList.add('hidden');
+    }
+}
+
 export function mostrarToast(mensaje, tipo = 'info', duracionMs = 3500) {
     if (typeof document === 'undefined') return;
     let container = document.getElementById('toast-container');
@@ -254,4 +270,6 @@ if (typeof window !== 'undefined') {
     window.formatearFechaAR = formatearFechaAR;
     window.formatearHoraAR = formatearHoraAR;
     window.mostrarToast = mostrarToast;
+    window.mostrarOverlayCargaPanel = mostrarOverlayCargaPanel;
+    window.ocultarOverlayCargaPanel = ocultarOverlayCargaPanel;
 }

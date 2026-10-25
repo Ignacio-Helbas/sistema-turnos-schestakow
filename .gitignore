@@ -47,3 +47,13 @@ presentacion-inversores/
 presentacion-publica/
 pdf-directorio/
 
+
+# Documentos, articulos y scripts de compilacion de figuras
+*.docx
+~$*
+capturas-articulo/
+img_informe/
+original_informe_apa.txt
+scripts/__pycache__/
+scripts/*.py
+scripts/capturar_figuras.js

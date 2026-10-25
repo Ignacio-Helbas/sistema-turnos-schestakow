@@ -34,6 +34,8 @@ import {
     obtenerSesionActual
 } from "./auth.js";
 
+import { ejecutarUnaVez } from "./guardia.js";
+
 // Estado de Recepción
 let bdMedicosDinamica = {};
 let duracionTurnoGlobal = 15;
@@ -125,8 +127,27 @@ export async function generarAgendaRecepcion() {
             data.idDoc = d.id;
             turnosOcupados[data.horario] = data;
         });
+
+        const bannerPrevio = document.getElementById('banner-error-agenda-recepcion');
+        if (bannerPrevio) bannerPrevio.remove();
     } catch (e) {
         console.error("Error al cargar turnos de recepción:", e);
+        let bannerError = document.getElementById('banner-error-agenda-recepcion');
+        if (!bannerError && contenedor) {
+            bannerError = document.createElement('div');
+            bannerError.id = 'banner-error-agenda-recepcion';
+            bannerError.className = 'mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between text-xs text-red-800';
+            bannerError.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-red-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span><strong>Error de sincronización:</strong> No se pudieron cargar los turnos desde el servidor.</span>
+                </div>
+                <button onclick="generarAgendaRecepcion()" class="btn-his-secondary text-xs px-2.5 py-1 bg-white border border-red-300 text-red-700 hover:bg-red-50 font-bold shrink-0">Reintentar</button>
+            `;
+            contenedor.insertBefore(bannerError, contenedor.firstChild);
+        }
+        tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-red-600 font-medium">No se pudieron cargar los turnos de la agenda. Presione Reintentar arriba.</td></tr>';
+        return;
     }
 
     const duracionActual = modulacionPorMedico[medicoSeleccionadoRecepcion] || duracionTurnoGlobal;
@@ -145,7 +166,8 @@ export async function generarAgendaRecepcion() {
         if (turno) {
             let badgeColor = "badge-his badge-his-pendiente";
             if (turno.estado === "Atendido") badgeColor = "badge-his badge-his-atendido";
-            else if (turno.estado === "En Espera") badgeColor = "badge-his badge-his-espera";
+            else if (turno.estado === "En Consulta") badgeColor = "badge-his bg-purple-100 text-purple-800 border-purple-200";
+            else if (turno.estado === "En Espera" || turno.estado === "En Sala") badgeColor = "badge-his badge-his-espera";
             else if (turno.estado && turno.estado.includes("Cancelado")) badgeColor = "badge-his badge-his-cancelado";
             else if (turno.estado === "Ausente") badgeColor = "badge-his badge-his-ausente";
 
@@ -165,7 +187,7 @@ export async function generarAgendaRecepcion() {
                     <td class="p-3">
                         ${turno.estado === "Confirmado" || turno.estado === "Confirmado Presencial" ? `
                             <div class="flex items-center gap-1.5 flex-wrap">
-                                <button onclick="registrarLlegadaRecepcion('${turno.idDoc}')" class="btn-his-secondary text-xs px-2.5 py-1" title="Registrar llegada a sala">Marcar llegada</button>
+                                <button onclick="registrarLlegadaRecepcion('${turno.idDoc}')" class="btn-his-secondary text-xs px-2.5 py-1" title="Registrar llegada a sala">Confirmar llegada</button>
                                 <button onclick="reprogramarTurnoRecepcion('${turno.idDoc}', '${pacNomEsc}', '${hsStr}')" class="btn-his-text text-xs px-2 py-1 text-slate-700 hover:text-slate-900 border border-slate-200 rounded" title="Liberar horario para reasignar">Reprogramar</button>
                                 <button onclick="imprimirComprobanteTurnoRecepcion('${turno.idDoc}', '${pacNomEsc}', '${pacDniEsc}', '${hsStr}', '${codEsc}')" class="btn-his-text text-xs px-2 py-1 text-slate-700 hover:text-slate-900 border border-slate-200 rounded" title="Imprimir comprobante institucional">Comprobante</button>
                                 <button onclick="cancelarTurnoRecepcion('${turno.idDoc}')" class="btn-his-danger text-xs px-2 py-1" title="Cancelar turno">Liberar</button>
@@ -228,19 +250,23 @@ export async function reprogramarTurnoRecepcion(idDoc, pacienteNombre, horaActua
     );
     if (!confirmar) return;
 
-    try {
-        const sesion = obtenerSesionActual();
-        await updateDoc(doc(db, "turnos", idDoc), {
-            estado: "Cancelado - Reprogramación",
-            canceladoEn: serverTimestamp(),
-            canceladoPor: "recepcion"
-        });
-        mostrarToast("Turno liberado para su reprogramación", "info");
-        generarAgendaRecepcion();
-    } catch (e) {
-        console.error("Error al reprogramar turno:", e);
-        mostrarAlerta("Error", "No se pudo liberar el turno para reprogramación.");
-    }
+    const boton = document.getElementById('btn-confirm-aceptar') || document.querySelector('#modal-confirmacion-accion button.btn-his-primary');
+
+    return await ejecutarUnaVez(`reprogramar-turno-${idDoc}`, async () => {
+        try {
+            const sesion = obtenerSesionActual();
+            await updateDoc(doc(db, "turnos", idDoc), {
+                estado: "Cancelado - Reprogramación",
+                canceladoEn: serverTimestamp(),
+                canceladoPor: "recepcion"
+            });
+            mostrarToast("Turno liberado para su reprogramación", "info");
+            generarAgendaRecepcion();
+        } catch (e) {
+            console.error("Error al reprogramar turno:", e);
+            mostrarAlerta("Error", "No se pudo liberar el turno para reprogramación.");
+        }
+    }, { boton });
 }
 
 export function imprimirComprobanteTurnoRecepcion(idDoc, pacNom, pacDni, hsStr, cod) {
@@ -345,86 +371,90 @@ export async function confirmarTurnoRecepcionFirebase() {
         return;
     }
 
-    try {
-        const qExistente = query(
-            collection(db, "turnos"),
-            where("medico", "==", medicoSeleccionadoRecepcion),
-            where("fecha", "==", fechaRecepcionSeleccionada),
-            where("horario", "==", horaSeleccionadaRecepcion)
-        );
-        const snap = await getDocs(qExistente);
-        const ocupado = snap.docs.some(d => {
-            const est = d.data().estado;
-            return !est || !est.toLowerCase().includes("cancelado");
-        });
+    const boton = document.querySelector('#modal-dar-turno button.btn-his-primary') || document.querySelector('#modal-dar-turno button[type="submit"]');
 
-        if (ocupado) {
-            mostrarAlerta("Horario No Disponible", "Este horario ya fue asignado previamente.");
+    return await ejecutarUnaVez('turno-recepcion-alta', async () => {
+        try {
+            const qExistente = query(
+                collection(db, "turnos"),
+                where("medico", "==", medicoSeleccionadoRecepcion),
+                where("fecha", "==", fechaRecepcionSeleccionada),
+                where("horario", "==", horaSeleccionadaRecepcion)
+            );
+            const snap = await getDocs(qExistente);
+            const ocupado = snap.docs.some(d => {
+                const est = d.data().estado;
+                return !est || !est.toLowerCase().includes("cancelado");
+            });
+
+            if (ocupado) {
+                mostrarAlerta("Horario No Disponible", "Este horario ya fue asignado previamente.");
+                generarAgendaRecepcion();
+                return;
+            }
+
+            const medUid = medicoUidSeleccionadoRecepcion || 'medico_demo';
+            const slotId = `${medUid}_${fechaRecepcionSeleccionada}_${horaSeleccionadaRecepcion.replace(':', '')}`;
+            const slotRef = doc(db, "disponibilidad", slotId);
+            const turnoRef = doc(collection(db, "turnos"));
+
+            const sesionActual = obtenerSesionActual();
+            const batch = writeBatch(db);
+            batch.set(slotRef, {
+                medicoUid: medUid,
+                fecha: fechaRecepcionSeleccionada,
+                horario: horaSeleccionadaRecepcion,
+                creadoEn: serverTimestamp()
+            });
+
+            batch.set(turnoRef, {
+                especialidad: especialidadSeleccionadaRecepcion,
+                medico: medicoSeleccionadoRecepcion,
+                medicoUid: medUid,
+                fecha: fechaRecepcionSeleccionada,
+                horario: horaSeleccionadaRecepcion,
+                pacienteNombre: nombre,
+                pacienteDni: dni,
+                pacienteFechaNacimiento: fechaNacimiento,
+                pacienteCobertura: cobertura,
+                pacienteCelular: celular,
+                pacienteEmail: email,
+                canal: "Presencial",
+                estado: "Confirmado Presencial",
+                codigoConfirmacion: turnoRef.id,
+                creadoEn: serverTimestamp(),
+                creadoPor: sesionActual?.uid || null,
+                llegadaEn: null,
+                inicioConsultaEn: null,
+                finConsultaEn: null,
+                canceladoPor: null,
+                canceladoEn: null,
+                reprogramadoDe: null,
+                timestamp: serverTimestamp()
+            });
+
+            await batch.commit();
+
+            cerrarModal('modal-dar-turno');
+            mostrarExito("¡Turno Asignado!", "El turno presencial fue registrado.");
+            document.getElementById('auto-nombre').value = '';
+            if (document.getElementById('auto-fecha-nacimiento')) document.getElementById('auto-fecha-nacimiento').value = '';
+            document.getElementById('auto-dni').value = '';
+            if (document.getElementById('auto-cobertura')) document.getElementById('auto-cobertura').value = 'No (Sin Obra Social)';
+            if (document.getElementById('auto-cobertura-otra')) {
+                document.getElementById('auto-cobertura-otra').value = '';
+                document.getElementById('div-auto-cobertura-otra')?.classList.add('hidden');
+            }
+            document.getElementById('auto-celular').value = '';
+            if (document.getElementById('auto-email')) document.getElementById('auto-email').value = '';
+            const msgEl = document.getElementById('auto-msg');
+            if (msgEl) msgEl.classList.add('hidden');
             generarAgendaRecepcion();
-            return;
+        } catch (error) {
+            console.error(error);
+            mostrarAlerta("Error", "Error al registrar el turno.");
         }
-
-        const medUid = medicoUidSeleccionadoRecepcion || 'medico_demo';
-        const slotId = `${medUid}_${fechaRecepcionSeleccionada}_${horaSeleccionadaRecepcion.replace(':', '')}`;
-        const slotRef = doc(db, "disponibilidad", slotId);
-        const turnoRef = doc(collection(db, "turnos"));
-
-        const sesionActual = obtenerSesionActual();
-        const batch = writeBatch(db);
-        batch.set(slotRef, {
-            medicoUid: medUid,
-            fecha: fechaRecepcionSeleccionada,
-            horario: horaSeleccionadaRecepcion,
-            creadoEn: serverTimestamp()
-        });
-
-        batch.set(turnoRef, {
-            especialidad: especialidadSeleccionadaRecepcion,
-            medico: medicoSeleccionadoRecepcion,
-            medicoUid: medUid,
-            fecha: fechaRecepcionSeleccionada,
-            horario: horaSeleccionadaRecepcion,
-            pacienteNombre: nombre,
-            pacienteDni: dni,
-            pacienteFechaNacimiento: fechaNacimiento,
-            pacienteCobertura: cobertura,
-            pacienteCelular: celular,
-            pacienteEmail: email,
-            canal: "Presencial",
-            estado: "Confirmado Presencial",
-            codigoConfirmacion: turnoRef.id,
-            creadoEn: serverTimestamp(),
-            creadoPor: sesionActual?.uid || null,
-            llegadaEn: null,
-            inicioConsultaEn: null,
-            finConsultaEn: null,
-            canceladoPor: null,
-            canceladoEn: null,
-            reprogramadoDe: null,
-            timestamp: serverTimestamp()
-        });
-
-        await batch.commit();
-
-        cerrarModal('modal-dar-turno');
-        mostrarExito("¡Turno Asignado!", "El turno presencial fue registrado.");
-        document.getElementById('auto-nombre').value = '';
-        if (document.getElementById('auto-fecha-nacimiento')) document.getElementById('auto-fecha-nacimiento').value = '';
-        document.getElementById('auto-dni').value = '';
-        if (document.getElementById('auto-cobertura')) document.getElementById('auto-cobertura').value = 'No (Sin Obra Social)';
-        if (document.getElementById('auto-cobertura-otra')) {
-            document.getElementById('auto-cobertura-otra').value = '';
-            document.getElementById('div-auto-cobertura-otra')?.classList.add('hidden');
-        }
-        document.getElementById('auto-celular').value = '';
-        if (document.getElementById('auto-email')) document.getElementById('auto-email').value = '';
-        const msgEl = document.getElementById('auto-msg');
-        if (msgEl) msgEl.classList.add('hidden');
-        generarAgendaRecepcion();
-    } catch (error) {
-        console.error(error);
-        mostrarAlerta("Error", "Error al registrar el turno.");
-    }
+    }, { boton });
 }
 
 export async function cancelarTurnoRecepcion(idDoc) {

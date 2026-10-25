@@ -16,8 +16,12 @@ import {
 } from "./firebase.js";
 
 import {
-    mostrarAlerta
+    mostrarAlerta,
+    mostrarOverlayCargaPanel,
+    ocultarOverlayCargaPanel
 } from "./ui.js";
+
+import { ejecutarUnaVez } from "./guardia.js";
 
 let sesionActual = null;
 let temporizadorInactividad = null;
@@ -46,6 +50,13 @@ export function resetInactividad() {
 
 export function mostrarPantallaLogin() {
     sesionActual = null;
+    ocultarOverlayCargaPanel();
+    const btnLogin = document.getElementById('btn-login') || document.getElementById('btn-login-submit');
+    if (btnLogin) {
+        btnLogin.disabled = false;
+        btnLogin.removeAttribute('aria-busy');
+        btnLogin.innerHTML = 'Ingresar al Sistema';
+    }
     document.body.dataset.view = 'login';
     document.querySelectorAll('.view').forEach(el => {
         el.classList.remove('active');
@@ -77,6 +88,24 @@ export async function iniciarSesionReal() {
         return;
     }
 
+    const boton = document.getElementById('btn-login') || document.getElementById('btn-login-submit');
+    const textoOriginal = boton ? boton.innerHTML : 'Ingresar al Sistema';
+
+    if (boton) {
+        if (boton.disabled) return;
+        boton.disabled = true;
+        boton.setAttribute('aria-busy', 'true');
+        boton.innerHTML = `
+            <span class="inline-flex items-center justify-center gap-2">
+                <svg class="animate-spin -ml-1 mr-1 h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>Procesando...</span>
+            </span>
+        `;
+    }
+
     try {
         sessionStorage.setItem('hospital_sesion_activa', 'true');
         try {
@@ -93,7 +122,15 @@ export async function iniciarSesionReal() {
         const inputPass = document.getElementById('login-pass');
         if (inputUser) inputUser.value = '';
         if (inputPass) inputPass.value = '';
+
+        mostrarOverlayCargaPanel("Iniciando sesión en el sistema...");
     } catch (error) {
+        if (boton) {
+            boton.disabled = false;
+            boton.removeAttribute('aria-busy');
+            boton.innerHTML = textoOriginal;
+        }
+        ocultarOverlayCargaPanel();
         sessionStorage.removeItem('hospital_sesion_activa');
         sesionActual = null;
         console.error("Error Auth:", error);
