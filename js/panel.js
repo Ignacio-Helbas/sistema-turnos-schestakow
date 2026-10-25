@@ -262,9 +262,16 @@ export function switchView(viewName) {
     if (target) target.classList.add('active');
     const mobSub = document.getElementById('mobile-header-subtitle');
     if (mobSub) {
-        if (viewName === 'doctor') mobSub.textContent = 'Consultorio Médico';
-        else if (viewName === 'admin') mobSub.textContent = 'Administración';
-        else if (viewName === 'reception') mobSub.textContent = 'Recepción y Admisión';
+        if (viewName === 'doctor') {
+            mobSub.textContent = 'Consultorio Médico';
+            mobSub.className = 'text-[10px] text-emerald-700 font-semibold';
+        } else if (viewName === 'admin') {
+            mobSub.textContent = 'Administración';
+            mobSub.className = 'text-[10px] text-slate-700 font-semibold';
+        } else if (viewName === 'reception') {
+            mobSub.textContent = 'Recepción y Admisión';
+            mobSub.className = 'text-[10px] text-sky-800 font-semibold';
+        }
     }
 
     // Breadcrumbs
@@ -475,6 +482,9 @@ export function sincronizarNavegacionMobile(sesion) {
 
     const elAvatarBottomAdm = document.getElementById("avatar-bottom-adm");
     if (elAvatarBottomAdm) elAvatarBottomAdm.textContent = inicial;
+
+    const elAvatarBottomRec = document.getElementById("avatar-bottom-rec");
+    if (elAvatarBottomRec) elAvatarBottomRec.textContent = inicial;
 
     const elAvatarMobile = document.getElementById("perfil-mobile-avatar");
     if (elAvatarMobile) elAvatarMobile.textContent = inicial;

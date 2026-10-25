@@ -208,7 +208,7 @@ export function renderizarListaInterconsultas() {
     if (filtradas.length === 0) {
         contenedor.innerHTML = `
             <div class="p-8 text-center text-slate-400 text-xs">
-                <svg class="w-8 h-8 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                <svg class="w-8 h-8 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12m-5 4l3 3l-3 3m3 -3h-8"></path></svg>
                 <p class="font-semibold text-slate-600">No hay interconsultas</p>
                 <p class="text-[11px] text-slate-400 mt-1">No se encontraron conversaciones con los filtros actuales.</p>
             </div>

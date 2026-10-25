@@ -288,7 +288,7 @@
             <div id="titulo-medico-dashboard-container" class="mb-4 bg-white/95 backdrop-blur p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div id="titulo-medico-header-info" class="flex items-center gap-3">
                     <div class="p-2 bg-emerald-100 text-emerald-800 rounded-lg">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v6H3v6h6v6h6v-6h6V9h-6V3H9z"></path></svg>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h-1a2 2 0 0 0 -2 2v3.5a5.5 5.5 0 0 0 11 0v-3.5a2 2 0 0 0 -2 -2h-1m-7 13a6 6 0 1 0 12 0v-3m-9 -9v2m-3 -2v2m15 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path></svg>
                     </div>
                     <div>
                         <h2 id="titulo-medico-dashboard" class="text-xl font-bold text-slate-800">Consultorio Médico e Historia Clínica</h2>
@@ -306,7 +306,7 @@
                         Buscar
                     </button>
                     <button id="btn-abrir-emergencia" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0m10 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0m-14 -11h9v12h-9zm9 3h4.586a1 1 0 0 1 .707 .293l2.414 2.414a1 1 0 0 1 .293 .707v5.586h-8m-7 -4h4m-2 -2v4"></path></svg>
                         <span class="btn-emergencia-texto">Acceso Emergencia</span>
                     </button>
                     <button id="btn-refresh-agenda" onclick="cargarAgendaMedico()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-3 py-2 rounded-lg transition flex items-center gap-1" title="Refrescar agenda">
@@ -318,11 +318,11 @@
             <!-- Selector de Sub-vistas del Consultorio -->
             <div class="subvistas-desktop-doctor flex mb-5 bg-white/95 backdrop-blur px-3 pt-2 rounded-xl border border-slate-200 shadow-sm items-center gap-2 overflow-x-auto scrollbar-hide">
                 <button type="button" id="tab-consultorio-atencion" onclick="window.cambiarSubvistaDoctor('atencion')" class="px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer">
-                    <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2m-6 -2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2zm1 11h4m-2 -2v4m-3 4h6"></path></svg>
                     <span>Atención Clínica & Historia</span>
                 </button>
                 <button type="button" id="tab-consultorio-interconsultas" onclick="window.cambiarSubvistaDoctor('interconsultas')" class="px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer">
-                    <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12m-5 4l3 3l-3 3m3 -3h-8"></path></svg>
                     <span>Interconsultas Médicas</span>
                     <span id="badge-interconsultas-no-leidas" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white">0</span>
                 </button>
@@ -353,11 +353,11 @@
                     </div>
                     <div class="flex items-center gap-2 w-full lg:w-auto justify-end flex-wrap">
                         <button id="btn-pedir-interconsulta" onclick="abrirModalNuevaInterconsultaDesdePaciente()" class="bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs px-3 py-2 rounded-lg transition border border-teal-800 flex items-center gap-1.5 shadow-sm" title="Solicitar interconsulta confidencial sobre este paciente">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12m-5 4l3 3l-3 3m3 -3h-8"></path></svg>
                             <span>Pedir Interconsulta</span>
                         </button>
                         <button id="btn-agendar-proxima-consulta" onclick="abrirModalProximaConsulta()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3 py-2 rounded-lg transition border border-emerald-800 flex items-center gap-1.5 shadow-sm">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.5 21h-6.5a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v5m-14 -3h14m-12 -6v4m8 -4v4m3 8h6m-3 -3v6"></path></svg>
                             Agendar Próxima Consulta
                         </button>
                         <button id="btn-editar-resumen-clinico" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-3 py-2 rounded-lg transition border border-slate-300 flex items-center gap-1">
@@ -378,8 +378,8 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div class="bg-red-50/70 border border-red-200 rounded-lg p-3">
                         <p class="text-xs font-bold uppercase tracking-wider text-red-800 flex items-center gap-1 mb-1">
-                            <svg class="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                            Alergias Conocidas
+                                <svg class="w-4 h-4 text-red-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.495 6.505l2 -2a4.95 4.95 0 0 1 7 7l-2 2m-2 2l-4 4a4.95 4.95 0 0 1 -7 -7l4 -4m-4.995 1.495l7 7m-12.5 -12.5l18 18"></path></svg>
+                                Alergias Conocidas
                         </p>
                         <p id="hc-alergias-texto" class="text-xs text-red-900 font-semibold italic">Sin alergias registradas</p>
                     </div>
@@ -531,11 +531,11 @@
                             <!-- Botones de Envío y Citación -->
                             <div class="pt-2 flex flex-col sm:flex-row gap-3">
                                 <button id="btn-guardar-consulta-hc" class="btn-his-primary flex-1 py-3 px-4 text-sm font-bold shadow-xs flex items-center justify-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 3v4a1 1 0 0 0 1 1h4m-2 13h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2zm-8 -6l2 2l4 -4"></path></svg>
                                     <span>Registrar Consulta Clínica</span>
                                 </button>
                                 <button type="button" onclick="abrirModalProximaConsulta()" class="btn-his-secondary py-3 px-4 text-sm font-bold shadow-xs flex items-center justify-center gap-2">
-                                    <svg class="w-4 h-4 text-emerald-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <svg class="w-4 h-4 text-emerald-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.5 21h-6.5a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v5m-14 -3h14m-12 -6v4m8 -4v4m3 8h6m-3 -3v6"></path></svg>
                                     <span>Citar Próxima Consulta</span>
                                 </button>
                             </div>
@@ -566,7 +566,7 @@
                 <div class="bg-white/95 backdrop-blur p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div class="flex items-center gap-3">
                         <div class="p-2.5 bg-emerald-100 text-emerald-800 rounded-lg shrink-0">
-                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12m-5 4l3 3l-3 3m3 -3h-8"></path></svg>
                         </div>
                         <div>
                             <div class="flex items-center gap-2">
@@ -615,7 +615,7 @@
                         <!-- Estado Vacío (Placeholder) -->
                         <div id="interconsulta-chat-placeholder" class="flex-grow flex flex-col items-center justify-center p-8 text-center text-slate-400">
                             <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-3 text-slate-300">
-                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12m-5 4l3 3l-3 3m3 -3h-8"></path></svg>
                             </div>
                             <h4 class="text-sm font-bold text-slate-700">Seleccione una interconsulta</h4>
                             <p class="text-xs text-slate-400 mt-1 max-w-sm">Elija una conversación del listado izquierdo para ver el hilo clínico o cree una nueva interconsulta para comunicarse con otro profesional.</p>
@@ -1187,6 +1187,23 @@
         </div>
 
 <!-- ====================================================================== -->
+    <!-- BARRA DE NAVEGACIÓN INFERIOR MOBILE - RECEPCIÓN (md:hidden) -->
+    <!-- ====================================================================== -->
+    <nav id="bottom-nav-reception" class="fixed bottom-0 inset-x-0 z-40 bg-[#002845] border-t border-[#001c31] shadow-[0_-4px_16px_rgba(0,40,69,0.35)] md:hidden">
+        <div class="flex justify-center items-center h-14 px-2 pb-[env(safe-area-inset-bottom,0px)]">
+            <!-- Ítem único: Perfil y Cierre de Sesión -->
+            <button type="button" id="btn-bottom-rec-perfil" onclick="window.toggleMenuPerfilMobile()" class="btn-nav-mobile-item flex flex-col items-center justify-center py-1 text-white cursor-pointer" title="Mi perfil y cerrar sesión">
+                <div class="nav-pill-wrapper flex items-center justify-center">
+                    <div id="avatar-bottom-rec" class="w-6 h-6 rounded-full bg-white text-[#002845] flex items-center justify-center text-xs font-black shadow-xs ring-1 ring-white/60">
+                        R
+                    </div>
+                </div>
+                <span class="nav-item-label text-[10.5px] leading-tight tracking-wide font-sans text-sky-100 font-semibold">Perfil</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ====================================================================== -->
     <!-- BARRA DE NAVEGACIÓN INFERIOR MOBILE - CONSULTORIO MÉDICO (md:hidden) -->
     <!-- ====================================================================== -->
     <nav id="bottom-nav-doctor" class="fixed bottom-0 inset-x-0 z-40 bg-[#064e3b] border-t border-[#047857] shadow-[0_-4px_16px_rgba(6,78,59,0.3)] md:hidden">
@@ -1194,7 +1211,7 @@
             <!-- Ítem 1: Atención Clínica & Historia -->
             <button type="button" id="btn-bottom-doc-atencion" onclick="window.cambiarSubvistaDoctor('atencion')" class="btn-nav-mobile-item is-active">
                 <div class="nav-pill-wrapper">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2m-6 -2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2zm1 11h4m-2 -2v4m-3 4h6"></path></svg>
                 </div>
                 <span class="nav-item-label text-[10.5px] leading-tight tracking-wide font-sans">Atención</span>
                 <span class="nav-indicator-dot"></span>
@@ -1203,7 +1220,7 @@
             <!-- Ítem 2: Interconsultas Médicas (con Badge Superpuesto en Ícono) -->
             <button type="button" id="btn-bottom-doc-interconsultas" onclick="window.cambiarSubvistaDoctor('interconsultas')" class="btn-nav-mobile-item is-inactive relative">
                 <div class="nav-pill-wrapper relative">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12m-5 4l3 3l-3 3m3 -3h-8"></path></svg>
                     <!-- Badge superpuesto en la esquina superior derecha del ícono -->
                     <span id="badge-bottom-doc-ic" class="hidden absolute -top-1 -right-2 px-1.5 min-w-[17px] h-[17px] rounded-full text-[9px] font-black bg-amber-400 text-slate-900 shadow-md ring-1 ring-emerald-950 flex items-center justify-center text-center">0</span>
                 </div>
@@ -2047,7 +2064,7 @@
             <div class="p-5 border-b border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
-                        <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                        <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12m-5 4l3 3l-3 3m3 -3h-8"></path></svg>
                     </div>
                     <div>
                         <h3 class="text-base font-bold text-slate-900 leading-tight">Solicitud de Interconsulta Médica</h3>
