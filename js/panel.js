@@ -166,6 +166,7 @@ export async function cargarConfiguracionModulacion() {
 }
 
 export function aplicarPermisosVisuales(sesion) {
+    if (!sesion) sesion = obtenerSesionActual() || {};
     const btnAdmin = document.getElementById('btn-nav-admin');
     const btnRec = document.getElementById('btn-nav-reception');
     const btnDoc = document.getElementById('btn-nav-doctor');
@@ -193,6 +194,7 @@ export function aplicarPermisosVisuales(sesion) {
         btnLogout.innerText = `Cerrar Sesión (${sesion.nombre || sesion.correo})`;
     }
 
+    sincronizarNavegacionMobile(sesion);
     const rolMostrar = sesion.rol || 'Personal';
 
     if (usuarioSesionInfo) usuarioSesionInfo.classList.remove('hidden');
@@ -257,6 +259,12 @@ export function switchView(viewName) {
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
     const target = document.getElementById('view-' + viewName);
     if (target) target.classList.add('active');
+    const mobSub = document.getElementById('mobile-header-subtitle');
+    if (mobSub) {
+        if (viewName === 'doctor') mobSub.textContent = 'Consultorio Médico';
+        else if (viewName === 'admin') mobSub.textContent = 'Administración';
+        else if (viewName === 'reception') mobSub.textContent = 'Recepción y Admisión';
+    }
 
     // Breadcrumbs
     const breadcrumbView = document.getElementById('breadcrumb-current-view');
@@ -365,6 +373,7 @@ if (document.readyState === 'loading') {
 
 // Exponer en window para manejadores inline del DOM
 window.switchView = switchView;
+window.aplicarPermisosVisuales = aplicarPermisosVisuales;
 window.cambiarTabAdmin = cambiarTabAdmin;
 window.toggleHistorial = toggleHistorial;
 window.cargarMetricas = cargarMetricas;
@@ -403,3 +412,61 @@ if (!window.cambiarSubvistaDoctor) {
         }
     };
 }
+
+// ==========================================
+// CONTROL DE NAVEGACIÓN MÓVIL Y MENÚ PERFIL
+// ==========================================
+export function sincronizarNavegacionMobile(sesion) {
+    if (!sesion) return;
+    const esSuperadmin = sesion.rol === "Administración";
+
+    const nombre = sesion.nombre || sesion.correo || "Personal";
+    const inicial = nombre.trim().charAt(0).toUpperCase();
+
+    const elAvatarBottom = document.getElementById("avatar-bottom-doc");
+    if (elAvatarBottom) elAvatarBottom.textContent = inicial;
+
+    const elAvatarMobile = document.getElementById("perfil-mobile-avatar");
+    if (elAvatarMobile) elAvatarMobile.textContent = inicial;
+
+    const elNombreMobile = document.getElementById("perfil-mobile-nombre");
+    if (elNombreMobile) elNombreMobile.textContent = nombre;
+
+    const elCorreoMobile = document.getElementById("perfil-mobile-correo");
+    if (elCorreoMobile) elCorreoMobile.textContent = sesion.correo || "";
+
+    const elRolBadge = document.getElementById("perfil-mobile-rol-badge");
+    if (elRolBadge) {
+        elRolBadge.textContent = sesion.rol || "Personal";
+        elRolBadge.className = "badge-his " + (sesion.rol === "Médico" ? "badge-his-atendido" : (sesion.rol === "Administración" ? "badge-his-admin" : "badge-his-pendiente"));
+    }
+
+    const secCambiarVista = document.getElementById("seccion-cambiar-vista-mobile");
+    if (secCambiarVista) {
+        if (esSuperadmin) {
+            secCambiarVista.classList.remove("hidden");
+        } else {
+            secCambiarVista.classList.add("hidden");
+        }
+    }
+}
+
+export function toggleMenuPerfilMobile() {
+    const modal = document.getElementById("modal-perfil-mobile");
+    if (!modal) return;
+    modal.classList.toggle("hidden");
+}
+
+export function cerrarMenuPerfilMobile() {
+    const modal = document.getElementById("modal-perfil-mobile");
+    if (modal) modal.classList.add("hidden");
+}
+
+export function cambiarVistaDesdeMenuMobile(vista) {
+    cerrarMenuPerfilMobile();
+    switchView(vista);
+}
+
+window.toggleMenuPerfilMobile = toggleMenuPerfilMobile;
+window.cerrarMenuPerfilMobile = cerrarMenuPerfilMobile;
+window.cambiarVistaDesdeMenuMobile = cambiarVistaDesdeMenuMobile;

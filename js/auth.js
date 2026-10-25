@@ -220,3 +220,4 @@ export function inicializarAuth(onSessionReady) {
 // Exponer en window para manejadores inline del DOM
 window.iniciarSesionReal = iniciarSesionReal;
 window.cerrarSesionReal = cerrarSesionReal;
+window.establecerSesionActual = establecerSesionActual;

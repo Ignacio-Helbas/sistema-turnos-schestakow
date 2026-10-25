@@ -13,6 +13,12 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        if (new URLSearchParams(window.location.search).get('dev') === '1') {
+            document.documentElement.classList.add('modo-dev-mobile');
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.classList.add('modo-dev-mobile');
+            });
+        }
         tailwind.config = {
             theme: {
                 extend: {
@@ -49,11 +55,15 @@
 </head>
 <body class="pagina-panel text-slate-800 font-sans flex flex-col min-h-screen">
 
-    <!-- AVISO VISIBLE Y PERMANENTE DE PROTOTIPO ACADÉMICO (SIN EMOJIS) -->
-    <aside class="bg-amber-100 border-b border-amber-300 text-amber-950 px-3 py-1.5 text-center text-xs font-medium select-none z-50">
-        <div class="max-w-7xl mx-auto flex items-center justify-center gap-2">
+    <!-- AVISO VISIBLE Y PERMANENTE DE PROTOTIPO ACADÉMICO -->
+    <aside class="bg-amber-100 border-b border-amber-300 text-amber-950 px-2 py-1 md:py-1.5 text-center text-xs font-medium select-none z-50">
+        <div class="banner-demo-completo max-w-7xl mx-auto flex items-center justify-center gap-2">
             <span class="inline-block px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 font-bold text-[10px] uppercase tracking-wider">Demostración Académica</span>
             <span>Panel de demostración con datos sintéticos. Caso de estudio para Foro Universitario. No utilizar con pacientes reales.</span>
+        </div>
+        <div class="banner-demo-compacto hidden max-w-7xl mx-auto items-center justify-center gap-1.5">
+            <span class="inline-block px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 font-bold text-[9px] uppercase tracking-wider">Demo Académica</span>
+            <span class="text-[10px] sm:text-xs">Caso de estudio universitario • Sin pacientes reales</span>
         </div>
     </aside>
 
@@ -62,11 +72,15 @@
     <!-- ========================================== -->
     <header class="bg-white/95 backdrop-blur shadow-md sticky top-0 z-40 border-b border-blue-900/10">
         <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row justify-between min-h-[5rem] py-2 md:py-0 items-center gap-2 md:gap-0">
+            <div class="flex flex-col md:flex-row justify-between min-h-[3.25rem] md:min-h-[5rem] py-1.5 md:py-0 items-center gap-1 md:gap-0">
                 
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center py-1 md:py-2 select-none">
-                        <img src="img/LogoHospitalSolo.png" alt="Hospital Teodoro J. Schestakow" class="h-10 md:h-14 w-auto object-contain">
+                <div class="flex items-center justify-between w-full md:w-auto gap-3">
+                    <div class="flex items-center gap-2.5 py-1 select-none">
+                        <img src="img/LogoHospitalSolo.png" alt="Hospital Teodoro J. Schestakow" class="h-8 md:h-14 w-auto object-contain">
+                        <div class="header-mobile-dev-title hidden flex-col justify-center">
+                            <span class="text-xs font-bold text-slate-900 leading-tight">Hosp. Schestakow</span>
+                            <span id="mobile-header-subtitle" class="text-[10px] text-emerald-700 font-semibold">Consultorio Médico</span>
+                        </div>
                     </div>
 
                     <div class="hidden sm:flex flex-col justify-center border-l border-slate-200 pl-3 md:pl-4">
@@ -79,8 +93,8 @@
                     </div>
                 </div>
 
-                <!-- Botones de Navegación del Staff -->
-                <nav class="flex flex-wrap justify-center gap-x-2 gap-y-2 items-center w-full md:w-auto pb-2 md:pb-0">
+                <!-- Botones de Navegación del Staff (En mobile se gestionan vía barra inferior y menú de perfil) -->
+                <nav id="nav-desktop-staff" class="hidden md:flex flex-wrap justify-center gap-x-2 gap-y-2 items-center w-full md:w-auto pb-2 md:pb-0">
                     <button id="btn-nav-reception" onclick="switchView('reception')" class="hidden text-slate-600 hover:text-blue-900 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Recepción</button>
                     <button id="btn-nav-doctor" onclick="switchView('doctor')" class="hidden text-slate-600 hover:text-blue-900 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Consultorio</button>
                     <button id="btn-nav-admin" onclick="switchView('admin')" class="hidden text-slate-600 hover:text-blue-900 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Administración</button>
@@ -111,16 +125,26 @@
     <main class="flex-grow w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
 
         <!-- OVERLAY DE CARGA INICIAL DEL PANEL (FEEDBACK VISUAL DE ACCESO) -->
-        <div id="overlay-carga-panel" role="status" aria-live="polite" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex flex-col items-center justify-center z-50 transition-opacity duration-300 hidden">
-            <div class="card-his bg-white p-6 rounded-xl shadow-2xl flex flex-col items-center max-w-xs text-center border border-slate-100 animate-fade-in-up">
-                <div class="w-12 h-12 rounded-full bg-sky-50 text-[#002845] flex items-center justify-center mb-3">
-                    <svg class="animate-spin w-6 h-6 text-[#002845]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        <div id="overlay-carga-panel" role="status" aria-live="polite" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center z-50 transition-opacity duration-200 hidden">
+            <div class="modal-carga-dialog bg-white/98 backdrop-blur-md px-8 py-7 rounded-2xl shadow-2xl border border-slate-100 flex flex-col items-center max-w-xs sm:max-w-sm w-full mx-4 text-center">
+                <!-- Ícono Institucional: Cruz Médica Schestakow con Spinner Integrado en Verde Institucional -->
+                <div class="relative flex items-center justify-center mb-5">
+                    <svg class="animate-spin w-16 h-16 text-[#007a78]" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="3" class="opacity-15" />
+                        <path d="M32 4a28 28 0 0 1 28 28" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
                     </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="w-10 h-10 rounded-full bg-[#e6f5f4] flex items-center justify-center text-[#007a78] animate-pulse">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M9 3v6H3v6h6v6h6v-6h6V9h-6V3H9z"/>
+                            </svg>
+                        </div>
+                    </div>
                 </div>
-                <h3 class="text-sm font-bold text-slate-900 mb-1">Cargando panel...</h3>
-                <p id="overlay-carga-texto" class="text-xs text-slate-500">Inicializando módulos del sistema hospitalario</p>
+                <div class="space-y-1.5">
+                    <h3 class="text-base font-bold text-slate-900 tracking-tight">Cargando panel...</h3>
+                    <p id="overlay-carga-texto" class="text-xs text-slate-500 font-medium">Inicializando módulos del sistema hospitalario</p>
+                </div>
             </div>
         </div>
 
@@ -291,8 +315,8 @@
                 </div>
             </div>
 
-            <!-- Selector de Sub-vistas del Consultorio: Atención vs Interconsultas -->
-            <div class="mb-5 bg-white/95 backdrop-blur px-3 pt-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2 overflow-x-auto scrollbar-hide">
+            <!-- Selector de Sub-vistas del Consultorio -->
+            <div class="subvistas-desktop-doctor flex mb-5 bg-white/95 backdrop-blur px-3 pt-2 rounded-xl border border-slate-200 shadow-sm items-center gap-2 overflow-x-auto scrollbar-hide">
                 <button type="button" id="tab-consultorio-atencion" onclick="window.cambiarSubvistaDoctor('atencion')" class="px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer">
                     <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     <span>Atención Clínica & Historia</span>
@@ -1157,6 +1181,129 @@
             </div>
         </div>
 
+<!-- ====================================================================== -->
+    <!-- BARRA DE NAVEGACIÓN INFERIOR MOBILE - CONSULTORIO MÉDICO (md:hidden) -->
+    <!-- ====================================================================== -->
+    <nav id="bottom-nav-doctor" class="fixed bottom-0 inset-x-0 z-40 bg-[#007a78] border-t border-[#005f5d] shadow-[0_-4px_16px_rgba(0,40,69,0.2)] md:hidden">
+        <div class="grid grid-cols-3 h-14 items-center px-2 pb-[env(safe-area-inset-bottom,0px)]">
+            <!-- Ítem 1: Atención Clínica -->
+            <button type="button" id="btn-bottom-doc-atencion" onclick="window.cambiarSubvistaDoctor('atencion')" class="flex flex-col items-center justify-center py-1 text-white font-bold transition-all cursor-pointer">
+                <div class="flex items-center justify-center w-10 h-7 rounded-xl bg-white/15 mb-0.5">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <span class="text-[10px] leading-tight text-white tracking-wide">Atención</span>
+            </button>
+
+            <!-- Ítem 2: Interconsultas -->
+            <button type="button" id="btn-bottom-doc-interconsultas" onclick="window.cambiarSubvistaDoctor('interconsultas')" class="flex flex-col items-center justify-center py-1 text-white/75 hover:text-white font-medium transition-all cursor-pointer relative">
+                <div class="flex items-center justify-center w-10 h-7 rounded-xl mb-0.5 relative">
+                    <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    <span id="badge-bottom-doc-ic" class="hidden absolute top-0.5 right-1 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-400 text-slate-900 min-w-[15px] text-center shadow-xs">0</span>
+                </div>
+                <span class="text-[10px] leading-tight text-white/80 tracking-wide">Interconsultas</span>
+            </button>
+
+            <!-- Ítem 3: Perfil -->
+            <button type="button" id="btn-bottom-doc-perfil" onclick="window.toggleMenuPerfilMobile()" class="flex flex-col items-center justify-center py-1 text-white/75 hover:text-white font-medium transition-all cursor-pointer">
+                <div class="flex items-center justify-center w-10 h-7 rounded-xl mb-0.5">
+                    <div id="avatar-bottom-doc" class="w-6 h-6 rounded-full bg-white text-[#007a78] flex items-center justify-center text-xs font-bold shadow-xs">
+                        M
+                    </div>
+                </div>
+                <span class="text-[10px] leading-tight text-white/80 tracking-wide">Perfil</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ====================================================================== -->
+    <!-- MENÚ DE PERFIL MOBILE (BOTTOM SHEET ESTILO INSTAGRAM) -->
+    <!-- ====================================================================== -->
+    <div id="modal-perfil-mobile" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
+        <!-- Backdrop oscuro con blur -->
+        <div id="backdrop-perfil-mobile" onclick="window.cerrarMenuPerfilMobile()" class="absolute inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-300"></div>
+
+        <!-- Hoja inferior deslizante -->
+        <div class="animate-slide-up absolute bottom-0 inset-x-0 bg-white rounded-t-2xl shadow-2xl border-t border-slate-200 p-5 max-h-[85vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
+            <!-- Tirador superior (drag handle) -->
+            <div class="w-12 h-1 bg-slate-300 rounded-full mx-auto mb-4"></div>
+
+            <!-- Encabezado de Usuario -->
+            <div class="flex items-center gap-3.5 pb-4 border-b border-slate-100">
+                <div id="perfil-mobile-avatar" class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-base font-bold ring-2 ring-emerald-600/20 shadow-xs">
+                    M
+                </div>
+                <div class="flex-grow min-w-0">
+                    <h4 id="perfil-mobile-nombre" class="font-bold text-slate-900 text-sm truncate">Dr. Personal</h4>
+                    <p id="perfil-mobile-correo" class="text-xs text-slate-500 truncate">usuario@hospital.gob.ar</p>
+                    <div class="mt-1">
+                        <span id="perfil-mobile-rol-badge" class="badge-his badge-his-atendido text-[10px]">Médico</span>
+                    </div>
+                </div>
+                <button type="button" onclick="window.cerrarMenuPerfilMobile()" class="p-2 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer" aria-label="Cerrar menú">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Sección Cambiar de Vista (Visible solo para Superadmin / rol: Administración) -->
+            <div id="seccion-cambiar-vista-mobile" class="hidden py-4 border-b border-slate-100">
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">Cambiar de Vista (Superadmin)</p>
+                <div class="space-y-1.5">
+                    <!-- Recepción -->
+                    <button type="button" onclick="window.cambiarVistaDesdeMenuMobile('reception')" class="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200 cursor-pointer">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-900 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-blue-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-xs font-bold text-slate-800">Recepción y Admisión</div>
+                                <div class="text-[10px] text-slate-500">Acreditación y asignación de turnos</div>
+                            </div>
+                        </div>
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+
+                    <!-- Consultorio (Vista actual) -->
+                    <button type="button" onclick="window.cambiarVistaDesdeMenuMobile('doctor')" class="w-full flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 transition cursor-pointer">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-emerald-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v6H3v6h6v6h6v-6h6V9h-6V3H9z"></path></svg>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                                    <span>Consultorio Médico</span>
+                                    <span class="text-[9px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded-full">Actual</span>
+                                </div>
+                                <div class="text-[10px] text-emerald-700">Atención e Historia Clínica</div>
+                            </div>
+                        </div>
+                        <svg class="w-4 h-4 text-emerald-700" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                    </button>
+
+                    <!-- Administración -->
+                    <button type="button" onclick="window.cambiarVistaDesdeMenuMobile('admin')" class="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200 cursor-pointer">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-xs font-bold text-slate-800">Administración General</div>
+                                <div class="text-[10px] text-slate-500">Gestión, métricas y auditoría</div>
+                            </div>
+                        </div>
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Botón de Cerrar Sesión -->
+            <div class="pt-4">
+                <button type="button" onclick="cerrarSesionReal()" class="w-full btn-his-danger py-2.5 text-xs font-bold flex items-center justify-center gap-2 shadow-xs cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    <span>Cerrar Sesión</span>
+                </button>
+            </div>
+        </div>
+    </div>
     </main>
 
     <!-- ========================================== -->

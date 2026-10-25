@@ -404,6 +404,89 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     opacity: 0.4;
 }
 
+/* ==========================================================================
+   MODAL DE CARGA INSTITUCIONAL (OVERLAY LOGIN / ACCESO STAFF)
+   ========================================================================== */
+.modal-carga-dialog {
+    animation: modalCargaEntrada 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalCargaEntrada {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ==========================================================================
+   NAVEGACIÓN MÓVIL INFERIOR Y SHEET DE PERFIL
+   ========================================================================== */
+@keyframes slideUpSheet {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+.animate-slide-up {
+    animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==========================================================================
+   NAVEGACIÓN MÓVIL INFERIOR Y SHEET DE PERFIL (SOLO EN MODO DEV: ?dev=1)
+   ========================================================================== */
+@media (min-width: 768px) {
+    #bottom-nav-doctor,
+    #modal-perfil-mobile {
+        display: none !important;
+    }
+}
+
+@media (max-width: 767.98px) {
+    #bottom-nav-doctor,
+    #modal-perfil-mobile {
+        display: none;
+    }
+
+    body.modo-dev-mobile[data-view="doctor"] #bottom-nav-doctor {
+        display: block !important;
+    }
+
+    body.modo-dev-mobile #modal-perfil-mobile:not(.hidden) {
+        display: block !important;
+    }
+
+    body.modo-dev-mobile[data-view="doctor"] #nav-desktop-staff {
+        display: none !important;
+    }
+
+    body.modo-dev-mobile[data-view="doctor"] .subvistas-desktop-doctor {
+        display: none !important;
+    }
+
+    body.modo-dev-mobile[data-view="doctor"] .header-mobile-dev-title {
+        display: flex !important;
+    }
+
+    body.modo-dev-mobile[data-view="doctor"] main {
+        padding-bottom: 5.5rem !important;
+    }
+
+    body.modo-dev-mobile .banner-demo-completo {
+        display: none !important;
+    }
+
+    body.modo-dev-mobile .banner-demo-compacto {
+        display: flex !important;
+    }
+}
+
 /* Campos de Formulario (Inputs y Selects) */
 .input-his {
     width: 100%;

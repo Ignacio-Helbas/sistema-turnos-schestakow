@@ -166,12 +166,16 @@ function actualizarContadorNoLeidas() {
         }
     });
 
-    if (noLeidas > 0) {
-        badge.innerText = String(noLeidas);
-        badge.classList.remove("hidden");
-    } else {
-        badge.classList.add("hidden");
-    }
+    const badges = [badge, document.getElementById("badge-bottom-doc-ic")];
+    badges.forEach(b => {
+        if (!b) return;
+        if (noLeidas > 0) {
+            b.innerText = String(noLeidas);
+            b.classList.remove("hidden");
+        } else {
+            b.classList.add("hidden");
+        }
+    });
 }
 
 /**
@@ -776,6 +780,24 @@ export function cambiarSubvistaDoctor(subvista) {
         subAtencion.classList.add("hidden");
         subInterconsultas.classList.remove("hidden");
 
+        const btnBottomAtencion = document.getElementById("btn-bottom-doc-atencion");
+        const btnBottomIc = document.getElementById("btn-bottom-doc-interconsultas");
+        if (btnBottomAtencion && btnBottomIc) {
+            btnBottomAtencion.className = "flex flex-col items-center justify-center py-1 text-white/75 hover:text-white font-medium transition-all cursor-pointer";
+            btnBottomAtencion.querySelector("div")?.classList.remove("bg-white/15");
+            btnBottomAtencion.querySelector("svg")?.classList.remove("text-white");
+            btnBottomAtencion.querySelector("svg")?.classList.add("text-white/80");
+            btnBottomAtencion.querySelector("span")?.classList.remove("text-white");
+            btnBottomAtencion.querySelector("span")?.classList.add("text-white/80");
+
+            btnBottomIc.className = "flex flex-col items-center justify-center py-1 text-white font-bold transition-all cursor-pointer relative";
+            btnBottomIc.querySelector("div")?.classList.add("bg-white/15");
+            btnBottomIc.querySelector("svg")?.classList.remove("text-white/80");
+            btnBottomIc.querySelector("svg")?.classList.add("text-white");
+            btnBottomIc.querySelector("span")?.classList.remove("text-white/80");
+            btnBottomIc.querySelector("span")?.classList.add("text-white");
+        }
+
         inicializarModuloInterconsultas();
     } else {
         tabAtencion.className = "px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer";
@@ -783,6 +805,24 @@ export function cambiarSubvistaDoctor(subvista) {
 
         subInterconsultas.classList.add("hidden");
         subAtencion.classList.remove("hidden");
+
+        const btnBottomAtencion = document.getElementById("btn-bottom-doc-atencion");
+        const btnBottomIc = document.getElementById("btn-bottom-doc-interconsultas");
+        if (btnBottomAtencion && btnBottomIc) {
+            btnBottomAtencion.className = "flex flex-col items-center justify-center py-1 text-white font-bold transition-all cursor-pointer";
+            btnBottomAtencion.querySelector("div")?.classList.add("bg-white/15");
+            btnBottomAtencion.querySelector("svg")?.classList.remove("text-white/80");
+            btnBottomAtencion.querySelector("svg")?.classList.add("text-white");
+            btnBottomAtencion.querySelector("span")?.classList.remove("text-white/80");
+            btnBottomAtencion.querySelector("span")?.classList.add("text-white");
+
+            btnBottomIc.className = "flex flex-col items-center justify-center py-1 text-white/75 hover:text-white font-medium transition-all cursor-pointer relative";
+            btnBottomIc.querySelector("div")?.classList.remove("bg-white/15");
+            btnBottomIc.querySelector("svg")?.classList.remove("text-white");
+            btnBottomIc.querySelector("svg")?.classList.add("text-white/80");
+            btnBottomIc.querySelector("span")?.classList.remove("text-white");
+            btnBottomIc.querySelector("span")?.classList.add("text-white/80");
+        }
     }
 }
 
