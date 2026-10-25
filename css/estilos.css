@@ -331,6 +331,51 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     }
 }
 
+/* ==========================================================================
+   BOTÓN DE ACCESO INSTITUCIONAL Y SPINNER ANIMADO (CSS PURO ::before)
+   ========================================================================== */
+.btn-login {
+    position: relative;
+}
+
+.btn-login::before {
+    content: '';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    margin-top: -10px;
+    width: 20px;
+    height: 20px;
+    border: 2px solid currentColor;
+    border-left-color: transparent;
+    border-right-color: transparent;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.btn-login.cargando {
+    pointer-events: none;
+    cursor: wait;
+}
+
+.btn-login.cargando:disabled {
+    opacity: 0.9 !important;
+    cursor: wait !important;
+    pointer-events: none !important;
+}
+
+.btn-login.cargando::before {
+    opacity: 1;
+    animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 /* Campos de Formulario (Inputs y Selects) */
 .input-his {
     width: 100%;

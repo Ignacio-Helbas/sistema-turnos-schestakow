@@ -55,7 +55,8 @@ export function mostrarPantallaLogin() {
     if (btnLogin) {
         btnLogin.disabled = false;
         btnLogin.removeAttribute('aria-busy');
-        btnLogin.innerHTML = 'Ingresar al Sistema';
+        btnLogin.classList.remove('cargando');
+        btnLogin.textContent = 'Ingresar al Sistema';
     }
     document.body.dataset.view = 'login';
     document.querySelectorAll('.view').forEach(el => {
@@ -89,21 +90,13 @@ export async function iniciarSesionReal() {
     }
 
     const boton = document.getElementById('btn-login') || document.getElementById('btn-login-submit');
-    const textoOriginal = boton ? boton.innerHTML : 'Ingresar al Sistema';
+    const textoOriginal = 'Ingresar al Sistema';
 
     if (boton) {
-        if (boton.disabled) return;
+        if (boton.disabled || boton.classList.contains('cargando')) return;
         boton.disabled = true;
-        boton.setAttribute('aria-busy', 'true');
-        boton.innerHTML = `
-            <span class="inline-flex items-center justify-center gap-2">
-                <svg class="animate-spin -ml-1 mr-1 h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                </svg>
-                <span>Procesando...</span>
-            </span>
-        `;
+        boton.classList.add('cargando');
+        boton.textContent = 'Iniciando...';
     }
 
     try {
@@ -127,8 +120,8 @@ export async function iniciarSesionReal() {
     } catch (error) {
         if (boton) {
             boton.disabled = false;
-            boton.removeAttribute('aria-busy');
-            boton.innerHTML = textoOriginal;
+            boton.classList.remove('cargando');
+            boton.textContent = textoOriginal;
         }
         ocultarOverlayCargaPanel();
         sessionStorage.removeItem('hospital_sesion_activa');
