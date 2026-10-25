@@ -25,6 +25,7 @@ import {
 import {
     inicializarAuth,
     obtenerSesionActual,
+    establecerSesionActual,
     mostrarPantallaLogin
 } from "./auth.js";
 
@@ -327,6 +328,37 @@ export function cambiarTabAdmin(tabId) {
 
     if (tabId === 'metricas') cargarMetricas();
     if (tabId === 'auditoria') cargarAuditoriaAdmin();
+    actualizarBotonesBottomNavAdmin(tabId);
+}
+
+export function cambiarSubvistaAdminMobile(tabId) {
+    cambiarTabAdmin(tabId);
+}
+
+function actualizarBotonesBottomNavAdmin(tabId) {
+    const tabs = ['gestion', 'metricas', 'auditoria'];
+    tabs.forEach(t => {
+        const btn = document.getElementById('btn-bottom-adm-' + t);
+        if (!btn) return;
+        const iconWrap = btn.querySelector('div');
+        const iconSvg = btn.querySelector('svg');
+        const spanText = btn.querySelector('span');
+        if (t === tabId) {
+            btn.className = "flex flex-col items-center justify-center py-1 text-white font-bold transition-all cursor-pointer";
+            iconWrap?.classList.add('bg-white/15');
+            iconSvg?.classList.remove('text-white/80');
+            iconSvg?.classList.add('text-white');
+            spanText?.classList.remove('text-white/80');
+            spanText?.classList.add('text-white');
+        } else {
+            btn.className = "flex flex-col items-center justify-center py-1 text-white/75 hover:text-white font-medium transition-all cursor-pointer";
+            iconWrap?.classList.remove('bg-white/15');
+            iconSvg?.classList.remove('text-white');
+            iconSvg?.classList.add('text-white/80');
+            spanText?.classList.remove('text-white');
+            spanText?.classList.add('text-white/80');
+        }
+    });
 }
 
 export function toggleHistorial() {
@@ -426,6 +458,9 @@ export function sincronizarNavegacionMobile(sesion) {
     const elAvatarBottom = document.getElementById("avatar-bottom-doc");
     if (elAvatarBottom) elAvatarBottom.textContent = inicial;
 
+    const elAvatarBottomAdm = document.getElementById("avatar-bottom-adm");
+    if (elAvatarBottomAdm) elAvatarBottomAdm.textContent = inicial;
+
     const elAvatarMobile = document.getElementById("perfil-mobile-avatar");
     if (elAvatarMobile) elAvatarMobile.textContent = inicial;
 
@@ -451,9 +486,43 @@ export function sincronizarNavegacionMobile(sesion) {
     }
 }
 
+export function sincronizarVistasMenuMobile() {
+    const vistaActual = document.body.dataset.view || 'admin';
+    const items = [
+        { id: 'btn-menu-mob-reception', view: 'reception', bg: 'bg-blue-50/80', border: 'border-blue-200', badgeColor: 'bg-blue-700' },
+        { id: 'btn-menu-mob-doctor', view: 'doctor', bg: 'bg-emerald-50/80', border: 'border-emerald-200', badgeColor: 'bg-emerald-700' },
+        { id: 'btn-menu-mob-admin', view: 'admin', bg: 'bg-slate-100', border: 'border-slate-300', badgeColor: 'bg-slate-900' }
+    ];
+
+    items.forEach(item => {
+        const btn = document.getElementById(item.id);
+        if (!btn) return;
+        const badgeActual = btn.querySelector('.badge-vista-actual');
+        const iconIndicador = btn.querySelector('.indicador-vista-actual');
+        const arrow = btn.querySelector('.arrow-vista-otra');
+        const isCurrent = vistaActual === item.view;
+
+        if (isCurrent) {
+            btn.className = `w-full flex items-center justify-between p-2.5 rounded-xl ${item.bg} border ${item.border} transition cursor-pointer`;
+            if (badgeActual) {
+                badgeActual.className = `badge-vista-actual text-[9px] ${item.badgeColor} text-white font-bold px-1.5 py-0.2 rounded-full`;
+                badgeActual.classList.remove('hidden');
+            }
+            if (iconIndicador) iconIndicador.classList.remove('hidden');
+            if (arrow) arrow.classList.add('hidden');
+        } else {
+            btn.className = "w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200 cursor-pointer";
+            if (badgeActual) badgeActual.classList.add('hidden');
+            if (iconIndicador) iconIndicador.classList.add('hidden');
+            if (arrow) arrow.classList.remove('hidden');
+        }
+    });
+}
+
 export function toggleMenuPerfilMobile() {
     const modal = document.getElementById("modal-perfil-mobile");
     if (!modal) return;
+    sincronizarVistasMenuMobile();
     modal.classList.toggle("hidden");
 }
 
@@ -467,6 +536,35 @@ export function cambiarVistaDesdeMenuMobile(vista) {
     switchView(vista);
 }
 
+export function accesoRapidoDev(rol) {
+    sessionStorage.setItem('hospital_sesion_activa', 'true');
+    if (rol === 'doctor') {
+        const sesion = {
+            uid: 'medico_demo_01',
+            email: 'doctor@schestakow.gob.ar',
+            nombre: 'Dr. Alejandro Schestakow',
+            rol: 'Médico',
+            especialidad: 'Medicina General'
+        };
+        establecerSesionActual(sesion);
+        aplicarPermisosVisuales(sesion);
+        switchView('doctor');
+    } else {
+        const sesion = {
+            uid: 'admin_demo_01',
+            email: 'admin@schestakow.gob.ar',
+            nombre: 'Ignacio Helbas',
+            rol: 'Administración'
+        };
+        establecerSesionActual(sesion);
+        aplicarPermisosVisuales(sesion);
+        switchView('admin');
+    }
+}
+
 window.toggleMenuPerfilMobile = toggleMenuPerfilMobile;
 window.cerrarMenuPerfilMobile = cerrarMenuPerfilMobile;
 window.cambiarVistaDesdeMenuMobile = cambiarVistaDesdeMenuMobile;
+window.cambiarSubvistaAdminMobile = cambiarSubvistaAdminMobile;
+window.sincronizarVistasMenuMobile = sincronizarVistasMenuMobile;
+window.accesoRapidoDev = accesoRapidoDev;

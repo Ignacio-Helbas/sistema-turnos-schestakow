@@ -163,6 +163,20 @@
 </head>
 <body class="pagina-publica text-slate-800 font-sans flex flex-col min-h-screen">
 
+    <!-- BANNER DEV EN PORTAL PÚBLICO -->
+    <div id="banner-dev-publico" class="hidden bg-[#007a78] text-white px-3 py-2 text-center text-xs font-bold shadow-md select-none">
+        <span>🧪 Modo de prueba móvil activo (?dev=1): </span>
+        <a href="panel.html?dev=1" class="underline text-emerald-100 hover:text-white font-extrabold ml-1">Ir al Panel de Consultorio / Administración &rarr;</a>
+    </div>
+    <script>
+        if (new URLSearchParams(window.location.search).get('dev') === '1') {
+            document.addEventListener('DOMContentLoaded', () => {
+                const b = document.getElementById('banner-dev-publico');
+                if (b) b.classList.remove('hidden');
+            });
+        }
+    </script>
+
     <!-- AVISO VISIBLE Y PERMANENTE DE PROTOTIPO ACADÉMICO (SIN EMOJIS) -->
     <aside class="bg-amber-100 border-b border-amber-300 text-amber-950 px-3 py-1.5 text-center text-xs font-medium select-none z-50">
         <div class="max-w-7xl mx-auto flex items-center justify-center gap-2">

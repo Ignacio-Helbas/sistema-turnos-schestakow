@@ -38,7 +38,7 @@
     <script src="vendor/chart.umd.min.js"></script>
 
     <!-- Estilos Externos -->
-    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="css/estilos.css?v=20261025_02">
 
     <!-- Fondo de Pantalla -->
     <style>
@@ -179,6 +179,27 @@
                     </div>
                     <div class="pt-2">
                         <button id="btn-login" onclick="iniciarSesionReal()" class="btn-his-primary btn-login w-full py-2.5 text-xs font-bold shadow-xs flex items-center justify-center">Ingresar al Sistema</button>
+                    </div>
+
+                    <!-- ACCESO RÁPIDO PARA TESTEO MOBILE (SOLO VISIBLE CON ?dev=1) -->
+                    <div class="banner-test-dev hidden mt-4 pt-3 border-t border-slate-200">
+                        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+                            <div class="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-900 mb-1">
+                                <span>🧪</span>
+                                <span>Entorno de Testeo Móvil (?dev=1)</span>
+                            </div>
+                            <p class="text-[11px] text-emerald-800 mb-2.5">Accede directamente para probar las barras inferiores sin escribir contraseñas:</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="button" onclick="window.accesoRapidoDev('doctor')" class="px-2 py-2 bg-[#007a78] hover:bg-[#005f5d] text-white text-xs font-bold rounded-lg shadow-xs flex items-center justify-center gap-1 cursor-pointer">
+                                    <span>🩺</span>
+                                    <span>Consultorio</span>
+                                </button>
+                                <button type="button" onclick="window.accesoRapidoDev('admin')" class="px-2 py-2 bg-[#0f172a] hover:bg-[#1e293b] text-white text-xs font-bold rounded-lg shadow-xs flex items-center justify-center gap-1 cursor-pointer">
+                                    <span>⚙️</span>
+                                    <span>Administración</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div class="pt-4 border-t border-slate-200 text-center">
                         <a href="index.html" class="text-xs text-slate-500 hover:text-slate-800 transition inline-flex items-center justify-center gap-1">
@@ -682,7 +703,7 @@
                 </div>
             </div>
             
-            <div class="flex overflow-x-auto gap-4 sm:gap-8 border-b border-slate-200 mb-6 px-2 bg-white/90 pt-3 rounded-t-lg whitespace-nowrap scrollbar-hide">
+            <div class="subvistas-desktop-admin flex overflow-x-auto gap-4 sm:gap-8 border-b border-slate-200 mb-6 px-2 bg-white/90 pt-3 rounded-t-lg whitespace-nowrap scrollbar-hide">
                 <button onclick="cambiarTabAdmin('gestion')" id="tab-gestion" class="admin-tab active font-bold text-neutral-900 pb-2 cursor-pointer border-b-2 border-slate-900">Gestión y Modulación</button>
                 <button onclick="cambiarTabAdmin('metricas')" id="tab-metricas" class="admin-tab font-bold text-slate-500 hover:text-slate-800 pb-2 transition cursor-pointer">Métricas y Rendimiento</button>
                 <button onclick="cambiarTabAdmin('auditoria')" id="tab-auditoria" class="admin-tab font-bold text-slate-500 hover:text-slate-800 pb-2 transition cursor-pointer">Registro de Auditoría</button>
@@ -1216,6 +1237,47 @@
     </nav>
 
     <!-- ====================================================================== -->
+    <!-- BARRA DE NAVEGACIÓN INFERIOR MOBILE - ADMINISTRACIÓN (md:hidden) -->
+    <!-- ====================================================================== -->
+    <nav id="bottom-nav-admin" class="fixed bottom-0 inset-x-0 z-40 bg-[#0f172a] border-t border-slate-700 shadow-[0_-4px_16px_rgba(0,0,0,0.3)] md:hidden">
+        <div class="grid grid-cols-4 h-14 items-center px-2 pb-[env(safe-area-inset-bottom,0px)]">
+            <!-- Ítem 1: Gestión -->
+            <button type="button" id="btn-bottom-adm-gestion" onclick="window.cambiarSubvistaAdminMobile('gestion')" class="flex flex-col items-center justify-center py-1 text-white font-bold transition-all cursor-pointer">
+                <div class="flex items-center justify-center w-10 h-7 rounded-xl bg-white/15 mb-0.5">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                </div>
+                <span class="text-[10px] leading-tight text-white tracking-wide">Gestión</span>
+            </button>
+
+            <!-- Ítem 2: Métricas -->
+            <button type="button" id="btn-bottom-adm-metricas" onclick="window.cambiarSubvistaAdminMobile('metricas')" class="flex flex-col items-center justify-center py-1 text-white/75 hover:text-white font-medium transition-all cursor-pointer">
+                <div class="flex items-center justify-center w-10 h-7 rounded-xl mb-0.5">
+                    <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                </div>
+                <span class="text-[10px] leading-tight text-white/80 tracking-wide">Métricas</span>
+            </button>
+
+            <!-- Ítem 3: Auditoría -->
+            <button type="button" id="btn-bottom-adm-auditoria" onclick="window.cambiarSubvistaAdminMobile('auditoria')" class="flex flex-col items-center justify-center py-1 text-white/75 hover:text-white font-medium transition-all cursor-pointer">
+                <div class="flex items-center justify-center w-10 h-7 rounded-xl mb-0.5">
+                    <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                </div>
+                <span class="text-[10px] leading-tight text-white/80 tracking-wide">Auditoría</span>
+            </button>
+
+            <!-- Ítem 4: Perfil -->
+            <button type="button" id="btn-bottom-adm-perfil" onclick="window.toggleMenuPerfilMobile()" class="flex flex-col items-center justify-center py-1 text-white/75 hover:text-white font-medium transition-all cursor-pointer">
+                <div class="flex items-center justify-center w-10 h-7 rounded-xl mb-0.5">
+                    <div id="avatar-bottom-adm" class="w-6 h-6 rounded-full bg-white text-[#0f172a] flex items-center justify-center text-xs font-bold shadow-xs">
+                        A
+                    </div>
+                </div>
+                <span class="text-[10px] leading-tight text-white/80 tracking-wide">Perfil</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ====================================================================== -->
     <!-- MENÚ DE PERFIL MOBILE (BOTTOM SHEET ESTILO INSTAGRAM) -->
     <!-- ====================================================================== -->
     <div id="modal-perfil-mobile" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
@@ -1249,48 +1311,57 @@
                 <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">Cambiar de Vista (Superadmin)</p>
                 <div class="space-y-1.5">
                     <!-- Recepción -->
-                    <button type="button" onclick="window.cambiarVistaDesdeMenuMobile('reception')" class="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200 cursor-pointer">
+                    <button type="button" id="btn-menu-mob-reception" onclick="window.cambiarVistaDesdeMenuMobile('reception')" class="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200 cursor-pointer">
                         <div class="flex items-center gap-2.5">
                             <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-900 flex items-center justify-center">
                                 <svg class="w-4 h-4 text-blue-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                             </div>
                             <div class="text-left">
-                                <div class="text-xs font-bold text-slate-800">Recepción y Admisión</div>
+                                <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    <span>Recepción y Admisión</span>
+                                    <span class="badge-vista-actual hidden text-[9px] bg-blue-700 text-white font-bold px-1.5 py-0.2 rounded-full">Actual</span>
+                                </div>
                                 <div class="text-[10px] text-slate-500">Acreditación y asignación de turnos</div>
                             </div>
                         </div>
-                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        <svg class="indicador-vista-actual hidden w-4 h-4 text-blue-700" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                        <svg class="arrow-vista-otra w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                     </button>
 
-                    <!-- Consultorio (Vista actual) -->
-                    <button type="button" onclick="window.cambiarVistaDesdeMenuMobile('doctor')" class="w-full flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 transition cursor-pointer">
+                    <!-- Consultorio -->
+                    <button type="button" id="btn-menu-mob-doctor" onclick="window.cambiarVistaDesdeMenuMobile('doctor')" class="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200 cursor-pointer">
                         <div class="flex items-center gap-2.5">
                             <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
                                 <svg class="w-4 h-4 text-emerald-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v6H3v6h6v6h6v-6h6V9h-6V3H9z"></path></svg>
                             </div>
                             <div class="text-left">
-                                <div class="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                                <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                                     <span>Consultorio Médico</span>
-                                    <span class="text-[9px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded-full">Actual</span>
+                                    <span class="badge-vista-actual hidden text-[9px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded-full">Actual</span>
                                 </div>
-                                <div class="text-[10px] text-emerald-700">Atención e Historia Clínica</div>
+                                <div class="text-[10px] text-slate-500">Atención e Historia Clínica</div>
                             </div>
                         </div>
-                        <svg class="w-4 h-4 text-emerald-700" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                        <svg class="indicador-vista-actual hidden w-4 h-4 text-emerald-700" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                        <svg class="arrow-vista-otra w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                     </button>
 
                     <!-- Administración -->
-                    <button type="button" onclick="window.cambiarVistaDesdeMenuMobile('admin')" class="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200 cursor-pointer">
+                    <button type="button" id="btn-menu-mob-admin" onclick="window.cambiarVistaDesdeMenuMobile('admin')" class="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200 cursor-pointer">
                         <div class="flex items-center gap-2.5">
                             <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center">
                                 <svg class="w-4 h-4 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             </div>
                             <div class="text-left">
-                                <div class="text-xs font-bold text-slate-800">Administración General</div>
+                                <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    <span>Administración General</span>
+                                    <span class="badge-vista-actual hidden text-[9px] bg-slate-900 text-white font-bold px-1.5 py-0.2 rounded-full">Actual</span>
+                                </div>
                                 <div class="text-[10px] text-slate-500">Gestión, métricas y auditoría</div>
                             </div>
                         </div>
-                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        <svg class="indicador-vista-actual hidden w-4 h-4 text-slate-800" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                        <svg class="arrow-vista-otra w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                     </button>
                 </div>
             </div>
@@ -2105,7 +2176,7 @@
     <script type="module" src="js/interconsultas.js"></script>
 
     <!-- Script Orquestador del Panel Institucional -->
-    <script type="module" src="js/panel.js"></script>
+    <script type="module" src="js/panel.js?v=20261025_02"></script>
 
 </body>
 </html>

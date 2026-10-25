@@ -443,6 +443,7 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
    ========================================================================== */
 @media (min-width: 768px) {
     #bottom-nav-doctor,
+    #bottom-nav-admin,
     #modal-perfil-mobile {
         display: none !important;
     }
@@ -450,6 +451,7 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
 
 @media (max-width: 767.98px) {
     #bottom-nav-doctor,
+    #bottom-nav-admin,
     #modal-perfil-mobile {
         display: none;
     }
@@ -458,23 +460,31 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
         display: block !important;
     }
 
+    body.modo-dev-mobile[data-view="admin"] #bottom-nav-admin {
+        display: block !important;
+    }
+
     body.modo-dev-mobile #modal-perfil-mobile:not(.hidden) {
         display: block !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] #nav-desktop-staff {
+    body.modo-dev-mobile[data-view="doctor"] #nav-desktop-staff,
+    body.modo-dev-mobile[data-view="admin"] #nav-desktop-staff {
         display: none !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] .subvistas-desktop-doctor {
+    body.modo-dev-mobile[data-view="doctor"] .subvistas-desktop-doctor,
+    body.modo-dev-mobile[data-view="admin"] .subvistas-desktop-admin {
         display: none !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] .header-mobile-dev-title {
+    body.modo-dev-mobile[data-view="doctor"] .header-mobile-dev-title,
+    body.modo-dev-mobile[data-view="admin"] .header-mobile-dev-title {
         display: flex !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] main {
+    body.modo-dev-mobile[data-view="doctor"] main,
+    body.modo-dev-mobile[data-view="admin"] main {
         padding-bottom: 5.5rem !important;
     }
 
@@ -484,6 +494,10 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
 
     body.modo-dev-mobile .banner-demo-compacto {
         display: flex !important;
+    }
+
+    body.modo-dev-mobile .banner-test-dev {
+        display: block !important;
     }
 }
 
