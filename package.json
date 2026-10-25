@@ -9,7 +9,7 @@
     "test:emulators": "firebase emulators:exec --project demo-turnos-schestakow --only firestore \"npm test\""
   },
   "devDependencies": {
-    "@firebase/rules-unit-testing": "^3.0.3",
+    "@firebase/rules-unit-testing": "^6.0.0",
     "firebase": "^10.12.2",
     "puppeteer-core": "^25.16.0"
   }
