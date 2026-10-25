@@ -783,19 +783,10 @@ export function cambiarSubvistaDoctor(subvista) {
         const btnBottomAtencion = document.getElementById("btn-bottom-doc-atencion");
         const btnBottomIc = document.getElementById("btn-bottom-doc-interconsultas");
         if (btnBottomAtencion && btnBottomIc) {
-            btnBottomAtencion.className = "flex flex-col items-center justify-center py-1 text-white/75 hover:text-white font-medium transition-all cursor-pointer";
-            btnBottomAtencion.querySelector("div")?.classList.remove("bg-white/15");
-            btnBottomAtencion.querySelector("svg")?.classList.remove("text-white");
-            btnBottomAtencion.querySelector("svg")?.classList.add("text-white/80");
-            btnBottomAtencion.querySelector("span")?.classList.remove("text-white");
-            btnBottomAtencion.querySelector("span")?.classList.add("text-white/80");
-
-            btnBottomIc.className = "flex flex-col items-center justify-center py-1 text-white font-bold transition-all cursor-pointer relative";
-            btnBottomIc.querySelector("div")?.classList.add("bg-white/15");
-            btnBottomIc.querySelector("svg")?.classList.remove("text-white/80");
-            btnBottomIc.querySelector("svg")?.classList.add("text-white");
-            btnBottomIc.querySelector("span")?.classList.remove("text-white/80");
-            btnBottomIc.querySelector("span")?.classList.add("text-white");
+            btnBottomAtencion.classList.remove("is-active");
+            btnBottomAtencion.classList.add("is-inactive");
+            btnBottomIc.classList.remove("is-inactive");
+            btnBottomIc.classList.add("is-active");
         }
 
         inicializarModuloInterconsultas();
@@ -809,19 +800,10 @@ export function cambiarSubvistaDoctor(subvista) {
         const btnBottomAtencion = document.getElementById("btn-bottom-doc-atencion");
         const btnBottomIc = document.getElementById("btn-bottom-doc-interconsultas");
         if (btnBottomAtencion && btnBottomIc) {
-            btnBottomAtencion.className = "flex flex-col items-center justify-center py-1 text-white font-bold transition-all cursor-pointer";
-            btnBottomAtencion.querySelector("div")?.classList.add("bg-white/15");
-            btnBottomAtencion.querySelector("svg")?.classList.remove("text-white/80");
-            btnBottomAtencion.querySelector("svg")?.classList.add("text-white");
-            btnBottomAtencion.querySelector("span")?.classList.remove("text-white/80");
-            btnBottomAtencion.querySelector("span")?.classList.add("text-white");
-
-            btnBottomIc.className = "flex flex-col items-center justify-center py-1 text-white/75 hover:text-white font-medium transition-all cursor-pointer relative";
-            btnBottomIc.querySelector("div")?.classList.remove("bg-white/15");
-            btnBottomIc.querySelector("svg")?.classList.remove("text-white");
-            btnBottomIc.querySelector("svg")?.classList.add("text-white/80");
-            btnBottomIc.querySelector("span")?.classList.remove("text-white");
-            btnBottomIc.querySelector("span")?.classList.add("text-white/80");
+            btnBottomAtencion.classList.remove("is-inactive");
+            btnBottomAtencion.classList.add("is-active");
+            btnBottomIc.classList.remove("is-active");
+            btnBottomIc.classList.add("is-inactive");
         }
     }
 }

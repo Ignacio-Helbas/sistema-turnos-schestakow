@@ -1507,6 +1507,102 @@ export function inicializarEventosHC() {
     if (btnConfirmarRect) {
         btnConfirmarRect.addEventListener('click', () => guardarRectificacionInmutable());
     }
+
+    // Inicializar Pull-to-Refresh para móviles
+    inicializarPullRefreshAgenda();
+}
+
+/**
+ * Inicializa el comportamiento de Pull-to-Refresh en la lista de sala de espera (Mobile).
+ */
+function inicializarPullRefreshAgenda() {
+    const container = document.getElementById('medico-agenda-container');
+    const indicator = document.getElementById('pull-refresh-indicator');
+    const spinnerText = document.getElementById('pull-refresh-text');
+    const spinnerIcon = document.getElementById('pull-refresh-spinner');
+
+    if (!container || !indicator) return;
+
+    let startY = 0;
+    let isPulling = false;
+    let isRefreshing = false;
+
+    container.addEventListener('touchstart', (e) => {
+        if (container.scrollTop <= 0 && !isRefreshing) {
+            startY = e.touches[0].clientY;
+            isPulling = true;
+        }
+    }, { passive: true });
+
+    container.addEventListener('touchmove', (e) => {
+        if (!isPulling || isRefreshing) return;
+        const currentY = e.touches[0].clientY;
+        const pullDistance = currentY - startY;
+
+        if (pullDistance > 10 && container.scrollTop <= 0) {
+            indicator.classList.remove('hidden');
+            const visualDist = Math.min(pullDistance * 0.45, 60);
+            indicator.style.height = visualDist + 'px';
+
+            if (visualDist >= 40) {
+                if (spinnerText) spinnerText.textContent = 'Soltar para actualizar sala...';
+                if (spinnerIcon) spinnerIcon.style.transform = 'rotate(180deg)';
+            } else {
+                if (spinnerText) spinnerText.textContent = 'Deslizar para actualizar...';
+                if (spinnerIcon) spinnerIcon.style.transform = 'rotate(0deg)';
+            }
+        }
+    }, { passive: true });
+
+    container.addEventListener('touchend', async (e) => {
+        if (!isPulling || isRefreshing) return;
+        isPulling = false;
+        const endY = e.changedTouches[0].clientY;
+        const pullDistance = endY - startY;
+
+        if (pullDistance > 60 && container.scrollTop <= 0) {
+            isRefreshing = true;
+            if (spinnerText) spinnerText.textContent = 'Actualizando sala de espera...';
+            if (spinnerIcon) {
+                spinnerIcon.classList.add('animate-spin');
+                spinnerIcon.style.transform = 'none';
+            }
+            try {
+                await cargarAgendaMedico();
+            } finally {
+                setTimeout(() => {
+                    if (spinnerIcon) spinnerIcon.classList.remove('animate-spin');
+                    indicator.style.height = '0px';
+                    setTimeout(() => {
+                        indicator.classList.add('hidden');
+                        indicator.style.height = '';
+                        isRefreshing = false;
+                    }, 250);
+                }, 400);
+            }
+        } else {
+            indicator.style.height = '0px';
+            setTimeout(() => {
+                indicator.classList.add('hidden');
+                indicator.style.height = '';
+            }, 200);
+        }
+    });
+
+    // Función programática para testing
+    window.ejecutarPullRefreshMedico = async function() {
+        indicator.classList.remove('hidden');
+        if (spinnerText) spinnerText.textContent = 'Actualizando sala de espera...';
+        if (spinnerIcon) spinnerIcon.classList.add('animate-spin');
+        try {
+            await cargarAgendaMedico();
+        } finally {
+            setTimeout(() => {
+                if (spinnerIcon) spinnerIcon.classList.remove('animate-spin');
+                indicator.classList.add('hidden');
+            }, 300);
+        }
+    };
 }
 
 // Exponer en window para manejadores inline del DOM

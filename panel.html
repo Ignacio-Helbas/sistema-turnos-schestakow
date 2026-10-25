@@ -286,7 +286,7 @@
         <div id="view-doctor" class="view hidden">
             <!-- Barra superior: Búsqueda por DNI y Acceso de Emergencia -->
             <div id="titulo-medico-dashboard-container" class="mb-4 bg-white/95 backdrop-blur p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div class="flex items-center gap-3">
+                <div id="titulo-medico-header-info" class="flex items-center gap-3">
                     <div class="p-2 bg-emerald-100 text-emerald-800 rounded-lg">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v6H3v6h6v6h6v-6h6V9h-6V3H9z"></path></svg>
                     </div>
@@ -297,7 +297,7 @@
                 </div>
 
                 <!-- Buscador de paciente por DNI y botón de emergencia -->
-                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                <div id="bloque-busqueda-medico-acciones" class="flex flex-wrap items-center gap-2 w-full md:w-auto">
                     <div class="relative flex-grow sm:flex-grow-0 sm:w-64">
                         <input type="text" id="input-buscar-dni-medico" placeholder="Buscar DNI de paciente..." maxlength="10" inputmode="numeric" class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
                         <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -307,9 +307,9 @@
                     </button>
                     <button id="btn-abrir-emergencia" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                        Acceso Emergencia
+                        <span class="btn-emergencia-texto">Acceso Emergencia</span>
                     </button>
-                    <button onclick="cargarAgendaMedico()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-3 py-2 rounded-lg transition flex items-center gap-1" title="Refrescar agenda">
+                    <button id="btn-refresh-agenda" onclick="cargarAgendaMedico()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-3 py-2 rounded-lg transition flex items-center gap-1" title="Refrescar agenda">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     </button>
                 </div>
@@ -411,7 +411,12 @@
                             <span>Llamar siguiente</span>
                         </button>
                     </div>
-                    <div id="medico-agenda-container" class="p-4 flex-grow overflow-y-auto space-y-3 bg-slate-50">
+                    <!-- Indicador Pull-to-Refresh para Sala de Espera Mobile -->
+                    <div id="pull-refresh-indicator" class="hidden overflow-hidden transition-all duration-200 bg-emerald-50/90 border-b border-emerald-200/80 text-emerald-800 text-xs font-semibold py-2 px-3 flex items-center justify-center gap-2">
+                        <svg id="pull-refresh-spinner" class="w-4 h-4 text-emerald-700 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <span id="pull-refresh-text">Deslizar para actualizar</span>
+                    </div>
+                    <div id="medico-agenda-container" class="p-4 flex-grow overflow-y-auto space-y-3 bg-slate-50 overscroll-contain">
                         <p class="text-sm text-slate-500 text-center mt-10">Cargando pacientes...</p>
                     </div>
                 </div>
@@ -1186,31 +1191,35 @@
     <!-- ====================================================================== -->
     <nav id="bottom-nav-doctor" class="fixed bottom-0 inset-x-0 z-40 bg-[#064e3b] border-t border-[#047857] shadow-[0_-4px_16px_rgba(6,78,59,0.3)] md:hidden">
         <div class="grid grid-cols-3 h-14 items-center px-2 pb-[env(safe-area-inset-bottom,0px)]">
-            <!-- Ítem 1: Atención Clínica -->
-            <button type="button" id="btn-bottom-doc-atencion" onclick="window.cambiarSubvistaDoctor('atencion')" class="flex flex-col items-center justify-center py-1 text-white font-bold transition-all cursor-pointer">
-                <div class="flex items-center justify-center w-10 h-7 rounded-xl bg-white/15 mb-0.5">
+            <!-- Ítem 1: Atención Clínica & Historia -->
+            <button type="button" id="btn-bottom-doc-atencion" onclick="window.cambiarSubvistaDoctor('atencion')" class="btn-nav-mobile-item is-active">
+                <div class="nav-pill-wrapper">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 </div>
-                <span class="text-[10px] leading-tight text-white tracking-wide">Atención</span>
+                <span class="nav-item-label text-[10.5px] leading-tight tracking-wide font-sans">Atención</span>
+                <span class="nav-indicator-dot"></span>
             </button>
 
-            <!-- Ítem 2: Interconsultas -->
-            <button type="button" id="btn-bottom-doc-interconsultas" onclick="window.cambiarSubvistaDoctor('interconsultas')" class="flex flex-col items-center justify-center py-1 text-white/75 hover:text-white font-medium transition-all cursor-pointer relative">
-                <div class="flex items-center justify-center w-10 h-7 rounded-xl mb-0.5 relative">
-                    <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                    <span id="badge-bottom-doc-ic" class="hidden absolute top-0.5 right-1 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-400 text-slate-900 min-w-[15px] text-center shadow-xs">0</span>
+            <!-- Ítem 2: Interconsultas Médicas (con Badge Superpuesto en Ícono) -->
+            <button type="button" id="btn-bottom-doc-interconsultas" onclick="window.cambiarSubvistaDoctor('interconsultas')" class="btn-nav-mobile-item is-inactive relative">
+                <div class="nav-pill-wrapper relative">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    <!-- Badge superpuesto en la esquina superior derecha del ícono -->
+                    <span id="badge-bottom-doc-ic" class="hidden absolute -top-1 -right-2 px-1.5 min-w-[17px] h-[17px] rounded-full text-[9px] font-black bg-amber-400 text-slate-900 shadow-md ring-1 ring-emerald-950 flex items-center justify-center text-center">0</span>
                 </div>
-                <span class="text-[10px] leading-tight text-white/80 tracking-wide">Interconsultas</span>
+                <span class="nav-item-label text-[10.5px] leading-tight tracking-wide font-sans">Interconsultas</span>
+                <span class="nav-indicator-dot opacity-0"></span>
             </button>
 
             <!-- Ítem 3: Perfil -->
-            <button type="button" id="btn-bottom-doc-perfil" onclick="window.toggleMenuPerfilMobile()" class="flex flex-col items-center justify-center py-1 text-white/75 hover:text-white font-medium transition-all cursor-pointer">
-                <div class="flex items-center justify-center w-10 h-7 rounded-xl mb-0.5">
-                    <div id="avatar-bottom-doc" class="w-6 h-6 rounded-full bg-white text-[#064e3b] flex items-center justify-center text-xs font-bold shadow-xs">
+            <button type="button" id="btn-bottom-doc-perfil" onclick="window.toggleMenuPerfilMobile()" class="btn-nav-mobile-item is-inactive">
+                <div class="nav-pill-wrapper">
+                    <div id="avatar-bottom-doc" class="w-6 h-6 rounded-full bg-white text-[#064e3b] flex items-center justify-center text-xs font-black shadow-xs ring-1 ring-white/50">
                         M
                     </div>
                 </div>
-                <span class="text-[10px] leading-tight text-white/80 tracking-wide">Perfil</span>
+                <span class="nav-item-label text-[10.5px] leading-tight tracking-wide font-sans">Perfil</span>
+                <span class="nav-indicator-dot opacity-0"></span>
             </button>
         </div>
     </nav>
