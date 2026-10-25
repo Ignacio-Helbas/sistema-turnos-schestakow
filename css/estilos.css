@@ -376,6 +376,34 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     to { transform: rotate(360deg); }
 }
 
+/* ==========================================================================
+   ÍCONO ANIMADO DE VISIBILIDAD DE CONTRASEÑA (SVG + CSS)
+   ========================================================================== */
+.icono-ojo {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.ojo-tache {
+    stroke-dasharray: 32;
+    stroke-dashoffset: 32;
+    transition: stroke-dashoffset 0.3s ease;
+}
+
+.icono-ojo.oculto .ojo-tache {
+    stroke-dashoffset: 0;
+}
+
+.ojo-forma,
+.ojo-pupila {
+    transition: opacity 0.2s ease;
+}
+
+.icono-ojo.oculto .ojo-forma,
+.icono-ojo.oculto .ojo-pupila {
+    opacity: 0.4;
+}
+
 /* Campos de Formulario (Inputs y Selects) */
 .input-his {
     width: 100%;

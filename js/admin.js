@@ -371,10 +371,21 @@ export function toggleCamposMedico() {
     }
 }
 
-export function togglePasswordVisibility() {
-    const input = document.getElementById('input-usuario-pass');
+export function togglePasswordVisibility(inputId = 'input-usuario-pass', btnElement = null) {
+    const input = document.getElementById(inputId);
     if (!input) return;
-    input.type = input.type === 'password' ? 'text' : 'password';
+    const esPassword = input.type === 'password';
+    input.type = esPassword ? 'text' : 'password';
+
+    const boton = btnElement || (typeof event !== 'undefined' && event?.currentTarget) || input.parentElement?.querySelector('button');
+    if (boton) {
+        const ahoraVisible = esPassword;
+        boton.setAttribute('aria-label', ahoraVisible ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        const icono = boton.querySelector('.icono-ojo');
+        if (icono) {
+            icono.classList.toggle('oculto', !ahoraVisible);
+        }
+    }
 }
 
 export function iniciarGuardadoModulacion() {

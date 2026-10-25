@@ -58,3 +58,4 @@ scripts/__pycache__/
 scripts/*.py
 scripts/capturar_figuras.js
 login_cargando.*
+eye_toggle_demo.*
