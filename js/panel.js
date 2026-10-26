@@ -199,14 +199,58 @@ export function aplicarPermisosVisuales(sesion) {
 
     if (btnLogout) {
         btnLogout.classList.remove('hidden');
-        btnLogout.innerText = `Cerrar Sesión (${sesion.nombre || sesion.correo})`;
+    }
+
+    // Configuración del botón y dropdown de perfil de usuario en desktop
+    const btnPerfilDesktop = document.getElementById('btn-perfil-desktop');
+    const avatarDesktop = document.getElementById('avatar-perfil-desktop');
+    const dropdownAvatar = document.getElementById('dropdown-perfil-avatar');
+    const dropdownNombre = document.getElementById('dropdown-perfil-nombre');
+    const dropdownEmail = document.getElementById('dropdown-perfil-email');
+    const dropdownVistas = document.getElementById('dropdown-perfil-vistas');
+
+    const rolMostrar = sesion.rol || 'Personal';
+    const nombreMostrar = sesion.nombre || sesion.correo || 'Usuario Staff';
+    const inicial = (sesion.nombre || sesion.correo || 'U').charAt(0).toUpperCase();
+
+    if (btnPerfilDesktop) {
+        btnPerfilDesktop.classList.remove('hidden');
+        btnPerfilDesktop.classList.add('flex');
+    }
+    if (avatarDesktop) {
+        avatarDesktop.textContent = inicial;
+        if (sesion.rol === 'Médico') {
+            avatarDesktop.className = "w-8 h-8 rounded-full bg-emerald-700 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-emerald-100 shrink-0";
+        } else if (sesion.rol === 'Administración') {
+            avatarDesktop.className = "w-8 h-8 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-slate-200 shrink-0";
+        } else {
+            avatarDesktop.className = "w-8 h-8 rounded-full bg-sky-700 text-white font-bold text-xs flex items-center justify-center shadow-xs ring-2 ring-sky-100 shrink-0";
+        }
+    }
+    if (dropdownAvatar) {
+        dropdownAvatar.textContent = inicial;
+        if (sesion.rol === 'Médico') {
+            dropdownAvatar.className = "w-9 h-9 rounded-full bg-emerald-700 text-white font-bold text-sm flex items-center justify-center shadow-xs shrink-0";
+        } else if (sesion.rol === 'Administración') {
+            dropdownAvatar.className = "w-9 h-9 rounded-full bg-slate-800 text-white font-bold text-sm flex items-center justify-center shadow-xs shrink-0";
+        } else {
+            dropdownAvatar.className = "w-9 h-9 rounded-full bg-sky-700 text-white font-bold text-sm flex items-center justify-center shadow-xs shrink-0";
+        }
+    }
+    if (dropdownNombre) dropdownNombre.textContent = nombreMostrar;
+    if (dropdownEmail) dropdownEmail.textContent = sesion.correo || sesion.email || `${rolMostrar.toLowerCase()}@schestakow.gob.ar`;
+    if (dropdownVistas) {
+        if (sesion.rol === 'Administración') {
+            dropdownVistas.classList.remove('hidden');
+        } else {
+            dropdownVistas.classList.add('hidden');
+        }
     }
 
     sincronizarNavegacionMobile(sesion);
-    const rolMostrar = sesion.rol || 'Personal';
 
     if (usuarioSesionInfo) usuarioSesionInfo.classList.remove('hidden');
-    if (usuarioSesionNombre) usuarioSesionNombre.textContent = sesion.nombre || sesion.correo || 'Usuario Staff';
+    if (usuarioSesionNombre) usuarioSesionNombre.textContent = nombreMostrar;
     if (usuarioSesionRol) {
         usuarioSesionRol.textContent = rolMostrar;
         usuarioSesionRol.className = 'badge-his ' + (sesion.rol === 'Médico' ? 'badge-his-atendido' : (sesion.rol === 'Administración' ? 'badge-his-admin' : 'badge-his-pendiente'));
@@ -446,7 +490,51 @@ if (document.readyState === 'loading') {
     inicializarEventosHC();
 }
 
+
+export function toggleMenuPerfilDesktop(forzar) {
+    const dropdown = document.getElementById('dropdown-perfil-desktop');
+    const btn = document.getElementById('btn-perfil-desktop');
+    const chevron = document.getElementById('chevron-perfil-desktop');
+    if (!dropdown) return;
+
+    const estaOculto = dropdown.classList.contains('hidden');
+    const abrir = typeof forzar === 'boolean' ? forzar : estaOculto;
+
+    if (abrir) {
+        dropdown.classList.remove('hidden');
+        if (btn) btn.setAttribute('aria-expanded', 'true');
+        if (chevron) chevron.classList.add('rotate-180');
+    } else {
+        dropdown.classList.add('hidden');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+        if (chevron) chevron.classList.remove('rotate-180');
+    }
+}
+
+export function cambiarVistaDesdeMenuDesktop(vista) {
+    toggleMenuPerfilDesktop(false);
+    switchView(vista);
+}
+
+document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('dropdown-perfil-desktop');
+    const btn = document.getElementById('btn-perfil-desktop');
+    if (!dropdown || dropdown.classList.contains('hidden')) return;
+    if (!dropdown.contains(e.target) && !btn?.contains(e.target)) {
+        toggleMenuPerfilDesktop(false);
+    }
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        toggleMenuPerfilDesktop(false);
+    }
+});
+
 // Exponer en window para manejadores inline del DOM
+window.toggleMenuPerfilDesktop = toggleMenuPerfilDesktop;
+window.cambiarVistaDesdeMenuDesktop = cambiarVistaDesdeMenuDesktop;
+
 window.switchView = switchView;
 window.aplicarPermisosVisuales = aplicarPermisosVisuales;
 window.cambiarTabAdmin = cambiarTabAdmin;

@@ -458,63 +458,63 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
         display: none;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] #bottom-nav-doctor {
+    body[data-view="doctor"] #bottom-nav-doctor {
         display: block !important;
     }
 
-    body.modo-dev-mobile[data-view="admin"] #bottom-nav-admin {
+    body[data-view="admin"] #bottom-nav-admin {
         display: block !important;
     }
 
-    body.modo-dev-mobile[data-view="reception"] #bottom-nav-reception {
+    body[data-view="reception"] #bottom-nav-reception {
         display: block !important;
     }
 
-    body.modo-dev-mobile[data-view="login"] #bottom-nav-doctor,
-    body.modo-dev-mobile[data-view="login"] #bottom-nav-admin,
-    body.modo-dev-mobile[data-view="login"] #bottom-nav-reception,
-    body.modo-dev-mobile[data-view="login"] #modal-perfil-mobile {
+    body[data-view="login"] #bottom-nav-doctor,
+    body[data-view="login"] #bottom-nav-admin,
+    body[data-view="login"] #bottom-nav-reception,
+    body[data-view="login"] #modal-perfil-mobile {
         display: none !important;
     }
 
-    body.modo-dev-mobile #modal-perfil-mobile:not(.hidden) {
+    body #modal-perfil-mobile:not(.hidden) {
         display: block !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] #nav-desktop-staff,
-    body.modo-dev-mobile[data-view="admin"] #nav-desktop-staff,
-    body.modo-dev-mobile[data-view="reception"] #nav-desktop-staff {
+    body[data-view="doctor"] #nav-desktop-staff,
+    body[data-view="admin"] #nav-desktop-staff,
+    body[data-view="reception"] #nav-desktop-staff {
         display: none !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] .subvistas-desktop-doctor,
-    body.modo-dev-mobile[data-view="admin"] .subvistas-desktop-admin {
+    body[data-view="doctor"] .subvistas-desktop-doctor,
+    body[data-view="admin"] .subvistas-desktop-admin {
         display: none !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] .header-mobile-dev-title,
-    body.modo-dev-mobile[data-view="admin"] .header-mobile-dev-title,
-    body.modo-dev-mobile[data-view="reception"] .header-mobile-dev-title {
+    body[data-view="doctor"] .header-mobile-dev-title,
+    body[data-view="admin"] .header-mobile-dev-title,
+    body[data-view="reception"] .header-mobile-dev-title {
         display: flex !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] main,
-    body.modo-dev-mobile[data-view="admin"] main,
-    body.modo-dev-mobile[data-view="reception"] main {
+    body[data-view="doctor"] main,
+    body[data-view="admin"] main,
+    body[data-view="reception"] main {
         padding-bottom: 5.5rem !important;
     }
 
-    body.modo-dev-mobile .banner-demo-completo {
+    body .banner-demo-completo {
         display: none !important;
     }
 
-    body.modo-dev-mobile .banner-demo-compacto {
+    body .banner-demo-compacto {
         display: flex !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] footer,
-    body.modo-dev-mobile[data-view="admin"] footer,
-    body.modo-dev-mobile[data-view="reception"] footer {
+    body[data-view="doctor"] footer,
+    body[data-view="admin"] footer,
+    body[data-view="reception"] footer {
         display: none !important;
     }
 
@@ -525,24 +525,24 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
        SEPARACIÓN MÓVIL EN CONSULTORIO: SALA DE ESPERA vs ATENCIÓN CLÍNICA
        -------------------------------------------------------------------------- */
     /* Vista móvil de Sala de Espera (por defecto o data-mobile-subview="espera") */
-    body.modo-dev-mobile[data-view="doctor"] #subvista-doctor-atencion:not([data-mobile-subview="atencion"]) #columna-agenda-medico {
+    body[data-view="doctor"] #subvista-doctor-atencion:not([data-mobile-subview="atencion"]) #columna-agenda-medico {
         display: flex !important;
         width: 100% !important;
         height: calc(100vh - 12rem) !important;
         min-height: 480px !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] #subvista-doctor-atencion:not([data-mobile-subview="atencion"]) #columna-historia-clinica,
-    body.modo-dev-mobile[data-view="doctor"] #subvista-doctor-atencion:not([data-mobile-subview="atencion"]) #cabecera-paciente-hc {
+    body[data-view="doctor"] #subvista-doctor-atencion:not([data-mobile-subview="atencion"]) #columna-historia-clinica,
+    body[data-view="doctor"] #subvista-doctor-atencion:not([data-mobile-subview="atencion"]) #cabecera-paciente-hc {
         display: none !important;
     }
 
     /* Vista móvil de Atención Clínica (Historia y Ficha) */
-    body.modo-dev-mobile[data-view="doctor"] #subvista-doctor-atencion[data-mobile-subview="atencion"] #columna-agenda-medico {
+    body[data-view="doctor"] #subvista-doctor-atencion[data-mobile-subview="atencion"] #columna-agenda-medico {
         display: none !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] #subvista-doctor-atencion[data-mobile-subview="atencion"] #columna-historia-clinica {
+    body[data-view="doctor"] #subvista-doctor-atencion[data-mobile-subview="atencion"] #columna-historia-clinica {
         display: block !important;
         width: 100% !important;
     }
@@ -559,31 +559,31 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     }
 
     /* 1. En modo móvil, la búsqueda de HC se traslada a la barra inferior (Archivo) */
-    body.modo-dev-mobile[data-view="doctor"] #titulo-medico-dashboard-container {
+    body[data-view="doctor"] #titulo-medico-dashboard-container {
         display: contents !important;
     }
 
     /* Ocultar el título grande del encabezado en móvil (ya está en la cabecera superior) */
-    body.modo-dev-mobile[data-view="doctor"] #titulo-medico-header-info {
+    body[data-view="doctor"] #titulo-medico-header-info {
         display: none !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] #bloque-busqueda-medico-acciones {
+    body[data-view="doctor"] #bloque-busqueda-medico-acciones {
         display: contents !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] #bloque-busqueda-medico-acciones > .relative,
-    body.modo-dev-mobile[data-view="doctor"] #btn-buscar-paciente-hc {
+    body[data-view="doctor"] #bloque-busqueda-medico-acciones > .relative,
+    body[data-view="doctor"] #btn-buscar-paciente-hc {
         display: none !important;
     }
 
     /* Ocultar botón de refresh manual en móvil (reemplazado por Pull-to-Refresh) */
-    body.modo-dev-mobile[data-view="doctor"] #btn-refresh-agenda {
+    body[data-view="doctor"] #btn-refresh-agenda {
         display: none !important;
     }
 
     /* 2. Botón de Emergencia como FAB Flotante Circular (Esquina inferior derecha) */
-    body.modo-dev-mobile[data-view="doctor"] #btn-abrir-emergencia {
+    body[data-view="doctor"] #btn-abrir-emergencia {
         position: fixed !important;
         right: 1.25rem !important;
         bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)) !important;
@@ -604,15 +604,15 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
         -webkit-tap-highlight-color: transparent !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] #btn-abrir-emergencia:active {
+    body[data-view="doctor"] #btn-abrir-emergencia:active {
         transform: scale(0.90) !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] #btn-abrir-emergencia .btn-emergencia-texto {
+    body[data-view="doctor"] #btn-abrir-emergencia .btn-emergencia-texto {
         display: none !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] #btn-abrir-emergencia svg {
+    body[data-view="doctor"] #btn-abrir-emergencia svg {
         width: 1.625rem !important; /* 26px */
         height: 1.625rem !important;
         color: #ffffff !important;

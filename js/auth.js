@@ -69,6 +69,13 @@ export function mostrarPantallaLogin() {
     // Ocultar datos de usuario en cabecera desktop
     const usuarioSesionInfo = document.getElementById('usuario-sesion-info');
     if (usuarioSesionInfo) usuarioSesionInfo.classList.add('hidden');
+    const btnPerfilDesktop = document.getElementById('btn-perfil-desktop');
+    const dropdownPerfilDesktop = document.getElementById('dropdown-perfil-desktop');
+    if (btnPerfilDesktop) {
+        btnPerfilDesktop.classList.remove('flex');
+        btnPerfilDesktop.classList.add('hidden');
+    }
+    if (dropdownPerfilDesktop) dropdownPerfilDesktop.classList.add('hidden');
 
     const btnLogin = document.getElementById('btn-login') || document.getElementById('btn-login-submit');
     if (btnLogin) {
