@@ -1208,7 +1208,7 @@
     <!-- BARRA DE NAVEGACIÓN INFERIOR MOBILE - CONSULTORIO MÉDICO (md:hidden) -->
     <!-- ====================================================================== -->
     <nav id="bottom-nav-doctor" class="fixed bottom-0 inset-x-0 z-40 bg-[#064e3b] border-t border-[#047857] shadow-[0_-4px_16px_rgba(6,78,59,0.3)] md:hidden">
-        <div class="grid grid-cols-4 h-14 items-center px-1 pb-[env(safe-area-inset-bottom,0px)]">
+        <div class="grid grid-cols-5 h-14 items-center px-1 pb-[env(safe-area-inset-bottom,0px)]">
             <!-- Ítem 1: Sala de Espera (con Badge de pacientes en espera) -->
             <button type="button" id="btn-bottom-doc-espera" onclick="window.cambiarSubvistaDoctor('espera')" class="btn-nav-mobile-item is-active relative">
                 <div class="nav-pill-wrapper relative">
@@ -1227,6 +1227,14 @@
                 <span class="nav-item-label text-[10px] leading-tight tracking-wide font-sans">Atención</span>
             </button>
 
+            <!-- Ítem 3: Archivo / Buscar Historia Clínica (file-search) -->
+            <button type="button" id="btn-bottom-doc-archivo" onclick="window.abrirModalBuscarDniMobile()" class="btn-nav-mobile-item is-inactive">
+                <div class="nav-pill-wrapper">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 3v4a1 1 0 0 0 1 1h4m-2 14h-5a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v4.5m-3 8a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0m4.5 2l2.5 2.5"></path></svg>
+                </div>
+                <span class="nav-item-label text-[10px] leading-tight tracking-wide font-sans">Archivo</span>
+            </button>
+
             <!-- Ítem 3: Interconsultas Médicas (con Badge Superpuesto en Ícono) -->
             <button type="button" id="btn-bottom-doc-interconsultas" onclick="window.cambiarSubvistaDoctor('interconsultas')" class="btn-nav-mobile-item is-inactive relative">
                 <div class="nav-pill-wrapper relative">
@@ -1234,7 +1242,7 @@
                     <!-- Badge superpuesto en la esquina superior derecha del ícono -->
                     <span id="badge-bottom-doc-ic" class="hidden absolute -top-1 -right-2 px-1.5 min-w-[17px] h-[17px] rounded-full text-[9px] font-black bg-emerald-400 text-slate-900 shadow-md ring-1 ring-emerald-950 flex items-center justify-center text-center">0</span>
                 </div>
-                <span class="nav-item-label text-[10px] leading-tight tracking-wide font-sans">Interconsultas</span>
+                <span class="nav-item-label text-[10px] leading-tight tracking-wide font-sans">Consultas</span>
             </button>
 
             <!-- Ítem 4: Perfil -->
@@ -1289,6 +1297,47 @@
             </button>
         </div>
     </nav>
+
+    <!-- ====================================================================== -->
+    <!-- MODAL DE BÚSQUEDA DE HISTORIA CLÍNICA MOBILE (BOTTOM SHEET) -->
+    <!-- ====================================================================== -->
+    <div id="modal-buscar-paciente-mobile" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
+        <!-- Backdrop oscuro con blur -->
+        <div onclick="window.cerrarModalBuscarDniMobile()" class="absolute inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-300"></div>
+
+        <!-- Hoja inferior deslizante -->
+        <div class="animate-slide-up absolute bottom-0 inset-x-0 bg-white rounded-t-2xl shadow-2xl border-t border-slate-200 p-5 max-h-[85vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
+            <!-- Tirador superior (drag handle) -->
+            <div class="w-12 h-1 bg-slate-300 rounded-full mx-auto mb-4"></div>
+
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 3v4a1 1 0 0 0 1 1h4m-2 14h-5a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v4.5m-3 8a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0m4.5 2l2.5 2.5"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">Archivo de Historias Clínicas</h3>
+                        <p class="text-[11px] text-slate-500">Búsqueda directa por número de DNI</p>
+                    </div>
+                </div>
+                <button type="button" onclick="window.cerrarModalBuscarDniMobile()" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div class="relative">
+                    <input type="text" id="input-modal-buscar-dni" placeholder="Ingrese número de DNI (sin puntos)..." maxlength="10" inputmode="numeric" class="w-full pl-10 pr-4 py-3 text-base border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-medium">
+                    <svg class="w-5 h-5 text-slate-400 absolute left-3 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+
+                <button type="button" id="btn-modal-ejecutar-buscar-dni" onclick="window.ejecutarBusquedaDniModal()" class="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm rounded-xl transition shadow-md flex items-center justify-center gap-2 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 3v4a1 1 0 0 0 1 1h4m-2 14h-5a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v4.5m-3 8a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0m4.5 2l2.5 2.5"></path></svg>
+                    <span>Buscar / Abrir Historia Clínica</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- ====================================================================== -->
     <!-- MENÚ DE PERFIL MOBILE (BOTTOM SHEET ESTILO INSTAGRAM) -->

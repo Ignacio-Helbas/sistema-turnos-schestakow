@@ -1467,10 +1467,48 @@ export function imprimirComprobanteCitacion() {
     printWin.document.close();
 }
 
+
+// Controladores de modal mobile para Búsqueda en Archivo por DNI
+export function abrirModalBuscarDniMobile() {
+    const modal = document.getElementById('modal-buscar-paciente-mobile');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    const input = document.getElementById('input-modal-buscar-dni');
+    if (input) {
+        input.value = '';
+        setTimeout(() => input.focus(), 100);
+    }
+}
+
+export function cerrarModalBuscarDniMobile() {
+    const modal = document.getElementById('modal-buscar-paciente-mobile');
+    if (modal) modal.classList.add('hidden');
+}
+
+export async function ejecutarBusquedaDniModal() {
+    const input = document.getElementById('input-modal-buscar-dni');
+    const dni = input ? input.value.trim() : '';
+    if (!dni) return;
+    cerrarModalBuscarDniMobile();
+    const desktopInput = document.getElementById('input-buscar-dni-medico');
+    if (desktopInput) desktopInput.value = dni;
+    await buscarPacientePorDni(dni);
+}
+
 export function inicializarEventosHC() {
     const btnBuscarHC = document.getElementById('btn-buscar-paciente-hc');
     if (btnBuscarHC) {
         btnBuscarHC.addEventListener('click', () => buscarPacientePorDni());
+    }
+
+    const inputModalDni = document.getElementById('input-modal-buscar-dni');
+    if (inputModalDni) {
+        inputModalDni.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                ejecutarBusquedaDniModal();
+            }
+        });
     }
 
     const inputDniHC = document.getElementById('input-buscar-dni-medico');
@@ -1650,3 +1688,7 @@ window.copiarEnlaceCitacion = copiarEnlaceCitacion;
 window.imprimirComprobanteCitacion = imprimirComprobanteCitacion;
 window.llamarSiguientePaciente = llamarSiguientePaciente;
 window.sincronizarEvolucionCampos = sincronizarEvolucionCampos;
+
+window.abrirModalBuscarDniMobile = abrirModalBuscarDniMobile;
+window.cerrarModalBuscarDniMobile = cerrarModalBuscarDniMobile;
+window.ejecutarBusquedaDniModal = ejecutarBusquedaDniModal;

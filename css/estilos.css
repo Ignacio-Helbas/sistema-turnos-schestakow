@@ -551,20 +551,9 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
         }
     }
 
-    /* 1. Buscador de DNI Sticky bajo la cabecera */
+    /* 1. En modo móvil, la búsqueda de HC se traslada a la barra inferior (Archivo) */
     body.modo-dev-mobile[data-view="doctor"] #titulo-medico-dashboard-container {
-        position: sticky !important;
-        top: 3.25rem !important;
-        z-index: 35 !important;
-        padding: 0.625rem 0.75rem !important;
-        margin-bottom: 0.75rem !important;
-        background: #ffffff !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-        --tw-backdrop-blur: none !important;
-        border: 1px solid #e2e8f0 !important;
-        border-radius: 0.875rem !important;
-        box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.06) !important;
+        display: contents !important;
     }
 
     /* Ocultar el título grande del encabezado en móvil (ya está en la cabecera superior) */
@@ -573,23 +562,12 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     }
 
     body.modo-dev-mobile[data-view="doctor"] #bloque-busqueda-medico-acciones {
-        width: 100% !important;
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        gap: 0.5rem !important;
+        display: contents !important;
     }
 
-    body.modo-dev-mobile[data-view="doctor"] #bloque-busqueda-medico-acciones > .relative {
-        flex: 1 1 0% !important;
-        width: auto !important;
-    }
-
+    body.modo-dev-mobile[data-view="doctor"] #bloque-busqueda-medico-acciones > .relative,
     body.modo-dev-mobile[data-view="doctor"] #btn-buscar-paciente-hc {
-        flex-shrink: 0 !important;
-        padding-left: 0.875rem !important;
-        padding-right: 0.875rem !important;
-        height: 2.375rem !important;
+        display: none !important;
     }
 
     /* Ocultar botón de refresh manual en móvil (reemplazado por Pull-to-Refresh) */
