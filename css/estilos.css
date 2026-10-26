@@ -1074,12 +1074,4 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     animation: subviewFadeSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-body.modo-dev-mobile {
-    user-select: none;
-}
 
-body.modo-dev-mobile input,
-body.modo-dev-mobile textarea,
-body.modo-dev-mobile [contenteditable="true"] {
-    user-select: text;
-}

@@ -1496,18 +1496,6 @@ export async function ejecutarBusquedaDniModal() {
 }
 
 
-/**
- * Inicializa el soporte para navegación por gestos de deslizamiento horizontal (Swipe) en móvil.
- * Permite alternar fluidamente entre: 'espera' <---> 'atencion' <---> 'interconsultas'.
- * "Archivo" se mantiene accesible mediante toque directo en la barra central,
- * y "Perfil" queda 100% blindado para que solo se abra mediante toque deliberado del usuario.
- */
-export function inicializarSwipeGesturesDoctor() {
-    if (typeof window.inicializarGestosNavegacionUnificados === 'function') {
-        window.inicializarGestosNavegacionUnificados();
-    }
-}
-
 export function obtenerSubvistaDoctorActual() {
     const subAtencion = document.getElementById('subvista-doctor-atencion');
     const subInterconsultas = document.getElementById('subvista-doctor-interconsultas');
@@ -1519,29 +1507,6 @@ export function obtenerSubvistaDoctorActual() {
         return 'espera';
     }
     return 'atencion';
-}
-
-export function navegarSubvistaPorGesto(direccion) {
-    if (typeof window.cambiarSubvistaDoctor !== 'function') return;
-
-    const actual = obtenerSubvistaDoctorActual();
-    const cadena = ['espera', 'atencion', 'interconsultas'];
-    const idx = cadena.indexOf(actual);
-    if (idx === -1) return;
-
-    if (direccion === 'siguiente') {
-        // Deslizar hacia la izquierda -> avanzar a la derecha en la barra
-        // Si está en 'interconsultas', NO avanza a perfil (tope de seguridad absoluto)
-        if (idx < cadena.length - 1) {
-            window.cambiarSubvistaDoctor(cadena[idx + 1]);
-        }
-    } else if (direccion === 'anterior') {
-        // Deslizar hacia la derecha -> retroceder a la izquierda en la barra
-        // Si está en 'espera', se queda en espera (tope de inicio)
-        if (idx > 0) {
-            window.cambiarSubvistaDoctor(cadena[idx - 1]);
-        }
-    }
 }
 
 export function inicializarEventosHC() {
@@ -1618,8 +1583,6 @@ export function inicializarEventosHC() {
 
     // Inicializar Pull-to-Refresh para móviles
     inicializarPullRefreshAgenda();
-    // Inicializar navegación por gestos de deslizamiento horizontal (Swipe) en móvil
-    inicializarSwipeGesturesDoctor();
 }
 
 /**
@@ -1744,6 +1707,4 @@ window.abrirModalBuscarDniMobile = abrirModalBuscarDniMobile;
 window.cerrarModalBuscarDniMobile = cerrarModalBuscarDniMobile;
 window.ejecutarBusquedaDniModal = ejecutarBusquedaDniModal;
 
-window.inicializarSwipeGesturesDoctor = inicializarSwipeGesturesDoctor;
 window.obtenerSubvistaDoctorActual = obtenerSubvistaDoctorActual;
-window.navegarSubvistaPorGesto = navegarSubvistaPorGesto;
