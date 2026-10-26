@@ -419,7 +419,7 @@ window.cargarMetricas = cargarMetricas;
 window.cargarAuditoriaAdmin = cargarAuditoriaAdmin;
 window.cargarConfiguracionModulacion = cargarConfiguracionModulacion;
 
-// Fallback reactivo de navegación entre sub-vistas del Consultorio (Atención vs Interconsultas)
+// Fallback reactivo de navegación entre sub-vistas del Consultorio (Espera, Atención, Interconsultas)
 if (!window.cambiarSubvistaDoctor) {
     window.cambiarSubvistaDoctor = function (subvista) {
         const subAtencion = document.getElementById("subvista-doctor-atencion");
@@ -429,40 +429,52 @@ if (!window.cambiarSubvistaDoctor) {
 
         if (!subAtencion || !subInterconsultas) return;
 
+        const btnBottomEspera = document.getElementById("btn-bottom-doc-espera");
         const btnBottomAtencion = document.getElementById("btn-bottom-doc-atencion");
         const btnBottomIc = document.getElementById("btn-bottom-doc-interconsultas");
+
+        function actualizarBotonesNav(activoId) {
+            const botones = [
+                { id: 'btn-bottom-doc-espera', el: btnBottomEspera },
+                { id: 'btn-bottom-doc-atencion', el: btnBottomAtencion },
+                { id: 'btn-bottom-doc-interconsultas', el: btnBottomIc }
+            ];
+            botones.forEach(b => {
+                if (!b.el) return;
+                const dot = b.el.querySelector('.nav-indicator-dot');
+                if (b.id === activoId) {
+                    b.el.classList.remove('is-inactive');
+                    b.el.classList.add('is-active');
+                    if (dot) dot.classList.remove('opacity-0');
+                } else {
+                    b.el.classList.remove('is-active');
+                    b.el.classList.add('is-inactive');
+                    if (dot) dot.classList.add('opacity-0');
+                }
+            });
+        }
 
         if (subvista === "interconsultas") {
             subAtencion.classList.add("hidden");
             subInterconsultas.classList.remove("hidden");
-            if (tabAtencion) {
-                tabAtencion.className = "px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer";
-            }
-            if (tabInterconsultas) {
-                tabInterconsultas.className = "px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer";
-            }
-            if (btnBottomAtencion && btnBottomIc) {
-                btnBottomAtencion.classList.remove("is-active");
-                btnBottomAtencion.classList.add("is-inactive");
-                btnBottomIc.classList.remove("is-inactive");
-                btnBottomIc.classList.add("is-active");
-            }
+            if (tabAtencion) tabAtencion.className = "px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer";
+            if (tabInterconsultas) tabInterconsultas.className = "px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer";
+            actualizarBotonesNav('btn-bottom-doc-interconsultas');
             window.inicializarModuloInterconsultas?.();
+        } else if (subvista === "espera") {
+            subInterconsultas.classList.add("hidden");
+            subAtencion.classList.remove("hidden");
+            subAtencion.dataset.mobileSubview = "espera";
+            if (tabAtencion) tabAtencion.className = "px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer";
+            if (tabInterconsultas) tabInterconsultas.className = "px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer";
+            actualizarBotonesNav('btn-bottom-doc-espera');
         } else {
             subInterconsultas.classList.add("hidden");
             subAtencion.classList.remove("hidden");
-            if (tabAtencion) {
-                tabAtencion.className = "px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer";
-            }
-            if (tabInterconsultas) {
-                tabInterconsultas.className = "px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer";
-            }
-            if (btnBottomAtencion && btnBottomIc) {
-                btnBottomAtencion.classList.remove("is-inactive");
-                btnBottomAtencion.classList.add("is-active");
-                btnBottomIc.classList.remove("is-active");
-                btnBottomIc.classList.add("is-inactive");
-            }
+            subAtencion.dataset.mobileSubview = "atencion";
+            if (tabAtencion) tabAtencion.className = "px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer";
+            if (tabInterconsultas) tabInterconsultas.className = "px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer";
+            actualizarBotonesNav('btn-bottom-doc-atencion');
         }
     };
 }

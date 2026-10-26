@@ -142,7 +142,7 @@ export async function cargarEspecialistasPublico() {
                 avisoError = document.createElement('p');
                 avisoError.id = 'aviso-error-especialidades';
                 avisoError.className = 'text-xs text-rose-600 mt-1.5 flex items-center gap-1 font-medium';
-                avisoError.innerHTML = '<span>⚠️ No se pudieron cargar las especialidades disponibles. Verifique su conexión o recargue la página.</span>';
+                avisoError.innerHTML = '<span>No se pudieron cargar las especialidades disponibles. Verifique su conexión o recargue la página.</span>';
                 selectEspPublico.parentNode.appendChild(avisoError);
             }
         }

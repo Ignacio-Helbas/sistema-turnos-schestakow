@@ -120,6 +120,11 @@ export async function cargarAgendaMedico() {
             container.innerHTML = '<p class="text-xs text-slate-400 text-center py-10">No hay turnos programados para hoy.</p>';
             const badgeEspera = document.getElementById('badge-total-espera');
             if (badgeEspera) badgeEspera.innerText = '0';
+            const badgeBottomEspera = document.getElementById('badge-bottom-doc-espera');
+            if (badgeBottomEspera) {
+                badgeBottomEspera.innerText = '0';
+                badgeBottomEspera.classList.add('hidden');
+            }
             return;
         }
 
@@ -135,6 +140,12 @@ export async function cargarAgendaMedico() {
 
         const badgeEspera = document.getElementById('badge-total-espera');
         if (badgeEspera) badgeEspera.innerText = String(enSalaCount);
+        const badgeBottomEspera = document.getElementById('badge-bottom-doc-espera');
+        if (badgeBottomEspera) {
+            badgeBottomEspera.innerText = String(enSalaCount);
+            if (enSalaCount > 0) badgeBottomEspera.classList.remove('hidden');
+            else badgeBottomEspera.classList.add('hidden');
+        }
 
         let html = '';
         lista.forEach(t => {
@@ -157,7 +168,7 @@ export async function cargarAgendaMedico() {
                 else if (t.llegadaEn instanceof Date) ms = t.llegadaEn.getTime();
                 if (ms) {
                     const mins = Math.max(0, Math.floor((Date.now() - ms) / 60000));
-                    tiempoEsperaHtml = `<span class="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/80 font-medium font-mono">⏱️ ${mins} min</span>`;
+                    tiempoEsperaHtml = `<span class="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/80 font-medium font-mono"><svg class="w-3 h-3 inline text-amber-700 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 7v5l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> ${mins} min</span>`;
                 }
             }
 
@@ -383,6 +394,11 @@ export async function abrirFichaPacienteHC(pacienteId, turnoId = null) {
         }
 
         await cargarCronologiaConsultas(pacienteId);
+
+        // En pantallas móviles, si se abre una ficha clínica, cambiar automáticamente a la vista de Atención
+        if (window.innerWidth < 1024 && window.cambiarSubvistaDoctor) {
+            window.cambiarSubvistaDoctor('atencion');
+        }
 
     } catch (e) {
         console.error("Error abriendo ficha clínica:", e);
@@ -881,6 +897,11 @@ export function cerrarFichaPacienteHC() {
     if (labelActivo) labelActivo.innerText = "Ningún paciente en atención";
     const badgeTurno = document.getElementById('badge-turno-en-curso');
     if (badgeTurno) badgeTurno.classList.add('hidden');
+
+    // En pantallas móviles, al cerrar la ficha clínica, volver a la pestaña de Espera
+    if (window.innerWidth < 1024 && window.cambiarSubvistaDoctor) {
+        window.cambiarSubvistaDoctor('espera');
+    }
 }
 
 export async function llamarPaciente(idDoc) {

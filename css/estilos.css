@@ -514,6 +514,43 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     /* --------------------------------------------------------------------------
        REORGANIZACIÓN MOBILE CONSULTORIO MÉDICO (DEV=1)
        -------------------------------------------------------------------------- */
+    /* --------------------------------------------------------------------------
+       SEPARACIÓN MÓVIL EN CONSULTORIO: SALA DE ESPERA vs ATENCIÓN CLÍNICA
+       -------------------------------------------------------------------------- */
+    /* Vista móvil de Sala de Espera (por defecto o data-mobile-subview="espera") */
+    body.modo-dev-mobile[data-view="doctor"] #subvista-doctor-atencion:not([data-mobile-subview="atencion"]) #columna-agenda-medico {
+        display: flex !important;
+        width: 100% !important;
+        height: calc(100vh - 12rem) !important;
+        min-height: 480px !important;
+    }
+
+    body.modo-dev-mobile[data-view="doctor"] #subvista-doctor-atencion:not([data-mobile-subview="atencion"]) #columna-historia-clinica,
+    body.modo-dev-mobile[data-view="doctor"] #subvista-doctor-atencion:not([data-mobile-subview="atencion"]) #cabecera-paciente-hc {
+        display: none !important;
+    }
+
+    /* Vista móvil de Atención Clínica (Historia y Ficha) */
+    body.modo-dev-mobile[data-view="doctor"] #subvista-doctor-atencion[data-mobile-subview="atencion"] #columna-agenda-medico {
+        display: none !important;
+    }
+
+    body.modo-dev-mobile[data-view="doctor"] #subvista-doctor-atencion[data-mobile-subview="atencion"] #columna-historia-clinica {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    /* En Desktop (1024px+), AMBAS columnas se muestran en simultáneo */
+    @media (min-width: 1024px) {
+        #subvista-doctor-atencion #columna-agenda-medico {
+            display: flex !important;
+            height: 750px !important;
+        }
+        #subvista-doctor-atencion #columna-historia-clinica {
+            display: block !important;
+        }
+    }
+
     /* 1. Buscador de DNI Sticky bajo la cabecera */
     body.modo-dev-mobile[data-view="doctor"] #titulo-medico-dashboard-container {
         position: sticky !important;
@@ -570,6 +607,7 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
         height: 3.5rem !important; /* 56px */
         border-radius: 9999px !important;
         padding: 0 !important;
+        gap: 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -649,6 +687,7 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
 }
 
 .btn-nav-mobile-item.is-active .nav-indicator-dot {
+    display: none !important;
     opacity: 1;
     transform: scale(1);
 }

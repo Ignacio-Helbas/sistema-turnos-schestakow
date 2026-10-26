@@ -208,7 +208,7 @@ export function renderizarListaInterconsultas() {
     if (filtradas.length === 0) {
         contenedor.innerHTML = `
             <div class="p-8 text-center text-slate-400 text-xs">
-                <svg class="w-8 h-8 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12m-5 4l3 3l-3 3m3 -3h-8"></path></svg>
+                <svg class="w-8 h-8 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 14l-3 -3h-7a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1h9a1 1 0 0 1 1 1v10m-7 1v2a1 1 0 0 1 -1 1h-7l-3 3v-10a1 1 0 0 1 1 -1h2"></path></svg>
                 <p class="font-semibold text-slate-600">No hay interconsultas</p>
                 <p class="text-[11px] text-slate-400 mt-1">No se encontraron conversaciones con los filtros actuales.</p>
             </div>
@@ -773,6 +773,31 @@ export function cambiarSubvistaDoctor(subvista) {
 
     if (!tabAtencion || !tabInterconsultas || !subAtencion || !subInterconsultas) return;
 
+    const btnBottomEspera = document.getElementById("btn-bottom-doc-espera");
+    const btnBottomAtencion = document.getElementById("btn-bottom-doc-atencion");
+    const btnBottomIc = document.getElementById("btn-bottom-doc-interconsultas");
+
+    function actualizarBotonesNav(activoId) {
+        const botones = [
+            { id: 'btn-bottom-doc-espera', el: btnBottomEspera },
+            { id: 'btn-bottom-doc-atencion', el: btnBottomAtencion },
+            { id: 'btn-bottom-doc-interconsultas', el: btnBottomIc }
+        ];
+        botones.forEach(b => {
+            if (!b.el) return;
+            const dot = b.el.querySelector('.nav-indicator-dot');
+            if (b.id === activoId) {
+                b.el.classList.remove('is-inactive');
+                b.el.classList.add('is-active');
+                if (dot) dot.classList.remove('opacity-0');
+            } else {
+                b.el.classList.remove('is-active');
+                b.el.classList.add('is-inactive');
+                if (dot) dot.classList.add('opacity-0');
+            }
+        });
+    }
+
     if (subvista === "interconsultas") {
         tabAtencion.className = "px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer";
         tabInterconsultas.className = "px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer";
@@ -780,33 +805,29 @@ export function cambiarSubvistaDoctor(subvista) {
         subAtencion.classList.add("hidden");
         subInterconsultas.classList.remove("hidden");
 
-        const btnBottomAtencion = document.getElementById("btn-bottom-doc-atencion");
-        const btnBottomIc = document.getElementById("btn-bottom-doc-interconsultas");
-        if (btnBottomAtencion && btnBottomIc) {
-            btnBottomAtencion.classList.remove("is-active");
-            btnBottomAtencion.classList.add("is-inactive");
-            btnBottomIc.classList.remove("is-inactive");
-            btnBottomIc.classList.add("is-active");
-        }
-
+        actualizarBotonesNav('btn-bottom-doc-interconsultas');
         inicializarModuloInterconsultas();
-    } else {
+    } else if (subvista === "espera") {
         tabAtencion.className = "px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer";
         tabInterconsultas.className = "px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer";
 
         subInterconsultas.classList.add("hidden");
         subAtencion.classList.remove("hidden");
+        subAtencion.dataset.mobileSubview = "espera";
 
-        const btnBottomAtencion = document.getElementById("btn-bottom-doc-atencion");
-        const btnBottomIc = document.getElementById("btn-bottom-doc-interconsultas");
-        if (btnBottomAtencion && btnBottomIc) {
-            btnBottomAtencion.classList.remove("is-inactive");
-            btnBottomAtencion.classList.add("is-active");
-            btnBottomIc.classList.remove("is-active");
-            btnBottomIc.classList.add("is-inactive");
-        }
+        actualizarBotonesNav('btn-bottom-doc-espera');
+    } else { // 'atencion'
+        tabAtencion.className = "px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer";
+        tabInterconsultas.className = "px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer";
+
+        subInterconsultas.classList.add("hidden");
+        subAtencion.classList.remove("hidden");
+        subAtencion.dataset.mobileSubview = "atencion";
+
+        actualizarBotonesNav('btn-bottom-doc-atencion');
     }
 }
+window.cambiarSubvistaDoctor = cambiarSubvistaDoctor;
 
 // Filtros de estado por chips
 export function establecerFiltroEstadoInterconsultas(estado) {
@@ -823,9 +844,9 @@ export function establecerFiltroEstadoInterconsultas(estado) {
     Object.entries(botones).forEach(([k, btn]) => {
         if (!btn) return;
         if (k === estado) {
-            btn.className = "px-2.5 py-1 text-[11px] font-bold rounded bg-emerald-800 text-white shadow-xs transition";
+            btn.className = "w-full h-8 px-1 text-[11px] font-bold rounded bg-emerald-800 text-white shadow-xs transition cursor-pointer whitespace-nowrap flex items-center justify-center text-center";
         } else {
-            btn.className = "px-2.5 py-1 text-[11px] font-medium rounded bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition";
+            btn.className = "w-full h-8 px-1 text-[11px] font-medium rounded bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition cursor-pointer whitespace-nowrap flex items-center justify-center text-center";
         }
     });
 
