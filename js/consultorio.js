@@ -1495,6 +1495,103 @@ export async function ejecutarBusquedaDniModal() {
     await buscarPacientePorDni(dni);
 }
 
+
+/**
+ * Inicializa el soporte para navegación por gestos de deslizamiento horizontal (Swipe) en móvil.
+ * Permite alternar fluidamente entre: 'espera' <---> 'atencion' <---> 'interconsultas'.
+ * "Archivo" se mantiene accesible mediante toque directo en la barra central,
+ * y "Perfil" queda 100% blindado para que solo se abra mediante toque deliberado del usuario.
+ */
+let swipeGesturesIniciado = false;
+export function inicializarSwipeGesturesDoctor() {
+    const viewDoctor = document.getElementById('view-doctor');
+    if (!viewDoctor || swipeGesturesIniciado) return;
+    swipeGesturesIniciado = true;
+
+    let startX = 0;
+    let startY = 0;
+    let startTime = 0;
+
+    viewDoctor.addEventListener('touchstart', (e) => {
+        // Solo en pantallas móviles (< 1024px)
+        if (window.innerWidth >= 1024) return;
+
+        // No interceptar si hay un modal o diálogo abierto
+        const modalAbierto = document.querySelector('.modal:not(.hidden), [role="dialog"]:not(.hidden)');
+        if (modalAbierto) return;
+
+        // No interceptar si el toque inicia en controles de formulario, botones o FAB
+        const target = e.target;
+        if (target.closest('input, textarea, select, button, #btn-abrir-emergencia, a, [contenteditable="true"]')) {
+            return;
+        }
+
+        const touch = e.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+        startTime = Date.now();
+    }, { passive: true });
+
+    viewDoctor.addEventListener('touchend', (e) => {
+        if (window.innerWidth >= 1024) return;
+
+        const modalAbierto = document.querySelector('.modal:not(.hidden), [role="dialog"]:not(.hidden)');
+        if (modalAbierto) return;
+
+        if (startTime === 0) return;
+
+        const touch = e.changedTouches[0];
+        const deltaX = touch.clientX - startX;
+        const deltaY = touch.clientY - startY;
+        const elapsedTime = Date.now() - startTime;
+        startTime = 0;
+
+        // Condiciones de seguridad para evitar falsos positivos durante el scroll vertical:
+        // 1. Distancia horizontal mínima de 50px
+        // 2. Desplazamiento predominantemente horizontal (deltaX > 1.4 * deltaY)
+        // 3. Duración del gesto menor a 600ms (descarte de arrastres sostenidos lentos)
+        if (Math.abs(deltaX) >= 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4 && elapsedTime <= 600) {
+            navegarSubvistaPorGesto(deltaX < 0 ? 'siguiente' : 'anterior');
+        }
+    }, { passive: true });
+}
+
+export function obtenerSubvistaDoctorActual() {
+    const subAtencion = document.getElementById('subvista-doctor-atencion');
+    const subInterconsultas = document.getElementById('subvista-doctor-interconsultas');
+
+    if (subInterconsultas && !subInterconsultas.classList.contains('hidden')) {
+        return 'interconsultas';
+    }
+    if (subAtencion && subAtencion.dataset.mobileSubview === 'espera') {
+        return 'espera';
+    }
+    return 'atencion';
+}
+
+export function navegarSubvistaPorGesto(direccion) {
+    if (typeof window.cambiarSubvistaDoctor !== 'function') return;
+
+    const actual = obtenerSubvistaDoctorActual();
+    const cadena = ['espera', 'atencion', 'interconsultas'];
+    const idx = cadena.indexOf(actual);
+    if (idx === -1) return;
+
+    if (direccion === 'siguiente') {
+        // Deslizar hacia la izquierda -> avanzar a la derecha en la barra
+        // Si está en 'interconsultas', NO avanza a perfil (tope de seguridad absoluto)
+        if (idx < cadena.length - 1) {
+            window.cambiarSubvistaDoctor(cadena[idx + 1]);
+        }
+    } else if (direccion === 'anterior') {
+        // Deslizar hacia la derecha -> retroceder a la izquierda en la barra
+        // Si está en 'espera', se queda en espera (tope de inicio)
+        if (idx > 0) {
+            window.cambiarSubvistaDoctor(cadena[idx - 1]);
+        }
+    }
+}
+
 export function inicializarEventosHC() {
     const btnBuscarHC = document.getElementById('btn-buscar-paciente-hc');
     if (btnBuscarHC) {
@@ -1569,6 +1666,8 @@ export function inicializarEventosHC() {
 
     // Inicializar Pull-to-Refresh para móviles
     inicializarPullRefreshAgenda();
+    // Inicializar navegación por gestos de deslizamiento horizontal (Swipe) en móvil
+    inicializarSwipeGesturesDoctor();
 }
 
 /**
@@ -1692,3 +1791,7 @@ window.sincronizarEvolucionCampos = sincronizarEvolucionCampos;
 window.abrirModalBuscarDniMobile = abrirModalBuscarDniMobile;
 window.cerrarModalBuscarDniMobile = cerrarModalBuscarDniMobile;
 window.ejecutarBusquedaDniModal = ejecutarBusquedaDniModal;
+
+window.inicializarSwipeGesturesDoctor = inicializarSwipeGesturesDoctor;
+window.obtenerSubvistaDoctorActual = obtenerSubvistaDoctorActual;
+window.navegarSubvistaPorGesto = navegarSubvistaPorGesto;
