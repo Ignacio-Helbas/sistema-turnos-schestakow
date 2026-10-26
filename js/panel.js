@@ -444,7 +444,6 @@ if (document.readyState === 'loading') {
 } else {
     iniciarRelojHospitalario();
     inicializarEventosHC();
-    inicializarGestosNavegacionUnificados();
 }
 
 // Exponer en window para manejadores inline del DOM
