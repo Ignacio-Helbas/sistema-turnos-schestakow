@@ -798,12 +798,22 @@ export function cambiarSubvistaDoctor(subvista) {
         });
     }
 
+    const mobSub = document.getElementById('mobile-header-subtitle');
+
     if (subvista === "interconsultas") {
         tabAtencion.className = "px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer";
         tabInterconsultas.className = "px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 border-b-2 border-emerald-700 flex items-center gap-2 transition cursor-pointer";
 
         subAtencion.classList.add("hidden");
         subInterconsultas.classList.remove("hidden");
+        subInterconsultas.classList.remove("subview-slide-in");
+        void subInterconsultas.offsetWidth;
+        subInterconsultas.classList.add("subview-slide-in");
+
+        if (mobSub) {
+            mobSub.textContent = 'Consultorio • Interconsultas';
+            mobSub.className = 'text-xs font-bold text-emerald-800';
+        }
 
         actualizarBotonesNav('btn-bottom-doc-interconsultas');
         inicializarModuloInterconsultas();
@@ -814,6 +824,14 @@ export function cambiarSubvistaDoctor(subvista) {
         subInterconsultas.classList.add("hidden");
         subAtencion.classList.remove("hidden");
         subAtencion.dataset.mobileSubview = "espera";
+        subAtencion.classList.remove("subview-slide-in");
+        void subAtencion.offsetWidth;
+        subAtencion.classList.add("subview-slide-in");
+
+        if (mobSub) {
+            mobSub.textContent = 'Consultorio • Sala de Espera';
+            mobSub.className = 'text-xs font-bold text-emerald-800';
+        }
 
         actualizarBotonesNav('btn-bottom-doc-espera');
     } else { // 'atencion'
@@ -823,6 +841,14 @@ export function cambiarSubvistaDoctor(subvista) {
         subInterconsultas.classList.add("hidden");
         subAtencion.classList.remove("hidden");
         subAtencion.dataset.mobileSubview = "atencion";
+        subAtencion.classList.remove("subview-slide-in");
+        void subAtencion.offsetWidth;
+        subAtencion.classList.add("subview-slide-in");
+
+        if (mobSub) {
+            mobSub.textContent = 'Consultorio • Atención Clínica';
+            mobSub.className = 'text-xs font-bold text-emerald-800';
+        }
 
         actualizarBotonesNav('btn-bottom-doc-atencion');
     }

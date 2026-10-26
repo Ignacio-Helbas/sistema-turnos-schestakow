@@ -1502,60 +1502,10 @@ export async function ejecutarBusquedaDniModal() {
  * "Archivo" se mantiene accesible mediante toque directo en la barra central,
  * y "Perfil" queda 100% blindado para que solo se abra mediante toque deliberado del usuario.
  */
-let swipeGesturesIniciado = false;
 export function inicializarSwipeGesturesDoctor() {
-    const viewDoctor = document.getElementById('view-doctor');
-    if (!viewDoctor || swipeGesturesIniciado) return;
-    swipeGesturesIniciado = true;
-
-    let startX = 0;
-    let startY = 0;
-    let startTime = 0;
-
-    viewDoctor.addEventListener('touchstart', (e) => {
-        // Solo en pantallas móviles (< 1024px) o en modo dev mobile
-        const esMobile = window.innerWidth < 1024 || document.body.classList.contains('modo-dev-mobile');
-        if (!esMobile) return;
-
-        // No interceptar si hay un modal o diálogo abierto
-        const modalAbierto = document.querySelector('.modal:not(.hidden), [role="dialog"]:not(.hidden)');
-        if (modalAbierto) return;
-
-        // No interceptar si el toque inicia en controles de formulario, botones o FAB
-        const target = e.target;
-        if (target.closest('input, textarea, select, button, #btn-abrir-emergencia, a, [contenteditable="true"]')) {
-            return;
-        }
-
-        const touch = e.touches[0];
-        startX = touch.clientX;
-        startY = touch.clientY;
-        startTime = Date.now();
-    }, { passive: true });
-
-    viewDoctor.addEventListener('touchend', (e) => {
-        const esMobile = window.innerWidth < 1024 || document.body.classList.contains('modo-dev-mobile');
-        if (!esMobile) return;
-
-        const modalAbierto = document.querySelector('.modal:not(.hidden), [role="dialog"]:not(.hidden)');
-        if (modalAbierto) return;
-
-        if (startTime === 0) return;
-
-        const touch = e.changedTouches[0];
-        const deltaX = touch.clientX - startX;
-        const deltaY = touch.clientY - startY;
-        const elapsedTime = Date.now() - startTime;
-        startTime = 0;
-
-        // Condiciones de seguridad para evitar falsos positivos durante el scroll vertical:
-        // 1. Distancia horizontal mínima de 50px
-        // 2. Desplazamiento predominantemente horizontal (deltaX > 1.4 * deltaY)
-        // 3. Duración del gesto menor a 600ms (descarte de arrastres sostenidos lentos)
-        if (Math.abs(deltaX) >= 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4 && elapsedTime <= 600) {
-            navegarSubvistaPorGesto(deltaX < 0 ? 'siguiente' : 'anterior');
-        }
-    }, { passive: true });
+    if (typeof window.inicializarGestosNavegacionUnificados === 'function') {
+        window.inicializarGestosNavegacionUnificados();
+    }
 }
 
 export function obtenerSubvistaDoctorActual() {

@@ -39,7 +39,8 @@ import {
 import {
     setCatalogosConsultorio,
     cargarAgendaMedico,
-    inicializarEventosHC
+    inicializarEventosHC,
+    obtenerSubvistaDoctorActual
 } from "./consultorio.js";
 
 import {
@@ -338,7 +339,23 @@ export function cambiarTabAdmin(tabId) {
     }
 
     const secActiva = document.getElementById('admin-sec-' + tabId);
-    if (secActiva) secActiva.classList.remove('hidden');
+    if (secActiva) {
+        secActiva.classList.remove('hidden');
+        secActiva.classList.remove('subview-slide-in');
+        void secActiva.offsetWidth;
+        secActiva.classList.add('subview-slide-in');
+    }
+
+    const mobSub = document.getElementById('mobile-header-subtitle');
+    if (mobSub) {
+        const nombres = {
+            'gestion': 'Administración • Gestión',
+            'metricas': 'Administración • Métricas',
+            'auditoria': 'Administración • Auditoría'
+        };
+        mobSub.textContent = nombres[tabId] || 'Administración';
+        mobSub.className = 'text-xs font-bold text-slate-800';
+    }
 
     if (tabId === 'metricas') cargarMetricas();
     if (tabId === 'auditoria') cargarAuditoriaAdmin();
@@ -409,58 +426,143 @@ inicializarAuth(async (sesion) => {
 
 
 /**
- * Inicializa el soporte para navegación por gestos de deslizamiento horizontal (Swipe) en móvil para Administración.
- * Permite alternar fluidamente entre: 'gestion' <---> 'metricas' <---> 'auditoria'.
- * "Perfil" queda 100% blindado para que solo se abra mediante toque deliberado del usuario.
+ * Motor Unificado de Navegación por Gestos (Swipe) para Móvil y Arrastre de Mouse en PC.
+ * Soporta alternancia horizontal fluida en:
+ * - Consultorio Médico: Espera <---> Atención <---> Consultas
+ * - Administración:     Gestión <---> Métricas <---> Auditoría
+ * En ambos casos, "Perfil" está 100% blindado contra deslizamientos (solo abre por toque deliberado).
  */
-let swipeGesturesAdminIniciado = false;
-export function inicializarSwipeGesturesAdmin() {
-    const viewAdmin = document.getElementById('view-admin');
-    if (!viewAdmin || swipeGesturesAdminIniciado) return;
-    swipeGesturesAdminIniciado = true;
+let gestosUnificadosIniciado = false;
+
+export function inicializarGestosNavegacionUnificados() {
+    if (window.__gestosUnificadosIniciado) return;
+    window.__gestosUnificadosIniciado = true;
 
     let startX = 0;
     let startY = 0;
     let startTime = 0;
+    let isMouseDown = false;
 
-    viewAdmin.addEventListener('touchstart', (e) => {
-        const esMobile = window.innerWidth < 1024 || document.body.classList.contains('modo-dev-mobile');
-        if (!esMobile) return;
+    function esModoValido() {
+        return window.innerWidth < 1024 || document.body.classList.contains('modo-dev-mobile');
+    }
 
+    function puedeIniciarGesto(target) {
+        if (!esModoValido()) return false;
+
+        // No interceptar si hay modales o diálogos emergentes visibles
         const modalAbierto = document.querySelector('.modal:not(.hidden), [role="dialog"]:not(.hidden)');
-        if (modalAbierto) return;
+        if (modalAbierto) return false;
 
-        const target = e.target;
-        if (target.closest('input, textarea, select, button, a, [contenteditable="true"], .overflow-x-auto, table')) {
+        // No interceptar si se está escribiendo en inputs o áreas de texto editables
+        if (target && target.closest('input:not([type="button"]):not([type="submit"]), textarea, [contenteditable="true"]')) {
+            return false;
+        }
+
+        // No interceptar si se toca directamente sobre la barra de navegación fija inferior
+        if (target && target.closest('#bottom-nav-doctor, #bottom-nav-admin, #bottom-nav-reception, #nav-desktop-staff')) {
+            return false;
+        }
+
+        return true;
+    }
+
+    window.__lastGestoTimestamp = window.__lastGestoTimestamp || 0;
+
+    function procesarFinGesto(endX, endY, origen) {
+        if (startTime === 0) return;
+
+        // Cooldown anti-rebote (400ms): evita que navegadores móviles disparen mouseup sintético tras touchend
+        const ahora = Date.now();
+        if (ahora - (window.__lastGestoTimestamp || 0) < 350) {
+            startTime = 0;
+            isMouseDown = false;
             return;
         }
 
+        const deltaX = endX - startX;
+        const deltaY = endY - startY;
+        const elapsedTime = ahora - startTime;
+        startTime = 0;
+        isMouseDown = false;
+
+        // Umbral de activación natural:
+        // Distancia horizontal mínima: 40px
+        // Predominancia horizontal: deltaX > deltaY * 1.2
+        // Tiempo máximo: 1000ms (cubre swipe táctil rápido y arrastre con mouse en PC)
+        if (Math.abs(deltaX) >= 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2 && elapsedTime <= 1000) {
+            window.__lastGestoTimestamp = ahora;
+            const direccion = deltaX < 0 ? 'siguiente' : 'anterior';
+            ejecutarSwipeSegunVistaActiva(direccion);
+        }
+    }
+
+    // --- Soporte Táctil (Móviles reales y emuladores táctiles) ---
+    document.addEventListener('touchstart', (e) => {
+        if (!puedeIniciarGesto(e.target)) return;
         const touch = e.touches[0];
         startX = touch.clientX;
         startY = touch.clientY;
         startTime = Date.now();
     }, { passive: true });
 
-    viewAdmin.addEventListener('touchend', (e) => {
-        const esMobile = window.innerWidth < 1024 || document.body.classList.contains('modo-dev-mobile');
-        if (!esMobile) return;
-
-        const modalAbierto = document.querySelector('.modal:not(.hidden), [role="dialog"]:not(.hidden)');
-        if (modalAbierto) return;
-
+    document.addEventListener('touchend', (e) => {
         if (startTime === 0) return;
-
         const touch = e.changedTouches[0];
-        const deltaX = touch.clientX - startX;
-        const deltaY = touch.clientY - startY;
-        const elapsedTime = Date.now() - startTime;
-        startTime = 0;
-
-        // Condiciones de seguridad para evitar falsos positivos durante el scroll vertical:
-        if (Math.abs(deltaX) >= 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4 && elapsedTime <= 600) {
-            navegarSubvistaAdminPorGesto(deltaX < 0 ? 'siguiente' : 'anterior');
-        }
+        procesarFinGesto(touch.clientX, touch.clientY, "TOUCH");
     }, { passive: true });
+
+    // --- Soporte Mouse Drag en PC (?dev=1 o responsive desktop) ---
+    document.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // Solo clic principal (izquierdo)
+        if (!puedeIniciarGesto(e.target)) return;
+        startX = e.clientX;
+        startY = e.clientY;
+        startTime = Date.now();
+        isMouseDown = true;
+    });
+
+    document.addEventListener('mouseup', (e) => {
+        if (!isMouseDown) return;
+        procesarFinGesto(e.clientX, e.clientY, "MOUSE");
+    });
+}
+
+export function ejecutarSwipeSegunVistaActiva(direccion) {
+    const vista = document.body.dataset.view;
+    
+    if (vista === 'doctor') {
+        if (typeof window.cambiarSubvistaDoctor !== 'function') return;
+        const actual = typeof obtenerSubvistaDoctorActual === 'function' ? obtenerSubvistaDoctorActual() : (window.obtenerSubvistaDoctorActual?.() || 'espera');
+        const cadena = ['espera', 'atencion', 'interconsultas'];
+        const idx = cadena.indexOf(actual);
+        if (idx === -1) return;
+
+        if (direccion === 'siguiente') {
+            if (idx < cadena.length - 1) {
+                window.cambiarSubvistaDoctor(cadena[idx + 1]);
+            }
+        } else if (direccion === 'anterior') {
+            if (idx > 0) {
+                window.cambiarSubvistaDoctor(cadena[idx - 1]);
+            }
+        }
+    } else if (vista === 'admin') {
+        const actual = obtenerSubvistaAdminActual();
+        const cadena = ['gestion', 'metricas', 'auditoria'];
+        const idx = cadena.indexOf(actual);
+        if (idx === -1) return;
+
+        if (direccion === 'siguiente') {
+            if (idx < cadena.length - 1) {
+                cambiarSubvistaAdminMobile(cadena[idx + 1]);
+            }
+        } else if (direccion === 'anterior') {
+            if (idx > 0) {
+                cambiarSubvistaAdminMobile(cadena[idx - 1]);
+            }
+        }
+    }
 }
 
 export function obtenerSubvistaAdminActual() {
@@ -476,35 +578,20 @@ export function obtenerSubvistaAdminActual() {
 }
 
 export function navegarSubvistaAdminPorGesto(direccion) {
-    const actual = obtenerSubvistaAdminActual();
-    const cadena = ['gestion', 'metricas', 'auditoria'];
-    const idx = cadena.indexOf(actual);
-    if (idx === -1) return;
-
-    if (direccion === 'siguiente') {
-        // Deslizar hacia la izquierda (deltaX < 0) -> avanza a la derecha
-        // Si está en 'auditoria', NO avanza a perfil (tope de seguridad absoluto)
-        if (idx < cadena.length - 1) {
-            cambiarSubvistaAdminMobile(cadena[idx + 1]);
-        }
-    } else if (direccion === 'anterior') {
-        // Deslizar hacia la derecha (deltaX > 0) -> retrocede a la izquierda
-        // Si está en 'gestion', se queda en gestion (tope de inicio)
-        if (idx > 0) {
-            cambiarSubvistaAdminMobile(cadena[idx - 1]);
-        }
-    }
+    ejecutarSwipeSegunVistaActiva(direccion);
 }
+
+export const inicializarSwipeGesturesAdmin = inicializarGestosNavegacionUnificados;
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         iniciarRelojHospitalario();
         inicializarEventosHC();
-        inicializarSwipeGesturesAdmin();
+        inicializarGestosNavegacionUnificados();
     });
 } else {
     iniciarRelojHospitalario();
     inicializarEventosHC();
-    inicializarSwipeGesturesAdmin();
+    inicializarGestosNavegacionUnificados();
 }
 
 // Exponer en window para manejadores inline del DOM
@@ -702,6 +789,9 @@ window.cambiarVistaDesdeMenuMobile = cambiarVistaDesdeMenuMobile;
 window.cambiarSubvistaAdminMobile = cambiarSubvistaAdminMobile;
 window.sincronizarVistasMenuMobile = sincronizarVistasMenuMobile;
 window.accesoRapidoDev = accesoRapidoDev;
-window.inicializarSwipeGesturesAdmin = inicializarSwipeGesturesAdmin;
+window.inicializarSwipeGesturesAdmin = inicializarGestosNavegacionUnificados;
 window.obtenerSubvistaAdminActual = obtenerSubvistaAdminActual;
 window.navegarSubvistaAdminPorGesto = navegarSubvistaAdminPorGesto;
+
+window.inicializarGestosNavegacionUnificados = inicializarGestosNavegacionUnificados;
+window.ejecutarSwipeSegunVistaActiva = ejecutarSwipeSegunVistaActiva;
