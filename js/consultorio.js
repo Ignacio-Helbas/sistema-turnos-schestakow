@@ -1513,8 +1513,9 @@ export function inicializarSwipeGesturesDoctor() {
     let startTime = 0;
 
     viewDoctor.addEventListener('touchstart', (e) => {
-        // Solo en pantallas móviles (< 1024px)
-        if (window.innerWidth >= 1024) return;
+        // Solo en pantallas móviles (< 1024px) o en modo dev mobile
+        const esMobile = window.innerWidth < 1024 || document.body.classList.contains('modo-dev-mobile');
+        if (!esMobile) return;
 
         // No interceptar si hay un modal o diálogo abierto
         const modalAbierto = document.querySelector('.modal:not(.hidden), [role="dialog"]:not(.hidden)');
@@ -1533,7 +1534,8 @@ export function inicializarSwipeGesturesDoctor() {
     }, { passive: true });
 
     viewDoctor.addEventListener('touchend', (e) => {
-        if (window.innerWidth >= 1024) return;
+        const esMobile = window.innerWidth < 1024 || document.body.classList.contains('modo-dev-mobile');
+        if (!esMobile) return;
 
         const modalAbierto = document.querySelector('.modal:not(.hidden), [role="dialog"]:not(.hidden)');
         if (modalAbierto) return;

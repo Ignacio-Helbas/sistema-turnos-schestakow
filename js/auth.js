@@ -51,6 +51,25 @@ export function resetInactividad() {
 export function mostrarPantallaLogin() {
     sesionActual = null;
     ocultarOverlayCargaPanel();
+
+    // Cerrar y ocultar modal de perfil móvil si estaba abierto
+    const modalPerfil = document.getElementById('modal-perfil-mobile');
+    if (modalPerfil) {
+        modalPerfil.classList.add('hidden');
+    }
+    if (typeof window.cerrarMenuPerfilMobile === 'function') {
+        window.cerrarMenuPerfilMobile();
+    }
+
+    // Ocultar cualquier modal residual
+    document.querySelectorAll('.modal, [role="dialog"]').forEach(m => {
+        m.classList.add('hidden');
+    });
+
+    // Ocultar datos de usuario en cabecera desktop
+    const usuarioSesionInfo = document.getElementById('usuario-sesion-info');
+    if (usuarioSesionInfo) usuarioSesionInfo.classList.add('hidden');
+
     const btnLogin = document.getElementById('btn-login') || document.getElementById('btn-login-submit');
     if (btnLogin) {
         btnLogin.disabled = false;
@@ -78,6 +97,16 @@ export function mostrarPantallaLogin() {
     if (btnRec) btnRec.classList.add('hidden');
     if (btnDoc) btnDoc.classList.add('hidden');
     if (btnLogout) btnLogout.classList.add('hidden');
+
+    // Ocultar barras inferiores móviles de staff y barra superadmin
+    const navDoc = document.getElementById('bottom-nav-doctor');
+    const navAdm = document.getElementById('bottom-nav-admin');
+    const navRec = document.getElementById('bottom-nav-reception');
+    const barraSuperadmin = document.getElementById('barra-superadmin-controles');
+    if (navDoc) navDoc.classList.add('hidden');
+    if (navAdm) navAdm.classList.add('hidden');
+    if (navRec) navRec.classList.add('hidden');
+    if (barraSuperadmin) barraSuperadmin.classList.add('hidden');
 }
 
 export async function iniciarSesionReal() {
@@ -140,7 +169,14 @@ export async function iniciarSesionReal() {
 export async function cerrarSesionReal() {
     sessionStorage.removeItem('hospital_sesion_activa');
     sesionActual = null;
-    await signOut(auth);
+    const modalPerfil = document.getElementById('modal-perfil-mobile');
+    if (modalPerfil) modalPerfil.classList.add('hidden');
+    if (typeof window.cerrarMenuPerfilMobile === 'function') {
+        window.cerrarMenuPerfilMobile();
+    }
+    try {
+        await signOut(auth);
+    } catch (_) {}
     mostrarPantallaLogin();
 }
 

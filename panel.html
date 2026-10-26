@@ -124,16 +124,16 @@
     <main class="flex-grow w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
 
         <!-- OVERLAY DE CARGA INICIAL DEL PANEL (FEEDBACK VISUAL DE ACCESO) -->
-        <div id="overlay-carga-panel" role="status" aria-live="polite" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center z-50 transition-opacity duration-200 hidden">
-            <div class="modal-carga-dialog bg-white/98 backdrop-blur-md px-8 py-7 rounded-2xl shadow-2xl border border-slate-100 flex flex-col items-center max-w-xs sm:max-w-sm w-full mx-4 text-center">
-                <!-- Ícono Institucional: Cruz Médica Schestakow con Spinner Integrado en Verde Institucional -->
+        <div id="overlay-carga-panel" role="status" aria-live="polite" class="fixed inset-0 bg-slate-900/75 backdrop-blur-md flex flex-col items-center justify-center z-50 transition-opacity duration-200 hidden">
+            <div class="modal-carga-dialog bg-slate-900/95 backdrop-blur-md px-8 py-7 rounded-2xl shadow-2xl border border-slate-700/80 flex flex-col items-center max-w-xs sm:max-w-sm w-full mx-4 text-center">
+                <!-- Ícono Institucional: Cruz Médica Schestakow con Spinner Integrado en Verde Esmeralda -->
                 <div class="relative flex items-center justify-center mb-5">
-                    <svg class="animate-spin w-16 h-16 text-[#007a78]" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="3" class="opacity-15" />
+                    <svg class="animate-spin w-16 h-16 text-emerald-400" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="3" class="opacity-20" />
                         <path d="M32 4a28 28 0 0 1 28 28" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
                     </svg>
                     <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-10 h-10 rounded-full bg-[#e6f5f4] flex items-center justify-center text-[#007a78] animate-pulse">
+                        <div class="w-10 h-10 rounded-full bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center text-emerald-400 animate-pulse">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M9 3v6H3v6h6v6h6v-6h6V9h-6V3H9z"/>
                             </svg>
@@ -141,8 +141,8 @@
                     </div>
                 </div>
                 <div class="space-y-1.5">
-                    <h3 class="text-base font-bold text-slate-900 tracking-tight">Cargando panel...</h3>
-                    <p id="overlay-carga-texto" class="text-xs text-slate-500 font-medium">Inicializando módulos del sistema hospitalario</p>
+                    <h3 class="text-base font-bold text-white tracking-tight">Cargando panel...</h3>
+                    <p id="overlay-carga-texto" class="text-xs text-slate-200 font-medium">Inicializando módulos del sistema hospitalario</p>
                 </div>
             </div>
         </div>

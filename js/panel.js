@@ -65,8 +65,10 @@ export function obtenerCatalogosStaff() {
 
 export async function iniciarModuloStaff() {
     establecerLimitesFecha(['input-fecha-recepcion']);
-    await cargarEspecialistasFirebase();
-    await cargarConfiguracionModulacion();
+    await Promise.allSettled([
+        cargarEspecialistasFirebase(),
+        cargarConfiguracionModulacion()
+    ]);
 }
 
 export async function cargarEspecialistasFirebase() {
@@ -147,17 +149,21 @@ export async function sincronizarMedicosPublicos() {
 
 export async function cargarConfiguracionModulacion() {
     try {
-        const snapGlobal = await getDoc(doc(db, "configuracion", "general"));
-        if (snapGlobal.exists()) {
+        const [snapGlobal, snapIndividual] = await Promise.all([
+            getDoc(doc(db, "configuracion", "general")).catch(() => null),
+            getDocs(collection(db, "modulacion_medicos")).catch(() => null)
+        ]);
+        if (snapGlobal && snapGlobal.exists && snapGlobal.exists()) {
             duracionTurnoGlobal = snapGlobal.data().duracionBase || 15;
             const selectAdmin = document.getElementById('admin-select-duracion');
-            if (selectAdmin && document.getElementById('admin-select-alcance').value === 'global') {
+            if (selectAdmin && document.getElementById('admin-select-alcance')?.value === 'global') {
                 selectAdmin.value = duracionTurnoGlobal;
             }
         }
-        const snapIndividual = await getDocs(collection(db, "modulacion_medicos"));
         modulacionPorMedico = {};
-        snapIndividual.forEach(d => { modulacionPorMedico[d.id] = d.data().duracionBase; });
+        if (snapIndividual && snapIndividual.forEach) {
+            snapIndividual.forEach(d => { modulacionPorMedico[d.id] = d.data().duracionBase; });
+        }
 
         setCatalogosRecepcion({ bdMedicos: bdMedicosDinamica, duracionGlobal: duracionTurnoGlobal, modulacion: modulacionPorMedico });
         setCatalogosConsultorio({ bdMedicos: bdMedicosDinamica, duracionGlobal: duracionTurnoGlobal, modulacion: modulacionPorMedico });
@@ -220,7 +226,8 @@ export function aplicarPermisosVisuales(sesion) {
             if (barraSuperadmin) barraSuperadmin.classList.remove('hidden');
         }
 
-        sincronizarMedicosPublicos();
+        // Sincronización en segundo plano para no demorar la carga visual del panel
+        sincronizarMedicosPublicos().catch(() => {});
         switchView('admin');
     } else if (sesion.rol === "Médico") {
         if (btnDoc) btnDoc.classList.remove('hidden');
@@ -400,14 +407,104 @@ inicializarAuth(async (sesion) => {
     }
 });
 
+
+/**
+ * Inicializa el soporte para navegación por gestos de deslizamiento horizontal (Swipe) en móvil para Administración.
+ * Permite alternar fluidamente entre: 'gestion' <---> 'metricas' <---> 'auditoria'.
+ * "Perfil" queda 100% blindado para que solo se abra mediante toque deliberado del usuario.
+ */
+let swipeGesturesAdminIniciado = false;
+export function inicializarSwipeGesturesAdmin() {
+    const viewAdmin = document.getElementById('view-admin');
+    if (!viewAdmin || swipeGesturesAdminIniciado) return;
+    swipeGesturesAdminIniciado = true;
+
+    let startX = 0;
+    let startY = 0;
+    let startTime = 0;
+
+    viewAdmin.addEventListener('touchstart', (e) => {
+        const esMobile = window.innerWidth < 1024 || document.body.classList.contains('modo-dev-mobile');
+        if (!esMobile) return;
+
+        const modalAbierto = document.querySelector('.modal:not(.hidden), [role="dialog"]:not(.hidden)');
+        if (modalAbierto) return;
+
+        const target = e.target;
+        if (target.closest('input, textarea, select, button, a, [contenteditable="true"], .overflow-x-auto, table')) {
+            return;
+        }
+
+        const touch = e.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+        startTime = Date.now();
+    }, { passive: true });
+
+    viewAdmin.addEventListener('touchend', (e) => {
+        const esMobile = window.innerWidth < 1024 || document.body.classList.contains('modo-dev-mobile');
+        if (!esMobile) return;
+
+        const modalAbierto = document.querySelector('.modal:not(.hidden), [role="dialog"]:not(.hidden)');
+        if (modalAbierto) return;
+
+        if (startTime === 0) return;
+
+        const touch = e.changedTouches[0];
+        const deltaX = touch.clientX - startX;
+        const deltaY = touch.clientY - startY;
+        const elapsedTime = Date.now() - startTime;
+        startTime = 0;
+
+        // Condiciones de seguridad para evitar falsos positivos durante el scroll vertical:
+        if (Math.abs(deltaX) >= 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4 && elapsedTime <= 600) {
+            navegarSubvistaAdminPorGesto(deltaX < 0 ? 'siguiente' : 'anterior');
+        }
+    }, { passive: true });
+}
+
+export function obtenerSubvistaAdminActual() {
+    const secAuditoria = document.getElementById('admin-sec-auditoria');
+    const secMetricas = document.getElementById('admin-sec-metricas');
+    if (secAuditoria && !secAuditoria.classList.contains('hidden')) {
+        return 'auditoria';
+    }
+    if (secMetricas && !secMetricas.classList.contains('hidden')) {
+        return 'metricas';
+    }
+    return 'gestion';
+}
+
+export function navegarSubvistaAdminPorGesto(direccion) {
+    const actual = obtenerSubvistaAdminActual();
+    const cadena = ['gestion', 'metricas', 'auditoria'];
+    const idx = cadena.indexOf(actual);
+    if (idx === -1) return;
+
+    if (direccion === 'siguiente') {
+        // Deslizar hacia la izquierda (deltaX < 0) -> avanza a la derecha
+        // Si está en 'auditoria', NO avanza a perfil (tope de seguridad absoluto)
+        if (idx < cadena.length - 1) {
+            cambiarSubvistaAdminMobile(cadena[idx + 1]);
+        }
+    } else if (direccion === 'anterior') {
+        // Deslizar hacia la derecha (deltaX > 0) -> retrocede a la izquierda
+        // Si está en 'gestion', se queda en gestion (tope de inicio)
+        if (idx > 0) {
+            cambiarSubvistaAdminMobile(cadena[idx - 1]);
+        }
+    }
+}
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         iniciarRelojHospitalario();
         inicializarEventosHC();
+        inicializarSwipeGesturesAdmin();
     });
 } else {
     iniciarRelojHospitalario();
     inicializarEventosHC();
+    inicializarSwipeGesturesAdmin();
 }
 
 // Exponer en window para manejadores inline del DOM
@@ -605,3 +702,6 @@ window.cambiarVistaDesdeMenuMobile = cambiarVistaDesdeMenuMobile;
 window.cambiarSubvistaAdminMobile = cambiarSubvistaAdminMobile;
 window.sincronizarVistasMenuMobile = sincronizarVistasMenuMobile;
 window.accesoRapidoDev = accesoRapidoDev;
+window.inicializarSwipeGesturesAdmin = inicializarSwipeGesturesAdmin;
+window.obtenerSubvistaAdminActual = obtenerSubvistaAdminActual;
+window.navegarSubvistaAdminPorGesto = navegarSubvistaAdminPorGesto;

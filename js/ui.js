@@ -195,6 +195,8 @@ export function formatearHoraAR(horaVal) {
 /**
  * Notificación Toast flotante, accesible y discreta para operaciones rutinarias
  */
+let timerAutoOcultarOverlay = null;
+
 export function mostrarOverlayCargaPanel(mensaje = "Cargando panel...") {
     const overlay = document.getElementById('overlay-carga-panel');
     const texto = document.getElementById('overlay-carga-texto');
@@ -202,9 +204,18 @@ export function mostrarOverlayCargaPanel(mensaje = "Cargando panel...") {
     if (overlay) {
         overlay.classList.remove('hidden');
     }
+    // Timeout de seguridad (1500ms): evita que el cartel quede congelado por latencias de red
+    if (timerAutoOcultarOverlay) clearTimeout(timerAutoOcultarOverlay);
+    timerAutoOcultarOverlay = setTimeout(() => {
+        ocultarOverlayCargaPanel();
+    }, 1500);
 }
 
 export function ocultarOverlayCargaPanel() {
+    if (timerAutoOcultarOverlay) {
+        clearTimeout(timerAutoOcultarOverlay);
+        timerAutoOcultarOverlay = null;
+    }
     const overlay = document.getElementById('overlay-carga-panel');
     if (overlay) {
         overlay.classList.add('hidden');

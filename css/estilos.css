@@ -470,6 +470,13 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
         display: block !important;
     }
 
+    body.modo-dev-mobile[data-view="login"] #bottom-nav-doctor,
+    body.modo-dev-mobile[data-view="login"] #bottom-nav-admin,
+    body.modo-dev-mobile[data-view="login"] #bottom-nav-reception,
+    body.modo-dev-mobile[data-view="login"] #modal-perfil-mobile {
+        display: none !important;
+    }
+
     body.modo-dev-mobile #modal-perfil-mobile:not(.hidden) {
         display: block !important;
     }
