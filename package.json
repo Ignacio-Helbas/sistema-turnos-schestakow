@@ -11,6 +11,6 @@
   "devDependencies": {
     "@firebase/rules-unit-testing": "^3.0.3",
     "firebase": "^10.12.2",
-    "puppeteer-core": "^25.16.0"
+    "puppeteer-core": "^25.17.0"
   }
 }
