@@ -85,6 +85,33 @@ npm test
 
 ---
 
+## Consideraciones Operativas y de Seguridad
+
+### Revocación de Cuentas y Ventana de Expiración de Sesión (Firebase Auth + Firestore)
+- Al dar de baja a un usuario desde el Panel de Administración (`eliminarUsuarioAdmin`), el sistema elimina el documento del empleado en Firestore y ejecuta la Cloud Function `administrarUsuarioStaff({ id, eliminar: true })`, la cual invoca `admin.auth().deleteUser(uid)` eliminando la cuenta y sus *refresh tokens*.
+- **Ventana de validez del ID Token:** En la arquitectura serverless directa de Firebase (donde el cliente interactúa con Firestore gobernado por `firestore.rules`), las reglas validan la firma criptográfica del JWT en cada solicitud, pero **no** consultan si la cuenta fue revocada en tiempo real. Por consiguiente, si el usuario ya tenía una pestaña abierta con una sesión activa, el **ID token en memoria continúa siendo válido hasta su expiración natural (hasta 1 hora)**.
+- **Procedimiento para bajas críticas o inmediatas:** Si el hospital requiere un corte de acceso instantáneo sin esperar la expiración de la hora (p. ej., ante despido con sospecha de conducta maliciosa), la arquitectura requeriría intermediar las operaciones a través de Cloud Functions con `verifyIdToken(token, checkRevoked=true)` o deshabilitar manualmente las reglas de acceso del UID en Firestore.
+
+---
+
+## Checklist de Despliegue a Producción
+
+Antes de la puesta en marcha definitiva en el entorno de producción de Firebase:
+
+1. **Migración Inicial de Custom Claims (Paso Obligatorio Pendiente):**
+   - Ejecutar el script de migración una vez desplegada la base real con credenciales administrativas (`GOOGLE_APPLICATION_CREDENTIALS` o Cloud Shell):
+     ```bash
+     node scripts/migrar-claims-permisos.js
+     ```
+   - Este paso sincroniza los claims `rol` y `permisosAdicionales` en Firebase Authentication para todos los usuarios preexistentes, evitando la dependencia continua del fallback de lectura en Firestore.
+2. **Despliegue de Reglas de Seguridad y Cloud Functions:**
+   - Desplegar `firestore.rules` con validación estricta de roles y permisos.
+   - Desplegar las funciones en `functions/` incluyendo `administrarUsuarioStaff` y `reservarQuirofano`.
+3. **Configuración de App Check y reCAPTCHA v3:**
+   - Asegurar el registro de los dominios habilitados en Firebase App Check para proteger los endpoints públicos contra abusos automatizados.
+
+---
+
 ## Contexto Académico
 
 - **Autor:** Ignacio Helbas

@@ -23,6 +23,40 @@ import {
 
 import { ejecutarUnaVez } from "./guardia.js";
 
+// =============================================================================
+// VALIDACIÓN CENTRALIZADA DE ROLES Y PERMISOS (ALINEADO CON firestore.rules)
+// =============================================================================
+
+export const ALIAS_ROLES = {
+    ADMINISTRACION: ['Administración'],
+    RECEPCION: ['Recepción', 'Recepcionista', 'Administrativo', 'Administración'],
+    MEDICO: ['Médico', 'medico', 'Medico'],
+    ENFERMERIA: ['Enfermería', 'Enfermeria', 'Enfermero', 'Enfermera']
+};
+
+export function esRolAdministracion(rol) {
+    return rol === 'Administración';
+}
+
+export function esRolRecepcion(rol) {
+    return ALIAS_ROLES.RECEPCION.includes(rol);
+}
+
+export function esRolMedico(rol) {
+    return ALIAS_ROLES.MEDICO.includes(rol);
+}
+
+export function esRolEnfermeria(rol) {
+    return ALIAS_ROLES.ENFERMERIA.includes(rol);
+}
+
+export function tienePermisoInternacion(sesion) {
+    if (!sesion) return false;
+    const rol = sesion.rol || "";
+    const permisos = Array.isArray(sesion.permisosAdicionales) ? sesion.permisosAdicionales : [];
+    return esRolAdministracion(rol) || esRolRecepcion(rol) || esRolEnfermeria(rol) || permisos.includes("internacion");
+}
+
 let sesionActual = null;
 let temporizadorInactividad = null;
 
@@ -116,7 +150,63 @@ export function mostrarPantallaLogin() {
     if (barraSuperadmin) barraSuperadmin.classList.add('hidden');
 }
 
+// ==========================================
+// PREVENCIÓN DE FUERZA BRUTA Y BACKOFF PROGRESIVO
+// ==========================================
+const AUTH_INTENTOS_CLAVE = 'hospital_auth_intentos_fallidos';
+const AUTH_BLOQUEO_HASTA_CLAVE = 'hospital_auth_bloqueo_hasta';
+
+function obtenerEstadoBloqueoLogin() {
+    try {
+        const ahora = Date.now();
+        const bloqueoHasta = parseInt(localStorage.getItem(AUTH_BLOQUEO_HASTA_CLAVE) || '0', 10);
+        if (bloqueoHasta > ahora) {
+            return { bloqueado: true, segundosRestantes: Math.ceil((bloqueoHasta - ahora) / 1000) };
+        }
+        return { bloqueado: false, segundosRestantes: 0 };
+    } catch (_) {
+        return { bloqueado: false, segundosRestantes: 0 };
+    }
+}
+
+function registrarIntentoFallidoLogin() {
+    try {
+        const intentos = parseInt(localStorage.getItem(AUTH_INTENTOS_CLAVE) || '0', 10) + 1;
+        localStorage.setItem(AUTH_INTENTOS_CLAVE, intentos.toString());
+        const ahora = Date.now();
+
+        if (intentos >= 5) {
+            // Bloqueo de 2 minutos tras 5 fallos
+            localStorage.setItem(AUTH_BLOQUEO_HASTA_CLAVE, (ahora + 2 * 60 * 1000).toString());
+            return { bloqueoAplicado: true, segundos: 120, intentos };
+        } else if (intentos >= 3) {
+            // Bloqueo de 30 segundos tras 3 fallos
+            localStorage.setItem(AUTH_BLOQUEO_HASTA_CLAVE, (ahora + 30 * 1000).toString());
+            return { bloqueoAplicado: true, segundos: 30, intentos };
+        }
+        return { bloqueoAplicado: false, intentos };
+    } catch (_) {
+        return { bloqueoAplicado: false, intentos: 1 };
+    }
+}
+
+function resetearIntentosFallidosLogin() {
+    try {
+        localStorage.removeItem(AUTH_INTENTOS_CLAVE);
+        localStorage.removeItem(AUTH_BLOQUEO_HASTA_CLAVE);
+    } catch (_) {}
+}
+
 export async function iniciarSesionReal() {
+    const bloqueo = obtenerEstadoBloqueoLogin();
+    if (bloqueo.bloqueado) {
+        mostrarAlerta(
+            "Acceso Suspendido por Seguridad",
+            `Por prevención de fuerza bruta ante intentos fallidos, el ingreso está suspendido. Reintente en ${bloqueo.segundosRestantes} segundos.`
+        );
+        return;
+    }
+
     const emailInput = document.getElementById('login-user')?.value.trim();
     const passInput = document.getElementById('login-pass')?.value.trim();
 
@@ -147,6 +237,7 @@ export async function iniciarSesionReal() {
             }
         }
 
+        resetearIntentosFallidosLogin();
         const inputUser = document.getElementById('login-user');
         const inputPass = document.getElementById('login-pass');
         if (inputUser) inputUser.value = '';
@@ -163,9 +254,12 @@ export async function iniciarSesionReal() {
         sessionStorage.removeItem('hospital_sesion_activa');
         sesionActual = null;
         console.error("Error Auth:", error);
+        const fallo = registrarIntentoFallidoLogin();
         let mensaje = "Correo o contraseña incorrectos.";
-        if (error.code === 'auth/too-many-requests') {
-            mensaje = "Demasiados intentos fallidos. Espere unos minutos o intente más tarde.";
+        if (fallo.bloqueoAplicado) {
+            mensaje = `Acceso bloqueado: se registraron ${fallo.intentos} intentos erróneos. Por seguridad hospitalaria, el formulario queda suspendido por ${fallo.segundos} segundos.`;
+        } else if (error.code === 'auth/too-many-requests') {
+            mensaje = "Demasiados intentos fallidos consecutivos en Firebase Auth. Espere unos minutos o intente más tarde.";
         } else if (error.code === 'auth/operation-not-allowed') {
             mensaje = "El proveedor de Correo/Contraseña no está habilitado en Firebase Authentication.";
         }
@@ -206,14 +300,28 @@ export function inicializarAuth(onSessionReady) {
 
         let rol = "Recepción";
         let nombre = user.displayName || user.email;
+        let permisosAdicionales = [];
 
         try {
+            try {
+                const tokenResult = await user.getIdTokenResult();
+                if (tokenResult && tokenResult.claims) {
+                    if (tokenResult.claims.rol) rol = tokenResult.claims.rol;
+                    if (Array.isArray(tokenResult.claims.permisosAdicionales)) {
+                        permisosAdicionales = tokenResult.claims.permisosAdicionales;
+                    }
+                }
+            } catch (_) {}
+
             const docRef = doc(db, "usuarios", user.uid);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 if (data.rol) rol = data.rol;
                 if (data.nombre) nombre = data.nombre;
+                if (Array.isArray(data.permisosAdicionales) && permisosAdicionales.length === 0) {
+                    permisosAdicionales = data.permisosAdicionales;
+                }
             }
         } catch (e) {
             console.warn("No se pudo leer perfil desde Firestore:", e);
@@ -223,7 +331,8 @@ export function inicializarAuth(onSessionReady) {
             uid: user.uid,
             correo: user.email,
             nombre: nombre,
-            rol: rol
+            rol: rol,
+            permisosAdicionales: permisosAdicionales
         };
 
         resetInactividad();
@@ -264,3 +373,9 @@ export function inicializarAuth(onSessionReady) {
 window.iniciarSesionReal = iniciarSesionReal;
 window.cerrarSesionReal = cerrarSesionReal;
 window.establecerSesionActual = establecerSesionActual;
+window.obtenerSesionActual = obtenerSesionActual;
+window.esRolAdministracion = esRolAdministracion;
+window.esRolRecepcion = esRolRecepcion;
+window.esRolMedico = esRolMedico;
+window.esRolEnfermeria = esRolEnfermeria;
+window.tienePermisoInternacion = tienePermisoInternacion;

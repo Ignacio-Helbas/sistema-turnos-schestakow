@@ -404,6 +404,7 @@ export async function confirmarTurnoRecepcionFirebase() {
                 medicoUid: medUid,
                 fecha: fechaRecepcionSeleccionada,
                 horario: horaSeleccionadaRecepcion,
+                turnoId: turnoRef.id,
                 creadoEn: serverTimestamp()
             });
 

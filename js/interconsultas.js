@@ -37,6 +37,7 @@ import {
 import { ejecutarUnaVez } from "./guardia.js";
 
 // Estado interno del módulo
+let cacheColegasParaSelect = [];
 let interconsultasCargadas = [];
 let interconsultaSeleccionadaId = null;
 let filtroEstadoActual = "todos"; // todos | pendiente | en_curso | respondida | cerrada
@@ -600,22 +601,28 @@ export async function abrirModalCrearInterconsulta(datosTurno = null) {
             especialidades.map((esp) => `<option value="${escaparTexto(esp)}">${escaparTexto(esp)}</option>`).join("");
     }
 
-    window.actualizarSelectColegasPorEspecialidad = () => {
-        const espSel = selectEsp ? selectEsp.value : "";
-        const filtrados = espSel ? colegasSinMi.filter((c) => c.especialidad === espSel) : colegasSinMi;
-
-        if (selectColega) {
-            if (filtrados.length === 0) {
-                selectColega.innerHTML = `<option value="">No hay profesionales disponibles en esta área</option>`;
-            } else {
-                selectColega.innerHTML = `<option value="">-- Seleccione profesional destinatario --</option>` +
-                    filtrados.map((c) => `<option value="${escaparTexto(c.uid)}">${escaparTexto(c.nombre)} (${escaparTexto(c.especialidad)})</option>`).join("");
-            }
-        }
-    };
-
-    window.actualizarSelectColegasPorEspecialidad();
+    cacheColegasParaSelect = colegasSinMi;
+    actualizarSelectColegasPorEspecialidad();
     abrirModal("modal-nueva-interconsulta");
+}
+
+/**
+ * Filtra el selector de colegas según la especialidad seleccionada en el modal de nueva interconsulta.
+ */
+export function actualizarSelectColegasPorEspecialidad() {
+    const selectColega = document.getElementById("input-ic-colega-destino");
+    const selectEsp = document.getElementById("input-ic-especialidad-filtro");
+    const espSel = selectEsp ? selectEsp.value : "";
+    const filtrados = espSel ? cacheColegasParaSelect.filter((c) => c.especialidad === espSel) : cacheColegasParaSelect;
+
+    if (selectColega) {
+        if (filtrados.length === 0) {
+            selectColega.innerHTML = `<option value="">No hay profesionales disponibles en esta área</option>`;
+        } else {
+            selectColega.innerHTML = `<option value="">-- Seleccione profesional destinatario --</option>` +
+                filtrados.map((c) => `<option value="${escaparTexto(c.uid)}">${escaparTexto(c.nombre)} (${escaparTexto(c.especialidad)})</option>`).join("");
+        }
+    }
 }
 
 /**
@@ -912,6 +919,7 @@ export function vincularEventosDOMInterconsultas() {
     window.confirmarCierreInterconsulta = confirmarCierreInterconsulta;
     window.abrirModalAgregarColega = abrirModalAgregarColega;
     window.confirmarAgregarColega = confirmarAgregarColega;
+    window.actualizarSelectColegasPorEspecialidad = actualizarSelectColegasPorEspecialidad;
     window.establecerFiltroEstadoInterconsultas = establecerFiltroEstadoInterconsultas;
     window.inicializarModuloInterconsultas = inicializarModuloInterconsultas;
     window.desmontarModuloInterconsultas = desmontarModuloInterconsultas;
@@ -929,6 +937,7 @@ if (typeof window !== "undefined") {
     window.confirmarCierreInterconsulta = confirmarCierreInterconsulta;
     window.abrirModalAgregarColega = abrirModalAgregarColega;
     window.confirmarAgregarColega = confirmarAgregarColega;
+    window.actualizarSelectColegasPorEspecialidad = actualizarSelectColegasPorEspecialidad;
     window.establecerFiltroEstadoInterconsultas = establecerFiltroEstadoInterconsultas;
     window.inicializarModuloInterconsultas = inicializarModuloInterconsultas;
     window.desmontarModuloInterconsultas = desmontarModuloInterconsultas;

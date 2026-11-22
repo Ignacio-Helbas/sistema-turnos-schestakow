@@ -96,6 +96,8 @@
                 <nav id="nav-desktop-staff" class="hidden md:flex flex-wrap justify-center gap-x-2 gap-y-2 items-center w-full md:w-auto pb-2 md:pb-0">
                     <button id="btn-nav-reception" onclick="switchView('reception')" class="hidden text-slate-600 hover:text-blue-900 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Recepción</button>
                     <button id="btn-nav-doctor" onclick="switchView('doctor')" class="hidden text-slate-600 hover:text-blue-900 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Consultorio</button>
+                    <button id="btn-nav-internacion" onclick="switchView('internacion')" class="hidden text-slate-600 hover:text-blue-900 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Internación</button>
+                    <button id="btn-nav-quirofanos" onclick="switchView('quirofanos')" class="hidden text-slate-600 hover:text-blue-900 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Quirófanos</button>
                     <button id="btn-nav-admin" onclick="switchView('admin')" class="hidden text-slate-600 hover:text-blue-900 font-bold text-xs md:text-sm px-2 py-1 md:px-3 md:py-2 transition">Administración</button>
                     
                     <!-- Usuario en Sesión y Botón Cerrar Sesión -->
@@ -109,8 +111,9 @@
                             <!-- Nombre y Rol -->
                             <div id="usuario-sesion-info" class="flex flex-col text-left">
                                 <span id="usuario-sesion-nombre" class="text-xs font-bold text-slate-900 leading-tight max-w-[170px] truncate">Personal</span>
-                                <div class="flex items-center gap-1 mt-0.5">
+                                <div class="flex items-center gap-1 mt-0.5 flex-wrap">
                                     <span id="usuario-sesion-rol" class="badge-his badge-his-espera text-[9.5px] px-1.5 py-0 leading-tight">Staff</span>
+                                    <span id="usuario-sesion-permisos" class="hidden flex items-center gap-1 flex-wrap"></span>
                                 </div>
                             </div>
                             <!-- Chevron indicador -->
@@ -145,6 +148,14 @@
                                 <button type="button" onclick="window.cambiarVistaDesdeMenuDesktop('doctor')" class="w-full text-left px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-900 flex items-center gap-2 transition cursor-pointer">
                                     <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                     <span>Consultorio Médico</span>
+                                </button>
+                                <button type="button" onclick="window.cambiarVistaDesdeMenuDesktop('internacion')" class="w-full text-left px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-indigo-900 flex items-center gap-2 transition cursor-pointer">
+                                    <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                    <span>Internación (Camas)</span>
+                                </button>
+                                <button type="button" onclick="window.cambiarVistaDesdeMenuDesktop('quirofanos')" class="w-full text-left px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-teal-900 flex items-center gap-2 transition cursor-pointer">
+                                    <svg class="w-4 h-4 text-teal-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                                    <span>Agenda Quirófanos</span>
                                 </button>
                                 <button type="button" onclick="window.cambiarVistaDesdeMenuDesktop('admin')" class="w-full text-left px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 flex items-center gap-2 transition cursor-pointer">
                                     <svg class="w-4 h-4 text-slate-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
@@ -698,6 +709,179 @@
             </div><!-- Fin subvista-doctor-interconsultas -->
         </div>
 
+        
+        <!-- ====================================================================== -->
+        <!-- 4. VISTA INTERNACIÓN Y OCUPACIÓN DE CAMAS -->
+        <!-- ====================================================================== -->
+        <div id="view-internacion" class="view hidden">
+            <!-- Cabecera de la Vista -->
+            <div class="card-his bg-white/95 backdrop-blur p-4 mb-4 border-l-4 border-indigo-700 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900">Gestión de Internación y Ocupación de Camas</h2>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5">Monitoreo en tiempo real por piso y habitación, asignación de camas y altas hospitalarias</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="btn-admin-config-camas" onclick="window.renderizarTablaConfigCamasAdmin()" 
+                        class="hidden btn-his-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 shadow-2xs font-bold text-slate-700 bg-white hover:bg-slate-50 border-slate-300">
+                        <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span>Estructura de Camas</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Barra de Búsqueda Rápida de Paciente Internado -->
+            <div class="card-his bg-white p-4 mb-4 border border-slate-200/90 shadow-2xs">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex-1 max-w-md relative">
+                        <label for="input-buscar-internado" class="sr-only">Buscar paciente internado</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </span>
+                            <input type="text" id="input-buscar-internado" onkeyup="window.buscarPacienteInternado(this.value)" placeholder="Buscar paciente por Nombre o DNI..." 
+                                class="input-his pl-9 text-xs sm:text-sm py-2 bg-slate-50 focus:bg-white transition">
+                        </div>
+                    </div>
+                    <!-- Badges de Ocupación Global -->
+                    <div class="flex items-center gap-2 text-xs">
+                        <span class="badge-his bg-slate-100 text-slate-700 border-slate-200">
+                            Total Piso: <strong id="internacion-badge-total" class="ml-1 font-mono font-bold">0</strong>
+                        </span>
+                        <span class="badge-his bg-emerald-50 text-emerald-800 border-emerald-200">
+                            Libres: <strong id="internacion-badge-libres" class="ml-1 font-mono font-bold text-emerald-700">0</strong>
+                        </span>
+                        <span class="badge-his bg-rose-50 text-rose-800 border-rose-200">
+                            Ocupadas: <strong id="internacion-badge-ocupadas" class="ml-1 font-mono font-bold text-rose-700">0</strong>
+                        </span>
+                    </div>
+                </div>
+                <!-- Contenedor de Resultados de Búsqueda -->
+                <div id="resultado-busqueda-internado" class="mt-2.5"></div>
+            </div>
+
+            <!-- Navegación de Pisos y Filtros -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+                <!-- Selector Dinámico de Pisos -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider shrink-0 mr-1">Plano:</span>
+                    <div id="internacion-selector-pisos" class="flex items-center gap-1.5 shrink-0">
+                        <!-- Botones de pisos inyectados por internacion.js -->
+                    </div>
+                </div>
+
+                <!-- Filtros por Sector y Estado -->
+                <div class="flex flex-wrap items-center gap-2.5 text-xs">
+                    <div class="flex items-center gap-1.5">
+                        <label for="internacion-filtro-sector" class="text-slate-500 font-semibold">Sector:</label>
+                        <select id="internacion-filtro-sector" onchange="window.filtrarSectorInternacion(this.value)" class="select-his py-1 px-2.5 text-xs bg-slate-50">
+                            <option value="TODOS">Todos los sectores</option>
+                            <option value="Terapia Intensiva (UTI)">Terapia Intensiva (UTI)</option>
+                            <option value="Clínica Médica">Clínica Médica</option>
+                            <option value="Cirugía General">Cirugía General</option>
+                            <option value="Traumatología">Traumatología</option>
+                            <option value="Pediatría">Pediatría</option>
+                            <option value="Maternidad">Maternidad</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-1.5">
+                        <label for="internacion-filtro-estado" class="text-slate-500 font-semibold">Estado:</label>
+                        <select id="internacion-filtro-estado" onchange="window.filtrarEstadoInternacion(this.value)" class="select-his py-1 px-2.5 text-xs bg-slate-50">
+                            <option value="TODOS">Todas las camas</option>
+                            <option value="libre">Solo Libres</option>
+                            <option value="ocupada">Solo Ocupadas</option>
+                            <option value="mantenimiento">Mantenimiento</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mapa Visual de Habitaciones y Camas -->
+            <div id="internacion-mapa-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <!-- Habitaciones inyectadas dinámicamente por internacion.js -->
+            </div>
+        </div>
+
+        <!-- ====================================================================== -->
+        <!-- 5. VISTA DISPONIBILIDAD Y AGENDA DE QUIRÓFANOS -->
+        <!-- ====================================================================== -->
+        <div id="view-quirofanos" class="view hidden">
+            <!-- Cabecera de la Vista -->
+            <div class="card-his bg-white/95 backdrop-blur p-4 mb-4 border-l-4 border-teal-700 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-teal-600"></span>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900">Agenda y Disponibilidad de Quirófanos</h2>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5">Programación quirúrgica, disponibilidad horaria en vivo y prevención estricta de colisiones</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" id="btn-quirofano-config-admin" onclick="window.abrirConfigQuirofanosAdmin()" 
+                        class="hidden btn-his-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 shadow-2xs font-bold text-slate-700 bg-white hover:bg-slate-50 border-slate-300">
+                        <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span>Salas Físicas</span>
+                    </button>
+                    <button type="button" id="btn-quirofano-nueva-reserva" onclick="window.abrirModalNuevaReservaQuirofano()" 
+                        class="btn-his-primary text-xs px-3.5 py-1.5 flex items-center gap-1.5 shadow-2xs font-bold bg-teal-800 hover:bg-teal-900 border-teal-700">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        <span>Agendar Cirugía</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Resumen de Métricas del Día -->
+            <div id="quirofano-resumen-metricas"></div>
+
+            <!-- Barra de Controles y Filtros Quirúrgicos -->
+            <div class="card-his bg-white p-3.5 mb-4 border border-slate-200/90 shadow-2xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                    <!-- Selector de Fecha -->
+                    <div>
+                        <label for="quirofano-filtro-fecha" class="label-his text-[11px] mb-1">Fecha de Cirugía</label>
+                        <input type="date" id="quirofano-filtro-fecha" onchange="window.cambiarFechaQuirofano(this.value)" 
+                            class="input-his py-1.5 text-xs bg-slate-50 font-medium">
+                    </div>
+
+                    <!-- Filtro Quirófano -->
+                    <div>
+                        <label for="quirofano-filtro-sala" class="label-his text-[11px] mb-1">Quirófano / Sala</label>
+                        <select id="quirofano-filtro-sala" onchange="window.filtrarQuirofano(this.value)" class="select-his py-1.5 text-xs bg-slate-50">
+                            <option value="TODOS">Todos los Quirófanos</option>
+                        </select>
+                    </div>
+
+                    <!-- Filtro Cirujano -->
+                    <div>
+                        <label for="quirofano-filtro-cirujano" class="label-his text-[11px] mb-1">Cirujano</label>
+                        <select id="quirofano-filtro-cirujano" onchange="window.filtrarCirujanoQuirofano(this.value)" class="select-his py-1.5 text-xs bg-slate-50">
+                            <option value="TODOS">Todos los Cirujanos</option>
+                        </select>
+                    </div>
+
+                    <!-- Filtro Estado -->
+                    <div>
+                        <label for="quirofano-filtro-estado" class="label-his text-[11px] mb-1">Estado de Cirugía</label>
+                        <select id="quirofano-filtro-estado" onchange="window.filtrarEstadoQuirofano(this.value)" class="select-his py-1.5 text-xs bg-slate-50">
+                            <option value="TODOS">Todos los Estados</option>
+                            <option value="confirmado">Confirmado</option>
+                            <option value="en_curso">En Curso</option>
+                            <option value="reservado">Reservado (Pendiente)</option>
+                            <option value="finalizado">Finalizada</option>
+                            <option value="cancelado">Cancelada</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grilla Cronológica de Quirófanos -->
+            <div id="quirofano-grilla-salas">
+                <!-- Salas y bloques inyectados dinámicamente por quirofanos.js -->
+            </div>
+        </div>
+
         <!-- 3. VISTA ADMINISTRACIÓN -->
         <div id="view-admin" class="view hidden">
             <div class="card-his bg-white/95 backdrop-blur p-4 mb-4 border-l-4 border-slate-900 shadow-sm">
@@ -781,10 +965,8 @@
                             <thead>
                                 <tr>
                                     <th>Profesional / Staff</th>
-                                    <th>Rol / Especialidad</th>
-                                    <th class="text-center">Duración Asignada</th>
+                                    <th>Rol y Permisos</th>
                                     <th>Credenciales</th>
-                                    <th class="text-center">Estado</th>
                                     <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
@@ -1456,6 +1638,42 @@
                         <svg class="arrow-vista-otra w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                     </button>
 
+                    <!-- Internación -->
+                    <button type="button" id="btn-menu-mob-internacion" onclick="window.cambiarVistaDesdeMenuMobile('internacion')" class="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200 cursor-pointer">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-800 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-indigo-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    <span>Internación y Camas</span>
+                                    <span class="badge-vista-actual hidden text-[9px] bg-indigo-700 text-white font-bold px-1.5 py-0.2 rounded-full">Actual</span>
+                                </div>
+                                <div class="text-[10px] text-slate-500">Ocupación, admisiones y altas</div>
+                            </div>
+                        </div>
+                        <svg class="indicador-vista-actual hidden w-4 h-4 text-indigo-700" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                        <svg class="arrow-vista-otra w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+
+                    <!-- Quirófanos -->
+                    <button type="button" id="btn-menu-mob-quirofanos" onclick="window.cambiarVistaDesdeMenuMobile('quirofanos')" class="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200 cursor-pointer">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-teal-50 text-teal-800 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    <span>Agenda Quirófanos</span>
+                                    <span class="badge-vista-actual hidden text-[9px] bg-teal-700 text-white font-bold px-1.5 py-0.2 rounded-full">Actual</span>
+                                </div>
+                                <div class="text-[10px] text-slate-500">Programación quirúrgica y salas</div>
+                            </div>
+                        </div>
+                        <svg class="indicador-vista-actual hidden w-4 h-4 text-teal-700" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                        <svg class="arrow-vista-otra w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+
                     <!-- Administración -->
                     <button type="button" id="btn-menu-mob-admin" onclick="window.cambiarVistaDesdeMenuMobile('admin')" class="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200 cursor-pointer">
                         <div class="flex items-center gap-2.5">
@@ -1664,6 +1882,7 @@
                             <option value="Administración">Administración</option>
                             <option value="Recepción">Recepción</option>
                             <option value="Médico">Médico</option>
+                            <option value="Enfermería">Enfermería</option>
                         </select>
                     </div>
                     <div>
@@ -1730,6 +1949,42 @@
                         <option value="Diagnóstico por Imágenes">Diagnóstico por Imágenes</option>
                     </select>
                 </div>
+
+                <!-- Permisos Operativos Adicionales (Modelo Rol Principal + Permisos Adicionales) -->
+                <div id="div-usuario-permisos" class="border border-slate-200 rounded-lg p-3 bg-slate-50">
+                    <label class="label-his block mb-1 font-bold text-slate-800">Permisos Operativos Adicionales</label>
+                    <p class="text-[11px] text-slate-500 mb-2.5">Habilite facultades adicionales específicas según las responsabilidades del empleado:</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded border border-slate-200 hover:border-blue-400 select-none">
+                            <input type="checkbox" id="chk-permiso-coordina-quirofano" value="coordinaQuirofano" class="rounded text-blue-600 focus:ring-blue-500">
+                            <div>
+                                <span class="font-semibold text-slate-800 block">Coord. Quirófano</span>
+                                <span class="text-[10px] text-slate-500">Gestión de agenda y confirmación</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded border border-slate-200 hover:border-blue-400 select-none">
+                            <input type="checkbox" id="chk-permiso-anestesia" value="anestesia" class="rounded text-blue-600 focus:ring-blue-500">
+                            <div>
+                                <span class="font-semibold text-slate-800 block">Anestesiología</span>
+                                <span class="text-[10px] text-slate-500">Reserva y visualización de cirugías</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded border border-slate-200 hover:border-blue-400 select-none">
+                            <input type="checkbox" id="chk-permiso-instrumentacion" value="instrumentacion" class="rounded text-blue-600 focus:ring-blue-500">
+                            <div>
+                                <span class="font-semibold text-slate-800 block">Instrumentación</span>
+                                <span class="text-[10px] text-slate-500">Control de acto quirúrgico en sala</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded border border-slate-200 hover:border-blue-400 select-none">
+                            <input type="checkbox" id="chk-permiso-internacion" value="internacion" class="rounded text-blue-600 focus:ring-blue-500">
+                            <div>
+                                <span class="font-semibold text-slate-800 block">Gestión Internación</span>
+                                <span class="text-[10px] text-slate-500">Admisión y altas en mapa de camas</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
             </div>
             
             <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-2.5">
@@ -1747,7 +2002,7 @@
             <input type="text" id="input-seguridad-admin" class="input-his text-center mb-4 font-mono font-bold tracking-wider" placeholder="CONFIRMAR">
             <div class="flex justify-end gap-2.5 pt-2 border-t border-slate-100">
                 <button type="button" onclick="cerrarModal('modal-seguridad-modulacion')" class="btn-his-secondary text-xs">Cancelar</button>
-                <button type="button" onclick="if(document.getElementById('input-seguridad-admin').value === 'CONFIRMAR'){ejecutarGuardadoModulacion();}else{mostrarAlerta('Error', 'Debe escribir CONFIRMAR');}" class="btn-his-primary text-xs">Aplicar</button>
+                <button type="button" onclick="window.ejecutarGuardadoModulacion()" class="btn-his-primary text-xs">Aplicar</button>
             </div>
         </div>
     </div>
@@ -2279,6 +2534,497 @@
         </div>
     </div>
 
+    
+    <!-- ====================================================================== -->
+    <!-- MODAL INTERNAR PACIENTE (MÓDULO INTERNACIÓN) -->
+    <!-- ====================================================================== -->
+    <div id="modal-internar-paciente" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="card-his bg-white max-w-lg w-full overflow-hidden shadow-2xl p-0 border border-slate-200">
+            <div class="bg-gradient-to-r from-indigo-900 to-indigo-800 text-white p-4 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-700/80 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 id="modal-internar-titulo" class="font-bold text-sm text-white">Internar Paciente</h3>
+                        <p id="modal-internar-subtitulo" class="text-xs text-indigo-200">Asignar cama disponible</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModal('modal-internar-paciente')" class="text-indigo-200 hover:text-white p-1 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-3.5 text-xs">
+                <input type="hidden" id="modal-internar-cama-id">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="label-his" for="internar-paciente-nombre">Nombre y Apellido <span class="text-red-500">*</span></label>
+                        <input type="text" id="internar-paciente-nombre" placeholder="Ej: Juan Pérez" class="input-his">
+                    </div>
+                    <div>
+                        <label class="label-his" for="internar-paciente-dni">DNI / Documento <span class="text-red-500">*</span></label>
+                        <input type="text" id="internar-paciente-dni" placeholder="Sin puntos" class="input-his font-mono">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="label-his" for="internar-medico-tratante">Médico Tratante <span class="text-red-500">*</span></label>
+                        <input type="text" id="internar-medico-tratante" placeholder="Ej: Dr. Roberto Gómez" class="input-his">
+                    </div>
+                    <div>
+                        <label class="label-his" for="internar-paciente-cobertura">Obra Social / Cobertura</label>
+                        <input type="text" id="internar-paciente-cobertura" placeholder="Ej: PAMI, OSEP, Sin Cobertura" class="input-his">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="label-his" for="internar-diagnostico">Diagnóstico de Ingreso / Motivo</label>
+                    <textarea id="internar-diagnostico" rows="2" placeholder="Ej: Neumonía adquirida en la comunidad, compensación clínica..." class="input-his"></textarea>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-4 border-t border-slate-100 flex justify-end gap-2.5">
+                <button type="button" onclick="cerrarModal('modal-internar-paciente')" class="btn-his-secondary text-xs cursor-pointer">Cancelar</button>
+                <button type="button" onclick="window.confirmarInternacionPaciente()" class="btn-his-primary text-xs font-bold bg-indigo-700 hover:bg-indigo-800 border-indigo-700 cursor-pointer">
+                    Confirmar Asignación de Cama
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================================================================== -->
+    <!-- MODAL DAR DE ALTA PACIENTE (MÓDULO INTERNACIÓN) -->
+    <!-- ====================================================================== -->
+    <div id="modal-alta-paciente" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="card-his bg-white max-w-lg w-full overflow-hidden shadow-2xl p-0 border border-slate-200">
+            <div class="bg-gradient-to-r from-emerald-900 to-emerald-800 text-white p-4 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-700/80 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-white">Alta Médica y Liberación de Cama</h3>
+                        <p class="text-xs text-emerald-200">Cierre de internación y registro en historial clínico</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModal('modal-alta-paciente')" class="text-emerald-200 hover:text-white p-1 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-3.5 text-xs">
+                <input type="hidden" id="modal-alta-cama-id">
+
+                <!-- Resumen de la Cama y Paciente -->
+                <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-200/80 space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-600 font-semibold">Ubicación:</span>
+                        <strong id="alta-cama-ubicacion" class="text-slate-900">--</strong>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-600 font-semibold">Paciente:</span>
+                        <strong id="alta-paciente-nombre" class="text-slate-900">--</strong>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-600 font-semibold">DNI:</span>
+                        <span id="alta-paciente-dni" class="font-mono text-slate-800">--</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-600 font-semibold">Ingreso:</span>
+                        <span id="alta-fecha-ingreso" class="text-slate-800">--</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-600 font-semibold">Médico Responsable:</span>
+                        <span id="alta-medico-tratante" class="text-slate-800">--</span>
+                    </div>
+                </div>
+
+                <!-- Campos de Alta (Ocultos en modo solo lectura) -->
+                <div id="div-campos-alta-paciente" class="space-y-3.5">
+                    <div>
+                        <label class="label-his" for="alta-motivo-select">Motivo del Alta <span class="text-red-500">*</span></label>
+                        <select id="alta-motivo-select" class="select-his">
+                            <option value="Alta Médica Definitiva">Alta Médica Definitiva (Recuperación)</option>
+                            <option value="Alta Institucional / Derivación Externa">Derivación Externa / Traslado</option>
+                            <option value="Alta Voluntaria">Alta Voluntaria</option>
+                            <option value="Pase a Terapia Intensiva">Pase a Terapia Intensiva (UTI)</option>
+                            <option value="Pase a Sala General">Pase a Sala General</option>
+                            <option value="Óbito">Óbito</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="label-his" for="alta-observaciones">Observaciones / Epicrisis Sintética</label>
+                        <textarea id="alta-observaciones" rows="2" placeholder="Indicaciones al alta, pautas de alarma o resumen del egreso..." class="input-his"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-4 border-t border-slate-100 flex justify-end gap-2.5">
+                <button type="button" onclick="cerrarModal('modal-alta-paciente')" class="btn-his-secondary text-xs cursor-pointer">Cerrar</button>
+                <button type="button" id="btn-confirmar-alta-paciente" onclick="window.confirmarAltaPaciente()" class="btn-his-primary text-xs font-bold bg-emerald-700 hover:bg-emerald-800 border-emerald-700 cursor-pointer">
+                    Confirmar Alta y Liberar Cama
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================================================================== -->
+    <!-- MODAL CONFIGURACIÓN DE CAMAS (EXCLUSIVO ADMINISTRACIÓN) -->
+    <!-- ====================================================================== -->
+    <div id="modal-config-cama" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="card-his bg-white max-w-3xl w-full overflow-hidden shadow-2xl p-0 border border-slate-200 max-h-[90vh] flex flex-col">
+            <div class="bg-slate-900 text-white p-4 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-white">Estructura Física de Internación</h3>
+                        <p class="text-xs text-slate-400">Configuración institucional de pisos, habitaciones y camas</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModal('modal-config-cama')" class="text-slate-400 hover:text-white p-1 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 overflow-y-auto text-xs flex-1">
+                <!-- Formulario Agregar Nueva Cama -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h4 class="font-bold text-slate-800 mb-2.5 text-xs uppercase tracking-wider">Agregar Nueva Cama</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
+                        <div>
+                            <label class="label-his text-[10.5px]" for="config-cama-piso">Piso</label>
+                            <input type="number" id="config-cama-piso" min="1" max="15" value="1" class="input-his py-1.5 text-xs">
+                        </div>
+                        <div>
+                            <label class="label-his text-[10.5px]" for="config-cama-hab">Habitación</label>
+                            <input type="text" id="config-cama-hab" placeholder="Ej: 105" class="input-his py-1.5 text-xs">
+                        </div>
+                        <div>
+                            <label class="label-his text-[10.5px]" for="config-cama-nombre">Identificador Cama</label>
+                            <input type="text" id="config-cama-nombre" placeholder="Ej: Cama 1" class="input-his py-1.5 text-xs">
+                        </div>
+                        <div>
+                            <label class="label-his text-[10.5px]" for="config-cama-sector">Sector</label>
+                            <select id="config-cama-sector" class="select-his py-1.5 text-xs">
+                                <option value="Clínica Médica">Clínica Médica</option>
+                                <option value="Terapia Intensiva (UTI)">Terapia Intensiva (UTI)</option>
+                                <option value="Cirugía General">Cirugía General</option>
+                                <option value="Traumatología">Traumatología</option>
+                                <option value="Pediatría">Pediatría</option>
+                                <option value="Maternidad">Maternidad</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="label-his text-[10.5px]" for="config-cama-tipo">Tipo</label>
+                            <select id="config-cama-tipo" class="select-his py-1.5 text-xs">
+                                <option value="Compartida">Compartida</option>
+                                <option value="Individual">Individual</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex justify-end">
+                        <button type="button" onclick="window.guardarNuevaCamaAdmin()" class="btn-his-primary text-xs font-bold py-1.5 px-4 cursor-pointer">
+                            + Guardar Cama
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla de Camas Registradas -->
+                <div>
+                    <h4 class="font-bold text-slate-800 mb-2 text-xs uppercase tracking-wider">Camas Registradas en el Hospital</h4>
+                    <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-100 text-slate-700 text-[11px] uppercase font-bold border-b border-slate-200">
+                                <tr>
+                                    <th class="py-2 px-3">Piso</th>
+                                    <th class="py-2 px-3">Hab.</th>
+                                    <th class="py-2 px-3">Cama</th>
+                                    <th class="py-2 px-3">Sector</th>
+                                    <th class="py-2 px-3">Tipo</th>
+                                    <th class="py-2 px-3">Estado</th>
+                                    <th class="py-2 px-3 text-right">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-admin-camas-body">
+                                <tr><td colspan="7" class="text-center py-4 text-slate-400">Cargando camas...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-3.5 border-t border-slate-200 flex justify-end shrink-0">
+                <button type="button" onclick="cerrarModal('modal-config-cama')" class="btn-his-secondary text-xs">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================================================================== -->
+    <!-- MODAL NUEVA RESERVA DE QUIRÓFANO (MÓDULO QUIRÓFANOS) -->
+    <!-- ====================================================================== -->
+    <div id="modal-nueva-reserva-quirofano" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="card-his bg-white max-w-xl w-full overflow-hidden shadow-2xl p-0 border border-slate-200 max-h-[90vh] flex flex-col">
+            <div class="bg-gradient-to-r from-teal-900 to-teal-800 text-white p-4 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-teal-700/80 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-white">Agendar Procedimiento Quirúrgico</h3>
+                        <p class="text-xs text-teal-200">Asignación de quirófano con validación anti-colisión</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModal('modal-nueva-reserva-quirofano')" class="text-teal-200 hover:text-white p-1 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <form id="form-nueva-reserva-quirofano" onsubmit="event.preventDefault(); window.guardarReservaQuirofano();" class="p-5 space-y-3.5 text-xs overflow-y-auto flex-1">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="label-his" for="modal-quirofano-select-sala">Quirófano / Sala <span class="text-red-500">*</span></label>
+                        <select id="modal-quirofano-select-sala" class="select-his" required></select>
+                    </div>
+                    <div>
+                        <label class="label-his" for="modal-quirofano-input-fecha">Fecha de Cirugía <span class="text-red-500">*</span></label>
+                        <input type="date" id="modal-quirofano-input-fecha" class="input-his" required>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="label-his" for="modal-quirofano-input-hora-inicio">Hora Inicio <span class="text-red-500">*</span></label>
+                        <input type="time" id="modal-quirofano-input-hora-inicio" value="08:00" onchange="window.actualizarPreviewHoraFinModal()" class="input-his font-mono" required>
+                    </div>
+                    <div>
+                        <label class="label-his" for="modal-quirofano-select-duracion">Duración Estimada</label>
+                        <select id="modal-quirofano-select-duracion" onchange="window.actualizarPreviewHoraFinModal()" class="select-his font-mono">
+                            <option value="30">30 min</option>
+                            <option value="45">45 min</option>
+                            <option value="60" selected>60 min (1 h)</option>
+                            <option value="90">90 min (1.5 h)</option>
+                            <option value="120">120 min (2 h)</option>
+                            <option value="150">150 min (2.5 h)</option>
+                            <option value="180">180 min (3 h)</option>
+                            <option value="240">240 min (4 h)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label-his">Hora Fin Estimada</label>
+                        <div id="modal-quirofano-preview-hora-fin" class="input-his bg-slate-100 text-slate-800 font-mono font-bold flex items-center">
+                            09:00 hs
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="label-his" for="modal-quirofano-input-paciente-nombre">Paciente <span class="text-red-500">*</span></label>
+                        <input type="text" id="modal-quirofano-input-paciente-nombre" placeholder="Nombre y Apellido" class="input-his" required>
+                    </div>
+                    <div>
+                        <label class="label-his" for="modal-quirofano-input-paciente-dni">DNI del Paciente <span class="text-red-500">*</span></label>
+                        <input type="text" id="modal-quirofano-input-paciente-dni" placeholder="Sin puntos" class="input-his font-mono" required>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="label-his" for="modal-quirofano-input-cirujano">Cirujano Responsable <span class="text-red-500">*</span></label>
+                        <input type="text" id="modal-quirofano-input-cirujano" placeholder="Dr. / Dra." class="input-his" required>
+                    </div>
+                    <div>
+                        <label class="label-his" for="modal-quirofano-input-especialidad">Especialidad Quirúrgica</label>
+                        <input type="text" id="modal-quirofano-input-especialidad" placeholder="Ej: Cirugía General, Traumatología" class="input-his">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="label-his" for="modal-quirofano-input-procedimiento">Procedimiento / Intervención <span class="text-red-500">*</span></label>
+                    <input type="text" id="modal-quirofano-input-procedimiento" placeholder="Ej: Colecistectomía laparoscópica, Osteosíntesis de fémur..." class="input-his" required>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="label-his" for="modal-quirofano-select-anestesia">Tipo de Anestesia</label>
+                        <select id="modal-quirofano-select-anestesia" class="select-his">
+                            <option value="General">General Balanceada</option>
+                            <option value="Raquídea / Epidural">Raquídea / Epidural</option>
+                            <option value="Local + Sedación">Local + Sedación (MAC)</option>
+                            <option value="Bloqueo Periférico">Bloqueo Nervioso Periférico</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label-his" for="modal-quirofano-select-estado">Estado Inicial</label>
+                        <select id="modal-quirofano-select-estado" class="select-his">
+                            <option value="confirmado">Confirmado</option>
+                            <option value="reservado">Reservado (Pendiente)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="label-his" for="modal-quirofano-input-observaciones">Observaciones Quirúrgicas</label>
+                    <textarea id="modal-quirofano-input-observaciones" rows="2" placeholder="Requerimientos de instrumental, patología previa, hemoterapia..." class="input-his"></textarea>
+                </div>
+            </form>
+
+            <div class="bg-slate-50 p-4 border-t border-slate-100 flex justify-end gap-2.5 shrink-0">
+                <button type="button" onclick="cerrarModal('modal-nueva-reserva-quirofano')" class="btn-his-secondary text-xs cursor-pointer">Cancelar</button>
+                <button type="button" onclick="window.guardarReservaQuirofano()" class="btn-his-primary text-xs font-bold bg-teal-800 hover:bg-teal-900 border-teal-700 cursor-pointer">
+                    Confirmar Cirugía
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================================================================== -->
+    <!-- MODAL DETALLE DE RESERVA DE QUIRÓFANO -->
+    <!-- ====================================================================== -->
+    <div id="modal-detalle-quirofano" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="card-his bg-white max-w-lg w-full overflow-hidden shadow-2xl p-0 border border-slate-200">
+            <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-4 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold">
+                        Q
+                    </div>
+                    <div>
+                        <h3 id="modal-detalle-q-sala" class="font-bold text-sm text-white">Quirófano</h3>
+                        <p class="text-xs text-slate-300"><span id="modal-detalle-q-fecha">--</span> &bull; <span id="modal-detalle-q-horario" class="font-mono">--</span></p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModal('modal-detalle-quirofano')" class="text-slate-400 hover:text-white p-1 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-3.5 text-xs">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <span class="text-slate-500 font-semibold">Estado actual:</span>
+                    <span id="modal-detalle-q-estado" class="badge-his font-bold uppercase text-xs">--</span>
+                </div>
+
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 space-y-2">
+                    <div>
+                        <span class="text-[10.5px] uppercase font-bold text-slate-400 tracking-wider block">Procedimiento</span>
+                        <p id="modal-detalle-q-procedimiento" class="font-bold text-slate-900 text-sm mt-0.5">--</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/60">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Paciente</span>
+                            <p id="modal-detalle-q-paciente" class="font-semibold text-slate-800 mt-0.5">--</p>
+                        </div>
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Cirujano Responsable</span>
+                            <p id="modal-detalle-q-cirujano" class="font-semibold text-slate-800 mt-0.5">--</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/60">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Especialidad</span>
+                            <p id="modal-detalle-q-especialidad" class="text-slate-700 mt-0.5">--</p>
+                        </div>
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Anestesia</span>
+                            <p id="modal-detalle-q-anestesia" class="text-slate-700 mt-0.5">--</p>
+                        </div>
+                    </div>
+                    <div class="pt-2 border-t border-slate-200/60">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Observaciones</span>
+                        <p id="modal-detalle-q-observaciones" class="text-slate-600 italic mt-0.5">--</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción Dinámicos según Rol -->
+            <div class="bg-slate-50 p-4 border-t border-slate-100 flex flex-wrap justify-end gap-2" id="modal-detalle-q-acciones">
+                <!-- Inyectado por quirofanos.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================================================================== -->
+    <!-- MODAL CONFIGURACIÓN DE QUIRÓFANOS (EXCLUSIVO ADMINISTRACIÓN) -->
+    <!-- ====================================================================== -->
+    <div id="modal-config-quirofanos-admin" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+        <div class="card-his bg-white max-w-2xl w-full overflow-hidden shadow-2xl p-0 border border-slate-200 max-h-[90vh] flex flex-col">
+            <div class="bg-slate-900 text-white p-4 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-teal-800 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-white">Salas y Quirófanos Físicos</h3>
+                        <p class="text-xs text-slate-400">Configuración institucional de bloques operatorios</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModal('modal-config-quirofanos-admin')" class="text-slate-400 hover:text-white p-1 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 overflow-y-auto text-xs flex-1">
+                <!-- Formulario Agregar Nuevo Quirófano -->
+                <form id="form-admin-nuevo-quirofano" onsubmit="event.preventDefault(); window.guardarNuevoQuirofanoAdmin();" class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                    <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Agregar Quirófano</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="label-his text-[10.5px]" for="admin-quirofano-nombre">Nombre de la Sala <span class="text-red-500">*</span></label>
+                            <input type="text" id="admin-quirofano-nombre" placeholder="Ej: Quirófano 4 - Urología" class="input-his py-1.5 text-xs" required>
+                        </div>
+                        <div>
+                            <label class="label-his text-[10.5px]" for="admin-quirofano-especialidad">Especialidad Principal</label>
+                            <input type="text" id="admin-quirofano-especialidad" placeholder="Ej: Urología / Laparoscopía" class="input-his py-1.5 text-xs">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="label-his text-[10.5px]" for="admin-quirofano-equipamiento">Equipamiento e Instrumental Destacado</label>
+                        <input type="text" id="admin-quirofano-equipamiento" placeholder="Ej: Torre de endourología, láser Holmium..." class="input-his py-1.5 text-xs">
+                    </div>
+                    <div class="flex justify-end pt-1">
+                        <button type="button" onclick="window.guardarNuevoQuirofanoAdmin()" class="btn-his-primary text-xs font-bold py-1.5 px-4 cursor-pointer">
+                            + Agregar Sala
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Tabla de Quirófanos Activos -->
+                <div>
+                    <h4 class="font-bold text-slate-800 mb-2 text-xs uppercase tracking-wider">Salas Operatorias Activas</h4>
+                    <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-100 text-slate-700 text-[11px] uppercase font-bold border-b border-slate-200">
+                                <tr>
+                                    <th class="py-2 px-3">Quirófano</th>
+                                    <th class="py-2 px-3">Especialidad</th>
+                                    <th class="py-2 px-3">Equipamiento</th>
+                                    <th class="py-2 px-3 text-center">Estado</th>
+                                    <th class="py-2 px-3 text-right">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-admin-quirofanos-body">
+                                <tr><td colspan="5" class="text-center py-4 text-slate-400">Cargando salas...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-3.5 border-t border-slate-200 flex justify-between items-center shrink-0">
+                <button type="button" onclick="window.sembrarQuirofanosInicialConConfirmacion()" class="btn-his-secondary text-xs text-teal-700 border-teal-300 hover:bg-teal-50">
+                    📋 Cargar Estructura de Ejemplo
+                </button>
+                <button type="button" onclick="cerrarModal('modal-config-quirofanos-admin')" class="btn-his-secondary text-xs">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Calendario Hospitalario Schestakow (Componente Multi-Panel) -->
     <script type="module" src="js/calendario.js"></script>
 
@@ -2286,6 +3032,12 @@
     <script type="module" src="js/interconsultas.js"></script>
 
     <!-- Script Orquestador del Panel Institucional -->
+    <!-- Módulo de Internación y Ocupación de Camas -->
+    <script type="module" src="js/internacion.js"></script>
+
+    <!-- Módulo de Disponibilidad de Quirófanos -->
+    <script type="module" src="js/quirofanos.js"></script>
+
     <script type="module" src="js/panel.js"></script>
 
 </body>

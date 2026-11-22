@@ -1312,6 +1312,7 @@ export async function guardarProximaConsultaMedico() {
                     medicoUid: medUid,
                     fecha: fecha,
                     horario: horario,
+                    turnoId: turnoRef.id,
                     creadoEn: serverTimestamp()
                 });
             }
