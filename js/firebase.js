@@ -36,6 +36,10 @@ import {
     getFunctions,
     httpsCallable
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+import {
+    initializeAppCheck,
+    ReCaptchaV3Provider
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAghXQKrYy6EJGD5IqEdO4c_E-ntozUmz8",
@@ -50,6 +54,31 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const functionsInstancia = getFunctions(app);
+
+// ==========================================
+// FIREBASE APP CHECK (reCAPTCHA v3 Anti-Bot)
+// ==========================================
+export let appCheck = null;
+
+if (typeof window !== "undefined") {
+    try {
+        const siteKey = window.RECAPTCHA_SITE_KEY || "";
+        const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        
+        if (isLocalhost) {
+            self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+        }
+
+        if (siteKey) {
+            appCheck = initializeAppCheck(app, {
+                provider: new ReCaptchaV3Provider(siteKey),
+                isTokenAutoRefreshEnabled: true
+            });
+        }
+    } catch (e) {
+        console.warn("Aviso App Check:", e.message || e);
+    }
+}
 
 /**
  * Crea una cuenta en Firebase Authentication utilizando una instancia secundaria

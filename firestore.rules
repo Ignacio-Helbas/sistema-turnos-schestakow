@@ -2,9 +2,192 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ==========================================
-    // FUNCIONES AUXILIARES DE AUTORIZACIÓN
-    // ==========================================
+    // ===============================================================
+    // Assumed Data Model & Architecture (Hospital Teodoro J. Schestakow)
+    // ===============================================================
+    //
+    // Collection: usuarios/{uid}
+    // Document ID: UID de autenticación Firebase Auth
+    // Fields:
+    //   - nombre: string (1-100 caracteres)
+    //   - email: string (1-100 caracteres)
+    //   - rol: string ('Administración', 'Recepción', 'Recepcionista', 'Médico', 'Medico')
+    //   - activo: bool
+    //   - especialidad: string (opcional, 1-100 caracteres)
+    //
+    // Collection: medicos_publicos/{medicoUid}
+    // Document ID: UID público del médico
+    // Fields:
+    //   - nombre: string (1-100 caracteres)
+    //   - especialidad: string (1-100 caracteres)
+    //   - consultorio: string (opcional)
+    //   - activo: bool
+    //
+    // Collection: turnos/{turnoId}
+    // Document ID: Código alfanumérico Base62 (8 a 64 caracteres)
+    // Fields:
+    //   - especialidad: string (1-100 caracteres)
+    //   - medico: string (1-100 caracteres)
+    //   - medicoUid: string (1-128 caracteres)
+    //   - fecha: string ISO (YYYY-MM-DD)
+    //   - horario: string (HH:mm) o 'Pendiente' / 'Por Paciente'
+    //   - pacienteNombre: string (2-100 caracteres)
+    //   - pacienteDni: string (6-10 dígitos numéricos)
+    //   - pacienteCelular: string (6-25 caracteres)
+    //   - pacienteEmail: string (opcional, <= 100 caracteres)
+    //   - pacienteCobertura: string (opcional, <= 100 caracteres)
+    //   - pacienteFechaNacimiento: string (opcional, formato YYYY-MM-DD)
+    //   - consentimientoLey25326: bool (opcional, protección de datos personales)
+    //   - consentimientoLey26529: bool (opcional, derechos del paciente)
+    //   - codigoConfirmacion: string (6-64 caracteres)
+    //   - canal: string ('Web', 'Presencial', 'Telefónico', 'Consultorio', 'Seguimiento', 'Médico')
+    //   - estado: string ('Confirmado', 'Confirmado Presencial', 'Pendiente de Horario', 'En Espera', 'Atendido', 'En Consultorio', 'Ausente', 'Cancelado', 'Cancelado por Paciente')
+    //   - creadoEn: timestamp (inmutable tras creación)
+    //   - creadoPor: string UID o null (inmutable tras creación)
+    //   - llegadaEn: timestamp o null
+    //   - inicioConsultaEn: timestamp o null
+    //   - finConsultaEn: timestamp o null
+    //   - atendidoEn: timestamp o null
+    //   - canceladoPor: string ('paciente', 'recepcion', 'medico') o null
+    //   - canceladoEn: timestamp o null
+    //   - reprogramadoDe: string o null
+    //   - pacienteId: string (opcional)
+    //
+    // Collection: disponibilidad/{slotId}
+    // Document ID: Determinista ({medicoUid}_{fecha}_{horarioSinDosPuntos})
+    // Fields:
+    //   - medicoUid: string (1-128 caracteres)
+    //   - fecha: string ISO (YYYY-MM-DD)
+    //   - horario: string (HH:mm)
+    //   - creadoEn: timestamp
+    //   - turnoId: string (opcional, 8-64 caracteres alfanumérico)
+    //
+    // Collection: pacientes/{pacienteId}
+    // Document ID: Identificador único del paciente
+    // Fields:
+    //   - dni: string (6-10 dígitos)
+    //   - nombre: string (1-100 caracteres)
+    //   - apellido: string (1-100 caracteres)
+    //   - fechaNacimiento: string (opcional, YYYY-MM-DD)
+    //   - sexo: string (opcional, <= 20 caracteres)
+    //   - contacto: string (opcional, <= 50 caracteres)
+    //   - cobertura: string (opcional, <= 100 caracteres)
+    //   - creadoEn: timestamp
+    //   - creadoPor: string UID
+    //   - actualizadoEn: timestamp (opcional)
+    //
+    // Subcollection: pacientes/{pacienteId}/consultas/{consultaId} (INMUTABLE)
+    // Fields:
+    //   - turnoId: string (1-128 caracteres)
+    //   - medicoUid: string (UID del médico autenticado)
+    //   - medicoNombre: string (1-100 caracteres)
+    //   - fecha: timestamp
+    //   - motivo: string (1-1000 caracteres)
+    //   - evolucion: string (1-10000 caracteres)
+    //   - indicaciones: string (opcional, <= 5000 caracteres)
+    //   - diagnostico: string (opcional, <= 500 caracteres)
+    //   - diagnosticoCodigo: string (opcional, <= 20 caracteres)
+    //   - signosVitales: map (opcional)
+    //   - corrige: string o null
+    //
+    // Subcollection: pacientes/{pacienteId}/acceso/{medicoUid}
+    // Fields:
+    //   - medicoUid: string (UID del médico)
+    //   - turnoId: string (opcional)
+    //   - motivoEmergencia: string (opcional, >= 10 caracteres)
+    //   - concedidoEn: timestamp (opcional)
+    //
+    // Collection: auditoria/{auditId} (APPEND-ONLY)
+    // Fields:
+    //   - actorUid: string (UID del usuario staff autenticado)
+    //   - actorRol: string (<= 50 caracteres)
+    //   - accion: string (1-100 caracteres)
+    //   - pacienteId: string (opcional, <= 128 caracteres)
+    //   - consultaId: string (opcional, <= 128 caracteres)
+    //   - interconsultaId: string (opcional, <= 128 caracteres)
+    //   - fecha: timestamp
+    //   - detalle: string (opcional, <= 2000 caracteres)
+    //
+    // Collection: interconsultas/{interconsultaId}
+    // Fields:
+    //   - idTurno, codigoTurno, asunto, motivo, especialidadDestino, prioridad, estado, creadaPor, participantes, lecturas, creadaEn, actualizadaEn
+    // Subcollection: interconsultas/{interconsultaId}/mensajes/{mensajeId} (INMUTABLE)
+    //
+    // Collection: camas/{camaId}
+    // Fields:
+    //   - piso: number
+    //   - habitacion: string (1-20 caracteres)
+    //   - numeroCama: string (1-30 caracteres)
+    //   - sector: string (1-100 caracteres)
+    //   - tipo: string (1-50 caracteres)
+    //   - estado: string ('libre', 'ocupada', 'mantenimiento')
+    //   - activo: bool
+    //   - pacienteNombre: string o null (opcional, <= 100 caracteres)
+    //   - pacienteDni: string o null (opcional, 6-10 dígitos)
+    //   - medicoTratante: string o null (opcional, <= 100 caracteres)
+    //   - fechaIngreso: string o timestamp o null (opcional)
+    //   - internacionId: string o null (opcional, <= 64 caracteres)
+    //   - creadoEn: timestamp
+    //   - actualizadoEn: timestamp
+    //
+    // Collection: historial_internaciones/{historialId} (INMUTABLE TRAS ALTA)
+    // Fields:
+    //   - camaId: string (1-64 caracteres)
+    //   - piso: number
+    //   - habitacion: string (1-20 caracteres)
+    //   - numeroCama: string (1-30 caracteres)
+    //   - sector: string (1-100 caracteres)
+    //   - pacienteNombre: string (1-100 caracteres)
+    //   - pacienteDni: string (6-10 dígitos)
+    //   - pacienteCobertura: string o null (opcional, <= 100 caracteres)
+    //   - medicoTratante: string (1-100 caracteres)
+    //   - diagnosticoIngreso: string o null (opcional, <= 500 caracteres)
+    //   - fechaIngreso: string o timestamp
+    //   - fechaAlta: string o timestamp o null
+    //   - altaPor: string o null (UID del personal)
+    //   - motivoAlta: string o null (opcional, <= 200 caracteres)
+    //   - observacionesAlta: string o null (opcional, <= 1000 caracteres)
+    //   - estado: string ('activa', 'alta')
+    //   - creadoEn: timestamp
+    //   - actualizadoEn: timestamp (opcional)
+    //
+    // Collection: quirofanos/{quirofanoId}
+    // Fields:
+    //   - nombre: string (1-100 caracteres)
+    //   - especialidadPrincipal: string o null (opcional, <= 100 caracteres)
+    //   - equipamiento: string o null (opcional, <= 500 caracteres)
+    //   - activo: bool
+    //   - orden: number o null (opcional)
+    //   - creadoEn: timestamp (opcional)
+    //   - desactivadoEn: timestamp o null (opcional)
+    //
+    // Collection: reservas_quirofano/{reservaId}
+    // Fields:
+    //   - quirofanoId: string (1-64 caracteres)
+    //   - quirofanoNombre: string (1-100 caracteres)
+    //   - fecha: string ISO (YYYY-MM-DD)
+    //   - horaInicio: string (HH:mm)
+    //   - horaFin: string (HH:mm)
+    //   - duracionMinutos: number (> 0)
+    //   - pacienteNombre: string (1-100 caracteres)
+    //   - pacienteDni: string (6-10 dígitos)
+    //   - cirujanoNombre: string (1-100 caracteres)
+    //   - cirujanoUid: string o null (opcional, <= 128 caracteres)
+    //   - especialidad: string (opcional, <= 100 caracteres)
+    //   - procedimiento: string (1-200 caracteres)
+    //   - tipoAnestesia: string (opcional, <= 50 caracteres)
+    //   - observaciones: string o null (opcional, <= 1000 caracteres)
+    //   - estado: string ('reservado', 'confirmado', 'en_curso', 'finalizado', 'cancelado')
+    //   - creadoPor: map { uid, nombre, rol, email }
+    //   - creadoEn: timestamp
+    //   - actualizadoEn: timestamp
+    //
+    // ===============================================================
+
+    // =========================================================================
+    // FUNCIONES AUXILIARES DE AUTORIZACIÓN (RBAC HÍBRIDO + CUSTOM CLAIMS)
+    // =========================================================================
+
     function isSignedIn() {
       return request.auth != null;
     }
@@ -13,29 +196,228 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.get(['firebase', 'sign_in_provider'], 'password') != 'anonymous';
     }
 
-    function getUserRol() {
-      return request.auth.token.get('rol', 
-        exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) ?
-          get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get('rol', '') : ''
+    // 1. Obtiene los datos del documento de usuario en Firestore ÚNICAMENTE si faltan claims en el token
+    function getUserData() {
+      let hasTokenClaims = isSignedIn()
+                        && request.auth.token.get('rol', null) != null 
+                        && request.auth.token.get('permisosAdicionales', null) != null;
+      return !isSignedIn() ? {} : (
+        hasTokenClaims ? {} : (
+          exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) ?
+            get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data : {}
+        )
       );
     }
 
+    // 2. Extracción de Rol: prefiere claim del token, fallback a Firestore
+    function getUserRol(userDoc) {
+      let tokenRol = isSignedIn() ? request.auth.token.get('rol', null) : null;
+      return tokenRol != null ? tokenRol : userDoc.get('rol', '');
+    }
+
+    // 3. Extracción de Permisos Adicionales: prefiere claim del token, fallback a Firestore
+    function hasPermisoAdicional(userDoc, permiso) {
+      let tokenPermisos = isSignedIn() ? request.auth.token.get('permisosAdicionales', null) : null;
+      return tokenPermisos != null
+        ? permiso in tokenPermisos
+        : permiso in userDoc.get('permisosAdicionales', []);
+    }
+
+    // =========================================================================
+    // EVALUADORES DE ROL BASE CON CACHÉ userDoc (PUNTO 2: SIN ADMIN ADENTRO)
+    // =========================================================================
+    function isSuperAdminDoc(userDoc) {
+      return isStaff() && getUserRol(userDoc) == 'Administración';
+    }
+
+    function isRecepcionDoc(userDoc) {
+      let rol = getUserRol(userDoc);
+      return isStaff() && (
+        rol in ['Recepción', 'Recepcionista', 'Administrativo', 'Administración']
+      );
+    }
+
+    function isMedicoDoc(userDoc) {
+      let rol = getUserRol(userDoc);
+      return isStaff() && rol in ['Médico', 'medico', 'Medico'];
+    }
+
+    function isEnfermeriaDoc(userDoc) {
+      let rol = getUserRol(userDoc);
+      return isStaff() && rol in ['Enfermería', 'Enfermeria', 'Enfermero', 'Enfermera'];
+    }
+
+    // =========================================================================
+    // WRAPPERS RETROCOMPATIBLES (0 ARGUMENTOS)
+    // =========================================================================
     function isSuperAdmin() {
-      return isStaff() && getUserRol() == 'Administración';
+      return isSuperAdminDoc(getUserData());
     }
 
     function isRecepcion() {
-      return isStaff() && (
-        getUserRol() in ['Recepción', 'Recepcionista', 'Administrativo', 'Administración']
-      );
+      return isRecepcionDoc(getUserData());
     }
 
     function isMedico() {
-      return isStaff() && getUserRol() in ['Médico', 'medico', 'Medico'];
+      return isMedicoDoc(getUserData());
+    }
+
+    function isEnfermeria() {
+      return isEnfermeriaDoc(getUserData());
     }
 
     function hasPacienteAcceso(pacienteId) {
       return exists(/databases/$(database)/documents/pacientes/$(pacienteId)/acceso/$(request.auth.uid));
+    }
+
+    // =========================================================================
+    // FUNCIONES AUXILIARES NOMBRADAS POR MÓDULO (PUNTO 1: LET DENTRO DE FUNCIÓN)
+    // =========================================================================
+    function puedeLeerPaciente() {
+      let userDoc = getUserData();
+      return isStaff() && (
+        isSuperAdminDoc(userDoc) || isRecepcionDoc(userDoc) || isMedicoDoc(userDoc) || isEnfermeriaDoc(userDoc)
+      );
+    }
+
+    function puedeEscribirPaciente() {
+      let userDoc = getUserData();
+      return isStaff()
+        && (isSuperAdminDoc(userDoc) || isRecepcionDoc(userDoc) || isMedicoDoc(userDoc))
+        && isValidPaciente();
+    }
+
+    function puedeLeerResumenClinico(pacienteId) {
+      let userDoc = getUserData();
+      return isStaff() && (
+        isSuperAdminDoc(userDoc)
+        || isEnfermeriaDoc(userDoc)
+        || (isMedicoDoc(userDoc) && hasPacienteAcceso(pacienteId))
+      );
+    }
+
+    function puedeLeerCama() {
+      let userDoc = getUserData();
+      return isStaff() && (
+        isSuperAdminDoc(userDoc) || isRecepcionDoc(userDoc) || isMedicoDoc(userDoc) || isEnfermeriaDoc(userDoc)
+      );
+    }
+
+    function puedeActualizarCama() {
+      let userDoc = getUserData();
+      let diff = request.resource.data.diff(resource.data);
+      return isStaff()
+        && isValidCama(request.resource.data)
+        && (!('creadoEn' in resource.data) || request.resource.data.creadoEn == resource.data.creadoEn)
+        && (
+          isSuperAdminDoc(userDoc)
+          || (
+            (isRecepcionDoc(userDoc) || isEnfermeriaDoc(userDoc) || (isMedicoDoc(userDoc) && hasPermisoAdicional(userDoc, 'internacion')))
+            && (request.resource.data.estado != 'ocupada' || resource.data.estado == 'libre')
+            && diff.affectedKeys().hasOnly([
+              'pacienteNombre', 'pacienteDni', 'medicoTratante',
+              'fechaIngreso', 'internacionId', 'estado', 'actualizadoEn'
+            ])
+          )
+        );
+    }
+
+    function puedeLeerHistorialInternacion() {
+      let userDoc = getUserData();
+      return isStaff() && (
+        isSuperAdminDoc(userDoc) || isRecepcionDoc(userDoc) || isMedicoDoc(userDoc) || isEnfermeriaDoc(userDoc)
+      );
+    }
+
+    function puedeCrearHistorialInternacion() {
+      let userDoc = getUserData();
+      return isStaff()
+        && (
+          isSuperAdminDoc(userDoc)
+          || isRecepcionDoc(userDoc)
+          || isEnfermeriaDoc(userDoc)
+          || (isMedicoDoc(userDoc) && hasPermisoAdicional(userDoc, 'internacion'))
+        )
+        && isValidHistorialInternacion(request.resource.data)
+        && request.resource.data.estado == 'activa';
+    }
+
+    function puedeActualizarHistorialInternacion() {
+      let userDoc = getUserData();
+      let diff = request.resource.data.diff(resource.data);
+      return isStaff()
+        && (
+          isSuperAdminDoc(userDoc)
+          || isRecepcionDoc(userDoc)
+          || isEnfermeriaDoc(userDoc)
+          || (isMedicoDoc(userDoc) && hasPermisoAdicional(userDoc, 'internacion'))
+        )
+        && isValidHistorialInternacion(request.resource.data)
+        && request.resource.data.camaId == resource.data.camaId
+        && request.resource.data.fechaIngreso == resource.data.fechaIngreso
+        && request.resource.data.pacienteDni == resource.data.pacienteDni
+        && (!('creadoEn' in resource.data) || request.resource.data.creadoEn == resource.data.creadoEn)
+        && resource.data.estado == 'activa'
+        && (
+          (
+            request.resource.data.estado == 'activa'
+            && diff.affectedKeys().hasOnly([
+              'medicoTratante', 'diagnosticoIngreso', 'pacienteCobertura',
+              'observacionesAlta', 'actualizadoEn'
+            ])
+          )
+          || (
+            request.resource.data.estado == 'alta'
+            && diff.affectedKeys().hasOnly([
+              'fechaAlta', 'altaPor', 'motivoAlta',
+              'observacionesAlta', 'estado', 'actualizadoEn'
+            ])
+          )
+        );
+    }
+
+    function puedeLeerQuirofano() {
+      let userDoc = getUserData();
+      return isStaff() && (
+        isSuperAdminDoc(userDoc) || isRecepcionDoc(userDoc) || isMedicoDoc(userDoc) || isEnfermeriaDoc(userDoc)
+      );
+    }
+
+    function puedeLeerReservaQuirofano() {
+      let userDoc = getUserData();
+      return isStaff() && (
+        isSuperAdminDoc(userDoc) || isRecepcionDoc(userDoc) || isMedicoDoc(userDoc) || isEnfermeriaDoc(userDoc)
+      );
+    }
+
+    // Punto 4: Restricción estricta de diff.affectedKeys().hasOnly() en transiciones de estado
+    function puedeActualizarReservaQuirofano() {
+      let userDoc = getUserData();
+      let diff = request.resource.data.diff(resource.data);
+      let esAdmin = isSuperAdminDoc(userDoc);
+      let esRecepcion = isRecepcionDoc(userDoc);
+      let esMedico = isMedicoDoc(userDoc);
+      let esEnfermeria = isEnfermeriaDoc(userDoc);
+      return isStaff()
+        && isValidReservaQuirofano(request.resource.data)
+        && (
+          (
+            (esAdmin || esRecepcion || ((esMedico || esEnfermeria) && hasPermisoAdicional(userDoc, 'coordinaQuirofano')) || (esMedico && hasPermisoAdicional(userDoc, 'anestesia')))
+            && request.resource.data.estado in ['confirmado', 'en_curso', 'finalizado', 'cancelado']
+            && diff.affectedKeys().hasOnly(['estado', 'actualizadoEn', 'observaciones'])
+          )
+          || (
+            esEnfermeria && hasPermisoAdicional(userDoc, 'instrumentacion')
+            && request.resource.data.estado in ['en_curso', 'finalizado']
+            && diff.affectedKeys().hasOnly(['estado', 'actualizadoEn'])
+          )
+          || (
+            esMedico
+            && resource.data.creadoPor.uid == request.auth.uid
+            && request.resource.data.estado == 'cancelado'
+            && diff.affectedKeys().hasOnly(['estado', 'actualizadoEn'])
+          )
+        );
     }
 
     // ==========================================
@@ -115,10 +497,21 @@ service cloud.firestore {
         && data.pacienteNombre is string && data.pacienteNombre.size() >= 2 && data.pacienteNombre.size() <= 100
         && data.pacienteDni is string && data.pacienteDni.matches('^[0-9]{6,10}$')
         && data.pacienteCelular is string && data.pacienteCelular.size() >= 6 && data.pacienteCelular.size() <= 25
+        && (!('pacienteEmail' in data) || (data.pacienteEmail is string && data.pacienteEmail.size() <= 100))
+        && (!('pacienteCobertura' in data) || (data.pacienteCobertura is string && data.pacienteCobertura.size() <= 100))
+        && (!('pacienteFechaNacimiento' in data) || (data.pacienteFechaNacimiento is string && (data.pacienteFechaNacimiento.size() == 0 || data.pacienteFechaNacimiento.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))))
+        && (!('consentimientoLey25326' in data) || data.consentimientoLey25326 is bool)
+        && (!('consentimientoLey26529' in data) || data.consentimientoLey26529 is bool)
+        && (!('codigoConfirmacion' in data) || (data.codigoConfirmacion is string && data.codigoConfirmacion.size() <= 64))
         && data.canal in ['Presencial', 'Telefónico', 'Web', 'Consultorio', 'Seguimiento', 'Médico']
         && (
           data.estado in ['Confirmado', 'Confirmado Presencial', 'Pendiente de Horario']
           || (isSuperAdmin() && data.estado in ['En Espera', 'Atendido', 'En Consultorio', 'Ausente', 'Cancelado', 'Cancelado por Paciente'])
+        )
+        && (!('creadoPor' in data) || data.creadoPor == null || (data.creadoPor is string && data.creadoPor == request.auth.uid) || isSuperAdmin())
+        && (
+          ('creadoEn' in data && (data.creadoEn == request.time || data.creadoEn is timestamp)) ||
+          ('timestamp' in data && (data.timestamp == request.time || data.timestamp is timestamp))
         );
     }
 
@@ -126,13 +519,13 @@ service cloud.firestore {
       allow get: if isSuperAdmin()
         || isRecepcion()
         || (isMedico() && resource.data.medicoUid == request.auth.uid)
-        || (!isSignedIn() && turnoId.size() >= 8);
+        || (!isSignedIn() && turnoId.size() >= 8 && turnoId.matches('^[a-zA-Z0-9]{8,64}$'));
 
       allow list: if isSuperAdmin()
         || isRecepcion()
         || (isMedico() && resource.data.medicoUid == request.auth.uid);
 
-      allow create: if (turnoId.size() >= 8 && isValidTurnoCreate())
+      allow create: if (turnoId.size() >= 8 && turnoId.matches('^[a-zA-Z0-9]{8,64}$') && isValidTurnoCreate())
         || isValidTurnoStaffCreate();
 
       // En turnos solo se gestionan estados operativos y vinculación a pacienteId.
@@ -159,6 +552,7 @@ service cloud.firestore {
           || (
             !isSignedIn()
             && turnoId.size() >= 8
+            && turnoId.matches('^[a-zA-Z0-9]{8,64}$')
             && resource.data.estado == 'Pendiente de Horario'
             && request.resource.data.estado == 'Confirmado'
             && request.resource.data.horario.matches('^[0-9]{2}:[0-9]{2}$')
@@ -167,6 +561,7 @@ service cloud.firestore {
           || (
             !isSignedIn()
             && turnoId.size() >= 8
+            && turnoId.matches('^[a-zA-Z0-9]{8,64}$')
             && resource.data.estado in ['Confirmado', 'Pendiente de Horario']
             && request.resource.data.estado == 'Cancelado por Paciente'
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'canceladoEn', 'canceladoPor'])
@@ -179,50 +574,76 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // REGLAS: DISPONIBILIDAD
+    // REGLAS: DISPONIBILIDAD (Zero-Collision & Agenda)
     // ==========================================
-    // [LIMITACIÓN CONOCIDA DE PROTOTIPO DEMO]: Se permite el borrado no autenticado de /disponibilidad/{slotId}
-    // para permitir que el paciente libere el horario al cancelar su turno en el navegador sin backend.
-    // En un despliegue de producción hospitalaria, la liberación de agenda debe realizarse exclusivamente
-    // mediante una Cloud Function con Firebase Admin SDK o una transacción con getAfter() atada a la cancelación.
+    // VULN-01 Resuelta: Eliminado definitivamente el borrado permisivo no autenticado.
+    // La eliminación anónima solo se autoriza si se ejecuta en el mismo lote atómico (batch)
+    // que la cancelación legítima del turno correspondiente (verificado mediante getAfter).
+    function isValidDisponibilidadCreate() {
+      let data = request.resource.data;
+      let allowedKeys = ['medicoUid', 'fecha', 'horario', 'creadoEn', 'turnoId'];
+      return data.keys().hasOnly(allowedKeys)
+        && data.medicoUid is string && data.medicoUid.size() > 0 && data.medicoUid.size() <= 128
+        && data.fecha is string && data.fecha.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.horario is string && data.horario.matches('^[0-9]{2}:[0-9]{2}$')
+        && (data.creadoEn == request.time || data.creadoEn is timestamp)
+        && (!('turnoId' in data) || (data.turnoId is string && data.turnoId.size() >= 8 && data.turnoId.size() <= 64));
+    }
+
+    function isSlotLiberablePorPaciente() {
+      return !isSignedIn()
+        && 'turnoId' in resource.data
+        && resource.data.turnoId is string
+        && resource.data.turnoId.size() >= 8
+        && existsAfter(/databases/$(database)/documents/turnos/$(resource.data.turnoId))
+        && getAfter(/databases/$(database)/documents/turnos/$(resource.data.turnoId)).data.estado == 'Cancelado por Paciente'
+        && getAfter(/databases/$(database)/documents/turnos/$(resource.data.turnoId)).data.canceladoPor == 'paciente'
+        && getAfter(/databases/$(database)/documents/turnos/$(resource.data.turnoId)).data.canceladoEn == request.time;
+    }
+
     match /disponibilidad/{slotId} {
       allow read: if true;
       allow create: if !exists(/databases/$(database)/documents/disponibilidad/$(slotId))
-        && request.resource.data.keys().hasOnly(['medicoUid', 'fecha', 'horario', 'creadoEn'])
-        && request.resource.data.creadoEn == request.time;
-      allow delete: if isSuperAdmin() || isRecepcion()
-        || (!isSignedIn() && request.time != null);
+        && isValidDisponibilidadCreate();
+      allow delete: if isSuperAdmin()
+        || isRecepcion()
+        || isSlotLiberablePorPaciente();
+      allow update: if false;
     }
 
     // ==========================================
     // REGLAS: HISTORIA CLÍNICA (MODELO SEGURO E INMUTABLE)
     // ==========================================
 
+    function isValidPaciente() {
+      let data = request.resource.data;
+      let allowedKeys = [
+        'dni', 'nombre', 'apellido', 'fechaNacimiento', 'sexo',
+        'contacto', 'cobertura', 'creadoEn', 'creadoPor', 'esDemo', 'actualizadoEn'
+      ];
+      return data.keys().hasOnly(allowedKeys)
+        && data.dni is string && data.dni.matches('^[0-9]{6,10}$')
+        && data.nombre is string && data.nombre.size() > 0 && data.nombre.size() <= 100
+        && data.apellido is string && data.apellido.size() > 0 && data.apellido.size() <= 100
+        && (!('fechaNacimiento' in data) || (data.fechaNacimiento is string && (data.fechaNacimiento.size() == 0 || data.fechaNacimiento.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))))
+        && (!('sexo' in data) || (data.sexo is string && data.sexo.size() <= 20))
+        && (!('contacto' in data) || (data.contacto is string && data.contacto.size() <= 50))
+        && (!('cobertura' in data) || (data.cobertura is string && data.cobertura.size() <= 100));
+    }
+
     // 1. Pacientes (Solo datos demográficos)
     match /pacientes/{pacienteId} {
-      // Recepción y médicos leen datos demográficos
-      allow read: if isRecepcion() || isMedico() || isSuperAdmin();
+      // Recepción, médicos, enfermería y administración leen datos demográficos
+      allow read: if puedeLeerPaciente();
       
       // Creación y edición demográfica por staff
-      allow create, update: if (isRecepcion() || isMedico() || isSuperAdmin())
-        && request.resource.data.keys().hasOnly([
-          'dni', 'nombre', 'apellido', 'fechaNacimiento', 'sexo',
-          'contacto', 'cobertura', 'creadoEn', 'creadoPor', 'esDemo', 'actualizadoEn'
-        ])
-        && request.resource.data.dni is string
-        && request.resource.data.dni.matches('^[0-9]{6,10}$')
-        && request.resource.data.nombre is string
-        && request.resource.data.nombre.size() > 0
-        && request.resource.data.apellido is string
-        && request.resource.data.apellido.size() > 0
-        && (!('cobertura' in request.resource.data) || (request.resource.data.cobertura is string && request.resource.data.cobertura.size() <= 100));
+      allow create, update: if puedeEscribirPaciente();
 
       allow delete: if isSuperAdmin();
 
-      // 2. Resumen clínico (Alergias, antecedentes, medicación)
+      // 2. Resumen clínico (Alergias, antecedentes, medicación) - Enfermería SÍ lee
       match /clinico/{docId} {
-        // Solo médicos con acceso o administración
-        allow read: if isSuperAdmin() || (isMedico() && hasPacienteAcceso(pacienteId));
+        allow read: if puedeLeerResumenClinico(pacienteId);
         allow write: if isSuperAdmin() || (isMedico() && hasPacienteAcceso(pacienteId));
       }
 
@@ -240,10 +661,16 @@ service cloud.firestore {
             'motivo', 'evolucion', 'indicaciones', 'diagnostico',
             'diagnosticoCodigo', 'signosVitales', 'corrige'
           ])
-          && request.resource.data.motivo is string && request.resource.data.motivo.size() <= 1000
-          && request.resource.data.evolucion is string && request.resource.data.evolucion.size() <= 10000
-          && request.resource.data.indicaciones is string && request.resource.data.indicaciones.size() <= 5000
-          && request.resource.data.fecha == request.time
+          && request.resource.data.turnoId is string && request.resource.data.turnoId.size() > 0 && request.resource.data.turnoId.size() <= 128
+          && request.resource.data.medicoNombre is string && request.resource.data.medicoNombre.size() > 0 && request.resource.data.medicoNombre.size() <= 100
+          && request.resource.data.motivo is string && request.resource.data.motivo.size() >= 1 && request.resource.data.motivo.size() <= 1000
+          && request.resource.data.evolucion is string && request.resource.data.evolucion.size() >= 1 && request.resource.data.evolucion.size() <= 10000
+          && (!('indicaciones' in request.resource.data) || (request.resource.data.indicaciones is string && request.resource.data.indicaciones.size() <= 5000))
+          && (!('diagnostico' in request.resource.data) || (request.resource.data.diagnostico is string && request.resource.data.diagnostico.size() <= 500))
+          && (!('diagnosticoCodigo' in request.resource.data) || (request.resource.data.diagnosticoCodigo is string && request.resource.data.diagnosticoCodigo.size() <= 20))
+          && (!('signosVitales' in request.resource.data) || request.resource.data.signosVitales is map)
+          && (!('corrige' in request.resource.data) || request.resource.data.corrige == null || request.resource.data.corrige is string)
+          && (request.resource.data.fecha == request.time || request.resource.data.fecha is timestamp)
         );
 
         // INMUTABILIDAD: Nunca se pueden editar ni borrar consultas
@@ -276,7 +703,10 @@ service cloud.firestore {
       allow read: if isRecepcion() || isMedico() || isSuperAdmin();
       allow create: if (isRecepcion() || isMedico() || isSuperAdmin())
         && !exists(/databases/$(database)/documents/pacientes_por_dni/$(dni))
-        && request.resource.data.keys().hasOnly(['pacienteId', 'dni', 'creadoEn']);
+        && request.resource.data.keys().hasOnly(['pacienteId', 'dni', 'creadoEn'])
+        && request.resource.data.dni == dni
+        && request.resource.data.pacienteId is string
+        && (request.resource.data.creadoEn == request.time || request.resource.data.creadoEn is timestamp);
       allow update: if isSuperAdmin();
       allow delete: if isSuperAdmin();
     }
@@ -288,11 +718,17 @@ service cloud.firestore {
       allow read: if isSuperAdmin();
       allow create: if (isRecepcion() || isMedico() || isSuperAdmin())
         && request.resource.data.actorUid == request.auth.uid
-        && request.resource.data.fecha == request.time
+        && (request.resource.data.fecha == request.time || request.resource.data.fecha is timestamp)
         && request.resource.data.keys().hasOnly([
           'actorUid', 'actorRol', 'accion', 'pacienteId',
           'consultaId', 'interconsultaId', 'fecha', 'detalle'
-        ]);
+        ])
+        && request.resource.data.actorRol is string && request.resource.data.actorRol.size() <= 50
+        && request.resource.data.accion is string && request.resource.data.accion.size() >= 1 && request.resource.data.accion.size() <= 100
+        && (!('pacienteId' in request.resource.data) || (request.resource.data.pacienteId is string && request.resource.data.pacienteId.size() <= 128))
+        && (!('consultaId' in request.resource.data) || (request.resource.data.consultaId is string && request.resource.data.consultaId.size() <= 128))
+        && (!('interconsultaId' in request.resource.data) || (request.resource.data.interconsultaId is string && request.resource.data.interconsultaId.size() <= 128))
+        && (!('detalle' in request.resource.data) || (request.resource.data.detalle is string && request.resource.data.detalle.size() <= 2000));
       allow update, delete: if false;
     }
 
@@ -375,6 +811,157 @@ service cloud.firestore {
         // Trazabilidad legal: los mensajes nunca se modifican ni se eliminan
         allow update, delete: if false;
       }
+    }
+
+    // ==========================================
+    // REGLAS: INTERNACIÓN Y OCUPACIÓN DE CAMAS
+    // ==========================================
+    function isValidCama(data) {
+      let allowedKeys = [
+        'piso', 'habitacion', 'numeroCama', 'sector', 'tipo',
+        'estado', 'activo', 'pacienteNombre', 'pacienteDni',
+        'medicoTratante', 'fechaIngreso', 'internacionId',
+        'creadoEn', 'actualizadoEn'
+      ];
+      return data.keys().hasOnly(allowedKeys)
+        && data.piso is number
+        && data.habitacion is string && data.habitacion.size() >= 1 && data.habitacion.size() <= 20
+        && data.numeroCama is string && data.numeroCama.size() >= 1 && data.numeroCama.size() <= 30
+        && data.sector is string && data.sector.size() >= 1 && data.sector.size() <= 100
+        && data.tipo is string && data.tipo.size() >= 1 && data.tipo.size() <= 50
+        && data.estado in ['libre', 'ocupada', 'mantenimiento']
+        && data.activo is bool
+        && (!('pacienteNombre' in data) || data.pacienteNombre == null || (data.pacienteNombre is string && data.pacienteNombre.size() <= 100))
+        && (!('pacienteDni' in data) || data.pacienteDni == null || (data.pacienteDni is string && data.pacienteDni.matches('^[0-9]{6,10}$')))
+        && (!('medicoTratante' in data) || data.medicoTratante == null || (data.medicoTratante is string && data.medicoTratante.size() <= 100))
+        && (!('fechaIngreso' in data) || data.fechaIngreso == null || (data.fechaIngreso is string && data.fechaIngreso.size() <= 50) || data.fechaIngreso is timestamp)
+        && (!('internacionId' in data) || data.internacionId == null || (data.internacionId is string && data.internacionId.size() <= 64))
+        && (!('creadoEn' in data) || data.creadoEn == request.time || data.creadoEn is timestamp)
+        && (!('actualizadoEn' in data) || data.actualizadoEn == request.time || data.actualizadoEn is timestamp);
+    }
+
+    match /camas/{camaId} {
+      // Lectura por personal clínico y administrativo
+      allow read: if puedeLeerCama();
+
+      // Creación exclusiva de camas por SuperAdmin
+      allow create: if isSuperAdmin() && isValidCama(request.resource.data);
+
+      // Modificación operativa (internar paciente, dar de alta paciente, cambiar estado): SuperAdmin o Recepción
+      // Desactivación / cambio del estado 'activo': exclusivo SuperAdmin
+      allow update: if puedeActualizarCama();
+
+      // Eliminación física exclusiva SuperAdmin
+      allow delete: if isSuperAdmin();
+    }
+
+    function isValidHistorialInternacion(data) {
+      let allowedKeys = [
+        'camaId', 'piso', 'habitacion', 'numeroCama', 'sector',
+        'pacienteNombre', 'pacienteDni', 'pacienteCobertura',
+        'medicoTratante', 'diagnosticoIngreso', 'fechaIngreso',
+        'fechaAlta', 'altaPor', 'motivoAlta', 'observacionesAlta',
+        'estado', 'creadoEn', 'actualizadoEn'
+      ];
+      return data.keys().hasOnly(allowedKeys)
+        && data.camaId is string && data.camaId.size() >= 1 && data.camaId.size() <= 64
+        && data.piso is number
+        && data.habitacion is string && data.habitacion.size() >= 1 && data.habitacion.size() <= 20
+        && data.numeroCama is string && data.numeroCama.size() >= 1 && data.numeroCama.size() <= 30
+        && data.sector is string && data.sector.size() >= 1 && data.sector.size() <= 100
+        && data.pacienteNombre is string && data.pacienteNombre.size() >= 1 && data.pacienteNombre.size() <= 100
+        && data.pacienteDni is string && data.pacienteDni.matches('^[0-9]{6,10}$')
+        && (!('pacienteCobertura' in data) || data.pacienteCobertura == null || (data.pacienteCobertura is string && data.pacienteCobertura.size() <= 100))
+        && data.medicoTratante is string && data.medicoTratante.size() >= 1 && data.medicoTratante.size() <= 100
+        && (!('diagnosticoIngreso' in data) || data.diagnosticoIngreso == null || (data.diagnosticoIngreso is string && data.diagnosticoIngreso.size() <= 500))
+        && (data.fechaIngreso is string || data.fechaIngreso is timestamp)
+        && (!('fechaAlta' in data) || data.fechaAlta == null || data.fechaAlta is string || data.fechaAlta is timestamp)
+        && (!('altaPor' in data) || data.altaPor == null || (data.altaPor is string && data.altaPor.size() <= 128))
+        && (!('motivoAlta' in data) || data.motivoAlta == null || (data.motivoAlta is string && data.motivoAlta.size() <= 200))
+        && (!('observacionesAlta' in data) || data.observacionesAlta == null || (data.observacionesAlta is string && data.observacionesAlta.size() <= 1000))
+        && data.estado in ['activa', 'alta']
+        && (data.creadoEn == request.time || data.creadoEn is timestamp)
+        && (!('actualizadoEn' in data) || data.actualizadoEn == request.time || data.actualizadoEn is timestamp);
+    }
+
+    match /historial_internaciones/{historialId} {
+      allow read: if puedeLeerHistorialInternacion();
+      allow create: if puedeCrearHistorialInternacion();
+      allow update: if puedeActualizarHistorialInternacion();
+      allow delete: if false;
+    }
+
+    // ==========================================
+    // REGLAS: QUIRÓFANOS Y CIRUGÍAS PROGRAMADAS
+    // ==========================================
+    function isValidQuirofano(data) {
+      let allowedKeys = [
+        'nombre', 'especialidadPrincipal', 'equipamiento', 'activo',
+        'orden', 'creadoEn', 'desactivadoEn'
+      ];
+      return data.keys().hasOnly(allowedKeys)
+        && data.nombre is string && data.nombre.size() >= 1 && data.nombre.size() <= 100
+        && data.activo is bool
+        && (!('especialidadPrincipal' in data) || data.especialidadPrincipal == null || (data.especialidadPrincipal is string && data.especialidadPrincipal.size() <= 100))
+        && (!('equipamiento' in data) || data.equipamiento == null || (data.equipamiento is string && data.equipamiento.size() <= 500))
+        && (!('orden' in data) || data.orden == null || data.orden is number)
+        && (!('creadoEn' in data) || data.creadoEn == request.time || data.creadoEn is timestamp)
+        && (!('desactivadoEn' in data) || data.desactivadoEn == null || data.desactivadoEn == request.time || data.desactivadoEn is timestamp);
+    }
+
+    match /quirofanos/{quirofanoId} {
+      // Lectura por personal clínico y administrativo
+      allow read: if puedeLeerQuirofano();
+
+      // Escritura (crear, actualizar, eliminar/desactivar) exclusiva de SuperAdmin
+      allow create: if isSuperAdmin() && isValidQuirofano(request.resource.data);
+      allow update: if isSuperAdmin() && isValidQuirofano(request.resource.data)
+        && (!('creadoEn' in resource.data) || request.resource.data.creadoEn == resource.data.creadoEn);
+      allow delete: if isSuperAdmin();
+    }
+
+    function isValidReservaQuirofano(data) {
+      let allowedKeys = [
+        'quirofanoId', 'quirofanoNombre', 'fecha', 'horaInicio', 'horaFin',
+        'duracionMinutos', 'pacienteNombre', 'pacienteDni', 'cirujanoNombre',
+        'cirujanoUid', 'especialidad', 'procedimiento', 'tipoAnestesia',
+        'observaciones', 'estado', 'creadoPor', 'creadoEn', 'actualizadoEn'
+      ];
+      return data.keys().hasOnly(allowedKeys)
+        && data.quirofanoId is string && data.quirofanoId.size() >= 1 && data.quirofanoId.size() <= 64
+        && data.quirofanoNombre is string && data.quirofanoNombre.size() >= 1 && data.quirofanoNombre.size() <= 100
+        && data.fecha is string && data.fecha.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.horaInicio is string && data.horaInicio.matches('^[0-9]{2}:[0-9]{2}$')
+        && data.horaFin is string && data.horaFin.matches('^[0-9]{2}:[0-9]{2}$')
+        && data.duracionMinutos is number && data.duracionMinutos > 0
+        && data.pacienteNombre is string && data.pacienteNombre.size() >= 1 && data.pacienteNombre.size() <= 100
+        && data.pacienteDni is string && data.pacienteDni.matches('^[0-9]{6,10}$')
+        && data.cirujanoNombre is string && data.cirujanoNombre.size() >= 1 && data.cirujanoNombre.size() <= 100
+        && (!('cirujanoUid' in data) || data.cirujanoUid == null || (data.cirujanoUid is string && data.cirujanoUid.size() <= 128))
+        && (!('especialidad' in data) || (data.especialidad is string && data.especialidad.size() <= 100))
+        && data.procedimiento is string && data.procedimiento.size() >= 1 && data.procedimiento.size() <= 200
+        && (!('tipoAnestesia' in data) || (data.tipoAnestesia is string && data.tipoAnestesia.size() <= 50))
+        && (!('observaciones' in data) || (data.observaciones is string && data.observaciones.size() <= 1000))
+        && data.estado in ['reservado', 'confirmado', 'en_curso', 'finalizado', 'cancelado']
+        && data.creadoPor is map
+        && ('uid' in data.creadoPor && data.creadoPor.uid is string)
+        && (data.creadoEn == request.time || data.creadoEn is timestamp)
+        && (!('actualizadoEn' in data) || data.actualizadoEn == request.time || data.actualizadoEn is timestamp);
+    }
+
+    match /reservas_quirofano/{reservaId} {
+      // Lectura por personal clínico y administrativo
+      allow read: if puedeLeerReservaQuirofano();
+
+      // Denegación absoluta de creación directa por cliente (incluso para Administración).
+      // Toda creación debe pasar obligatoriamente por la Cloud Function reservarQuirofano().
+      allow create: if false;
+
+      // Transición operativa de estados con restricción de affectedKeys (Punto 4)
+      allow update: if puedeActualizarReservaQuirofano();
+
+      // Eliminación física exclusiva SuperAdmin
+      allow delete: if isSuperAdmin();
     }
 
     // ==========================================

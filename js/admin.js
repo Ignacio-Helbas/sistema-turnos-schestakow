@@ -21,7 +21,9 @@ import {
     limit,
     startAfter,
     sendPasswordResetEmail,
-    crearCuentaAuthSecundaria
+    crearCuentaAuthSecundaria,
+    functionsInstancia,
+    httpsCallable
 } from "./firebase.js";
 
 import {
@@ -37,7 +39,11 @@ import {
 } from "./ui.js";
 
 import {
-    obtenerSesionActual
+    obtenerSesionActual,
+    esRolAdministracion,
+    esRolRecepcion,
+    esRolMedico,
+    esRolEnfermeria
 } from "./auth.js";
 
 import {
@@ -116,9 +122,25 @@ export async function cargarUsuariosAdmin(direccion = 'init') {
         snap.forEach(d => {
             const u = d.data();
             const id = d.id;
-            let badgeRol = 'badge-his badge-his-pendiente';
+            let badgeRol = 'badge-his badge-his-espera';
             if (u.rol === 'Administración') badgeRol = 'badge-his badge-his-admin';
             else if (u.rol === 'Médico') badgeRol = 'badge-his badge-his-atendido';
+            else if (u.rol === 'Enfermería') badgeRol = 'badge-his badge-his-confirmado bg-teal-100 text-teal-800 border-teal-300';
+
+            const permisos = Array.isArray(u.permisosAdicionales) ? u.permisosAdicionales : [];
+            const permisosLabels = {
+                coordinaQuirofano: { texto: 'Coord. Quirófano', clase: 'bg-blue-50 text-blue-700 border-blue-200' },
+                anestesia: { texto: 'Anestesiología', clase: 'bg-purple-50 text-purple-700 border-purple-200' },
+                instrumentacion: { texto: 'Instrumentación', clase: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                internacion: { texto: 'Internación', clase: 'bg-amber-50 text-amber-700 border-amber-200' }
+            };
+            let chipsPermisos = '';
+            if (permisos.length > 0) {
+                chipsPermisos = '<div class="flex flex-wrap gap-1 mt-1.5">' + permisos.map(p => {
+                    const info = permisosLabels[p] || { texto: p, clase: 'bg-slate-100 text-slate-700 border-slate-200' };
+                    return `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${info.clase}">${info.texto}</span>`;
+                }).join('') + '</div>';
+            }
 
             filas += `
                 <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
@@ -128,7 +150,9 @@ export async function cargarUsuariosAdmin(direccion = 'init') {
                     </td>
                     <td class="p-3">
                         <span class="${badgeRol} text-[11px]">${escaparHTML(u.rol || 'Recepción')}</span>
-                        ${u.matricula ? `<p class="text-[11px] text-slate-500 font-mono mt-1">M.P.: ${escaparHTML(u.matricula)}</p>` : ''}
+                        ${u.especialidad ? `<p class="text-[11px] text-slate-700 font-medium mt-0.5">${escaparHTML(u.especialidad)}</p>` : ''}
+                        ${u.matricula ? `<p class="text-[11px] text-slate-500 font-mono mt-0.5">M.P.: ${escaparHTML(u.matricula)}</p>` : ''}
+                        ${chipsPermisos}
                     </td>
                     <td class="p-3 text-xs text-slate-600">
                         <p class="text-slate-700 text-xs font-semibold">${escaparHTML(u.correo || 'N/A')}</p>
@@ -169,6 +193,10 @@ export function abrirModalUsuarioNulo() {
     const modalTitulo = document.getElementById('modal-usuario-titulo');
     if (modalTitulo) modalTitulo.textContent = 'Registrar Nuevo Usuario';
 
+    ['chk-permiso-coordina-quirofano', 'chk-permiso-anestesia', 'chk-permiso-instrumentacion', 'chk-permiso-internacion'].forEach(idChk => {
+        const el = document.getElementById(idChk);
+        if (el) el.checked = false;
+    });
     toggleCamposMedico();
     abrirModal('modal-usuario');
 }
@@ -181,11 +209,29 @@ export async function editarUsuarioAdmin(id) {
 
         document.getElementById('input-usuario-id').value = id;
         document.getElementById('input-usuario-nombre').value = u.nombre || '';
-        document.getElementById('input-usuario-rol').value = u.rol || 'Administración';
+
+        // Punto 1: normalizar rol legado al valor canónico antes de asignar al select
+        let rolNormalizado = u.rol || 'Recepción';
+        if      (esRolAdministracion(rolNormalizado)) rolNormalizado = 'Administración';
+        else if (esRolMedico(rolNormalizado))         rolNormalizado = 'Médico';
+        else if (esRolEnfermeria(rolNormalizado))     rolNormalizado = 'Enfermería';
+        else if (esRolRecepcion(rolNormalizado))      rolNormalizado = 'Recepción';
+        document.getElementById('input-usuario-rol').value = rolNormalizado;
+
         document.getElementById('input-usuario-tel').value = u.tel || '';
         document.getElementById('input-usuario-correo').value = u.correo || '';
         document.getElementById('input-usuario-matricula').value = u.matricula || '';
         if (u.especialidad) document.getElementById('input-usuario-especialidad').value = u.especialidad;
+
+        const permisos = Array.isArray(u.permisosAdicionales) ? u.permisosAdicionales : [];
+        const chkCoord = document.getElementById('chk-permiso-coordina-quirofano');
+        const chkAnest = document.getElementById('chk-permiso-anestesia');
+        const chkInst = document.getElementById('chk-permiso-instrumentacion');
+        const chkInter = document.getElementById('chk-permiso-internacion');
+        if (chkCoord) chkCoord.checked = permisos.includes('coordinaQuirofano');
+        if (chkAnest) chkAnest.checked = permisos.includes('anestesia');
+        if (chkInst) chkInst.checked = permisos.includes('instrumentacion');
+        if (chkInter) chkInter.checked = permisos.includes('internacion');
 
         // Modo Edición: Ocultar campo de contraseña, mostrar botón de restablecimiento
         const divPass = document.getElementById('div-usuario-pass');
@@ -224,13 +270,20 @@ export async function guardarUsuarioAdminFirebase() {
         return;
     }
 
+    const permisosAdicionales = [];
+    if (document.getElementById('chk-permiso-coordina-quirofano')?.checked) permisosAdicionales.push('coordinaQuirofano');
+    if (document.getElementById('chk-permiso-anestesia')?.checked) permisosAdicionales.push('anestesia');
+    if (document.getElementById('chk-permiso-instrumentacion')?.checked) permisosAdicionales.push('instrumentacion');
+    if (document.getElementById('chk-permiso-internacion')?.checked) permisosAdicionales.push('internacion');
+
     const payload = {
         nombre: nom,
         rol: rol,
+        permisosAdicionales: permisosAdicionales,
         correo: cor,
         tel: tel,
-        matricula: rol === 'Médico' ? mat : '',
-        especialidad: rol === 'Médico' ? esp : '',
+        matricula: (esRolMedico(rol) || esRolEnfermeria(rol)) ? mat : '',
+        especialidad: esRolMedico(rol) ? esp : '',
         activo: true
     };
 
@@ -261,20 +314,54 @@ export async function guardarUsuarioAdminFirebase() {
                     return;
                 }
 
-                await setDoc(doc(db, "usuarios", uidFinal), {
-                    ...payload,
-                    uid: uidFinal,
-                    creadoEn: serverTimestamp()
-                });
+                // Punto 4: si setDoc falla después de crear la cuenta Auth, intentar rollback
+                try {
+                    await setDoc(doc(db, "usuarios", uidFinal), {
+                        ...payload,
+                        uid: uidFinal,
+                        creadoEn: serverTimestamp()
+                    });
+                } catch (dbErr) {
+                    console.error("Error al crear perfil Firestore:", dbErr);
+                    try {
+                        const fnAdminStaff = httpsCallable(functionsInstancia, 'administrarUsuarioStaff');
+                        await fnAdminStaff({ id: uidFinal, eliminar: true });
+                    } catch (_) { /* rollback best-effort */ }
+                    mostrarAlerta("Error al Registrar", "No se pudo crear el perfil. La cuenta de autenticación fue revertida. Puede reintentar el alta.");
+                    return;
+                }
             }
 
-            if (rol === 'Médico') {
+            // Punto 5: si el rol cambió a no-Médico en edición, marcar medicos_publicos como inactivo
+            if (id && !esRolMedico(rol)) {
+                await setDoc(doc(db, "medicos_publicos", id), { activo: false }, { merge: true }).catch(() => {});
+            }
+
+            if (esRolMedico(rol)) {
                 await setDoc(doc(db, "medicos_publicos", uidFinal), {
                     medicoUid: uidFinal,
                     nombre: nom,
                     especialidad: esp,
                     activo: true
                 }, { merge: true });
+            }
+
+            // Sincronizar Custom Claims en Auth mediante Cloud Function si está disponible
+            try {
+                const fnAdminStaff = httpsCallable(functionsInstancia, 'administrarUsuarioStaff');
+                await fnAdminStaff({
+                    id: uidFinal,
+                    nombre: nom,
+                    rol: rol,
+                    permisosAdicionales: permisosAdicionales,
+                    correo: cor,
+                    tel: tel,
+                    matricula: (esRolMedico(rol) || esRolEnfermeria(rol)) ? mat : '',
+                    especialidad: esRolMedico(rol) ? esp : '',
+                    activo: true
+                });
+            } catch (claimErr) {
+                console.warn("Aviso al sincronizar custom claims:", claimErr?.message || claimErr);
             }
 
             mostrarExito(
@@ -293,13 +380,39 @@ export async function guardarUsuarioAdminFirebase() {
 }
 
 export async function eliminarUsuarioAdmin(id) {
-    const confirmado = await pedirConfirmacion("¿Eliminar Usuario?", "Esta acción quitará el perfil de la tabla administrativa.", "Sí, eliminar");
+    const confirmado = await pedirConfirmacion("¿Eliminar Usuario?", "Esta acción quitará el perfil de la tabla administrativa y revocará el acceso de inicio de sesión del usuario.", "Sí, eliminar");
     if (!confirmado) return;
 
     try {
+        // 1. Eliminar documento del usuario en Firestore
         await deleteDoc(doc(db, "usuarios", id));
         await deleteDoc(doc(db, "medicos_publicos", id)).catch(() => {});
-        mostrarExito("Usuario Eliminado", "El perfil fue removido del sistema.");
+
+        // 2. Eliminar cuenta en Firebase Authentication vía Cloud Function para revocar acceso
+        let falloAuth = null;
+        try {
+            const fnAdminStaff = httpsCallable(functionsInstancia, 'administrarUsuarioStaff');
+            await fnAdminStaff({ id: id, eliminar: true });
+        } catch (authErr) {
+            console.warn("Aviso al eliminar cuenta de Auth:", authErr?.message || authErr);
+            const detalle = String(authErr?.message || authErr?.code || '');
+            const yaInexistente = detalle.includes('user-not-found') || detalle.includes('not-found');
+            if (!yaInexistente) {
+                falloAuth = authErr;
+            }
+        }
+
+        if (falloAuth) {
+            mostrarAlerta(
+                "Perfil Eliminado con Advertencia",
+                "El perfil del usuario fue removido de la base de datos, pero no se pudo dar de baja automáticamente la cuenta en Authentication. Por favor, verifique y revoque el acceso manualmente en la consola de Firebase."
+            );
+        } else {
+            mostrarExito(
+                "Usuario Eliminado",
+                "El perfil y las credenciales de acceso fueron removidos del sistema."
+            );
+        }
         cargarUsuariosAdmin('init');
         cargarEspecialistasFirebase();
     } catch (error) {
@@ -362,12 +475,56 @@ export function toggleCamposMedico() {
     const rol = document.getElementById('input-usuario-rol')?.value;
     const divMat = document.getElementById('div-usuario-matricula');
     const divEsp = document.getElementById('div-usuario-especialidad');
-    if (rol === 'Médico') {
+    if (esRolMedico(rol)) {
         if (divMat) divMat.classList.remove('hidden');
         if (divEsp) divEsp.classList.remove('hidden');
+    } else if (esRolEnfermeria(rol)) {
+        if (divMat) divMat.classList.remove('hidden');
+        if (divEsp) divEsp.classList.add('hidden');
     } else {
         if (divMat) divMat.classList.add('hidden');
         if (divEsp) divEsp.classList.add('hidden');
+    }
+    // Punto 3: ocultar/deshabilitar checkboxes de permisos que no aplican al rol
+    actualizarPermisosSegunRol(rol);
+}
+
+/**
+ * Punto 3: sincroniza la visibilidad/estado de los checkboxes de permisos
+ * adicionales con el rol seleccionado, según lo que realmente verifica firestore.rules.
+ *
+ * Matriz (basada en firestore.rules):
+ *   Administración / Recepción  → ningún permiso adicional opera en reglas → ocultar todos
+ *   Médico                      → coordinaQuirofano ✓ | anestesia ✓ | instrumentacion ✓ | internacion ✓
+ *   Enfermería                  → coordinaQuirofano ✓ | instrumentacion ✓ | internacion ✓
+ *                                 anestesia NO está en ninguna rama de Enfermería en las reglas
+ */
+function actualizarPermisosSegunRol(rol) {
+    const contenedor = document.getElementById('div-usuario-permisos');
+    const permisosPorRol = {
+        // id-checkbox → visible para estos roles
+        'chk-permiso-coordina-quirofano': ['Médico', 'Enfermería'],
+        'chk-permiso-anestesia':          ['Médico'],
+        'chk-permiso-instrumentacion':    ['Médico', 'Enfermería'],
+        'chk-permiso-internacion':        ['Médico', 'Enfermería'],
+    };
+
+    // Canonicalizar el rol para comparación
+    const rolCanon = esRolMedico(rol)     ? 'Médico'
+                   : esRolEnfermeria(rol) ? 'Enfermería'
+                   : null; // Administración / Recepción → ocultar todo
+
+    if (contenedor) {
+        contenedor.classList.toggle('hidden', rolCanon === null);
+    }
+
+    for (const [idChk, rolesPermitidos] of Object.entries(permisosPorRol)) {
+        const chk = document.getElementById(idChk);
+        if (!chk) continue;
+        const fila = chk.closest('label') || chk.parentElement;
+        const visible = rolCanon !== null && rolesPermitidos.includes(rolCanon);
+        if (fila) fila.classList.toggle('hidden', !visible);
+        if (!visible) chk.checked = false; // limpiar al ocultar
     }
 }
 
@@ -395,6 +552,12 @@ export function iniciarGuardadoModulacion() {
 }
 
 export async function ejecutarGuardadoModulacion() {
+    const inputSeguridad = document.getElementById('input-seguridad-admin');
+    if (!inputSeguridad || inputSeguridad.value.trim() !== 'CONFIRMAR') {
+        mostrarAlerta("Confirmación Requerida", "Debe escribir exactamente CONFIRMAR para aplicar la modulación.");
+        return;
+    }
+
     const alcance = document.getElementById('admin-select-alcance').value;
     const duracion = parseInt(document.getElementById('admin-select-duracion').value, 10);
 
@@ -497,13 +660,14 @@ export async function verificarEntornoDemo() {
 export async function limpiarBaseDeDatos() {
     const sesionActual = obtenerSesionActual();
 
-    if (sesionActual?.rol !== 'Administración') {
+    if (!sesionActual || !esRolAdministracion(sesionActual.rol)) {
         mostrarAlerta("Acceso Denegado", "Solo el Administrador General puede ejecutar la limpieza de la base de datos.");
         return;
     }
 
     const confirmacionPalabra = window.prompt(
-        "Esta acción eliminará todos los turnos, disponibilidades, pacientes, historias clínicas y médicos demostrativos.\n" +
+        "Esta acción eliminará todos los turnos, disponibilidades, pacientes, camas, quirófanos, reservas de quirófano y personal demostrativo.\n" +
+        "Nota: el historial de internaciones no se borra, por diseño, para preservar la trazabilidad clínica.\n" +
         "La cuenta del administrador en sesión quedará conservada y protegida.\n\n" +
         "Para confirmar la eliminación total, escriba la palabra LIMPIAR en mayúsculas:"
     );
@@ -519,7 +683,7 @@ export async function limpiarBaseDeDatos() {
     const barra = document.getElementById('progreso-barra');
     const texto = document.getElementById('progreso-texto');
     if (texto) texto.innerText = "Borrando turnos de prueba...";
-    if (barra) barra.style.width = '20%';
+    if (barra) barra.style.width = '15%';
 
     try {
         const turnosSnap = await getDocs(collection(db, "turnos"));
@@ -529,7 +693,7 @@ export async function limpiarBaseDeDatos() {
             turnosSnap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
             await batch.commit();
         }
-        if (barra) barra.style.width = '40%';
+        if (barra) barra.style.width = '30%';
 
         if (texto) texto.innerText = "Borrando disponibilidades y médicos públicos...";
         const dispSnap = await getDocs(collection(db, "disponibilidad"));
@@ -539,7 +703,7 @@ export async function limpiarBaseDeDatos() {
         const medicosPubSnap = await getDocs(collection(db, "medicos_publicos"));
         const promesasMedicosPub = medicosPubSnap.docs.map(d => deleteDoc(doc(db, "medicos_publicos", d.id)));
         await Promise.all(promesasMedicosPub);
-        if (barra) barra.style.width = '60%';
+        if (barra) barra.style.width = '45%';
 
         if (texto) texto.innerText = "Borrando pacientes e historias clínicas...";
         const pacientesSnap = await getDocs(collection(db, "pacientes"));
@@ -553,6 +717,31 @@ export async function limpiarBaseDeDatos() {
         if (dniMapSnap && dniMapSnap.docs) {
             const promesasDni = dniMapSnap.docs.map(d => deleteDoc(d.ref));
             await Promise.all(promesasDni);
+        }
+        if (barra) barra.style.width = '55%';
+
+        if (texto) texto.innerText = "Borrando camas de internación...";
+        const camasSnap = await getDocs(collection(db, "camas")).catch(() => ({ docs: [] }));
+        for (let i = 0; i < camasSnap.docs.length; i += BATCH_SIZE) {
+            const batch = writeBatch(db);
+            camasSnap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
+        if (barra) barra.style.width = '65%';
+
+        if (texto) texto.innerText = "Borrando salas de quirófanos y reservas quirúrgicas...";
+        const quirofanosSnap = await getDocs(collection(db, "quirofanos")).catch(() => ({ docs: [] }));
+        for (let i = 0; i < quirofanosSnap.docs.length; i += BATCH_SIZE) {
+            const batch = writeBatch(db);
+            quirofanosSnap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
+
+        const reservasSnap = await getDocs(collection(db, "reservas_quirofano")).catch(() => ({ docs: [] }));
+        for (let i = 0; i < reservasSnap.docs.length; i += BATCH_SIZE) {
+            const batch = writeBatch(db);
+            reservasSnap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+            await batch.commit();
         }
         if (barra) barra.style.width = '80%';
 
@@ -587,6 +776,13 @@ export async function limpiarBaseDeDatos() {
         cargarUsuariosAdmin('init');
         cargarEspecialistasFirebase();
         cargarMetricas(true);
+
+        if (typeof window.inicializarModuloInternacion === 'function') {
+            window.inicializarModuloInternacion().catch(() => {});
+        }
+        if (typeof window.inicializarModuloQuirofanos === 'function') {
+            window.inicializarModuloQuirofanos().catch(() => {});
+        }
     } catch (e) {
         console.error(e);
         cerrarModal('modal-progreso');
@@ -595,6 +791,12 @@ export async function limpiarBaseDeDatos() {
 }
 
 export async function inyectarMedicosDePrueba() {
+    const sesionActual = obtenerSesionActual();
+    if (!sesionActual || !esRolAdministracion(sesionActual.rol)) {
+        mostrarAlerta("Acceso Denegado", "Solo el Administrador General puede inyectar el catálogo de médicos de prueba.");
+        return;
+    }
+
     const confirm = await pedirConfirmacion(
         "¿Inyectar Médicos para Público General?",
         "Se cargarán 29 profesionales categorizados con todas sus especialidades médicas en el catálogo público para que cualquier persona en el portal web (index.html) pueda consultar y agendar turnos en vivo.",

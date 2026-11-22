@@ -11,6 +11,10 @@ yarn-error.log*
 .env.*.local
 *.pem
 *.key
+firebase-key.json
+
+# Código y respaldos heredados
+archivo/
 
 # Archivos del Sistema Operativo
 .DS_Store
@@ -59,3 +63,8 @@ scripts/*.py
 scripts/capturar_figuras.js
 login_cargando.*
 eye_toggle_demo.*
+
+# Archivos de pruebas y entornos locales
+scratch/
+.jdk21/
+.config/

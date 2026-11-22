@@ -87,6 +87,74 @@ test('Matriz de Seguridad de Reglas de Firestore', async (t) => {
         assert.match(rulesContent, /'pacienteFechaNacimiento'/, 'Debe permitir pacienteFechaNacimiento en isValidTurnoCreate');
         assert.match(rulesContent, /'consentimientoLey25326'/, 'Debe permitir consentimientoLey25326 en isValidTurnoCreate');
         assert.match(rulesContent, /'consentimientoLey26529'/, 'Debe permitir consentimientoLey26529 en isValidTurnoCreate');
+
+        // 13. VULN-01 Resuelta: Eliminación definitiva del borrado no autenticado indiscriminado en disponibilidad
+        assert.doesNotMatch(rulesContent, /!\s*isSignedIn\(\)\s*&&\s*request\.time\s*!=\s*null/,
+            'VULN-01 resuelta: No debe existir el borrado permisivo no autenticado de disponibilidad');
+
+        // 14. Disponibilidad: Validación de claves en creación y borrado atado a batch getAfter de cancelación de turno
+        assert.match(rulesContent, /'turnoId'/,
+            'La disponibilidad debe validar la clave turnoId para trazabilidad y vinculación');
+        assert.match(rulesContent, /isSlotLiberablePorPaciente\(\)/,
+            'La liberación de slots por paciente anónimo debe verificarse mediante función de batch atómico');
+        assert.match(rulesContent, /getAfter\(\/databases\/\$\(database\)\/documents\/turnos\/\$\(resource\.data\.turnoId\)\)\.data\.estado\s*==\s*'Cancelado por Paciente'/,
+            'La liberación de disponibilidad debe corroborar el estado Cancelado por Paciente vía getAfter');
+
+        // 15. Turnos: Restricción alfanumérica y longitud estricta en get anónimo
+        assert.match(rulesContent, /turnoId\.matches\('\^\[a-zA-Z0-9\]\{8,64\}\$'\)/,
+            'Debe restringir el formato del ID del turno a alfanumérico Base62 de 8 a 64 caracteres');
+
+        // 16. Internación - Camas: Lectura por staff, creación por SuperAdmin, update por Recepción/Admin, delete SuperAdmin
+        assert.match(rulesContent, /match \/camas\/\{camaId\}/,
+            'Debe existir la colección camas en firestore.rules');
+        assert.match(rulesContent, /function isValidCama\(data\)/,
+            'Debe existir la función de validación de esquema para camas');
+        assert.match(rulesContent, /match \/camas\/\{camaId\}[\s\S]*?allow create:\s*if\s*isSuperAdmin\(\)\s*&&\s*isValidCama\(request\.resource\.data\);/,
+            'Solo SuperAdmin debe poder crear camas hospitalarias');
+        assert.match(rulesContent, /match \/camas\/\{camaId\}[\s\S]*?allow delete:\s*if\s*isSuperAdmin\(\);/,
+            'Solo SuperAdmin debe poder eliminar camas');
+        assert.match(rulesContent, /request\.resource\.data\.estado\s*!=\s*'ocupada'\s*\|\|\s*resource\.data\.estado\s*==\s*'libre'/,
+            'Una cama solo puede pasar a estado ocupada si su estado previo era libre (o si es SuperAdmin)');
+
+        // 17. Internación - Historial de Internaciones: Creación por staff, inmutabilidad tras alta, allow delete: if false
+        assert.match(rulesContent, /match \/historial_internaciones\/\{historialId\}/,
+            'Debe existir la colección historial_internaciones en firestore.rules');
+        assert.match(rulesContent, /match \/historial_internaciones\/\{historialId\}[\s\S]*?allow delete:\s*if\s*false;/,
+            'Los registros de internación no pueden ser eliminados (inmutabilidad legal)');
+        assert.match(rulesContent, /request\.resource\.data\.camaId\s*==\s*resource\.data\.camaId/,
+            'El registro de internación debe proteger estrictamente camaId en modificaciones');
+        assert.match(rulesContent, /request\.resource\.data\.fechaIngreso\s*==\s*resource\.data\.fechaIngreso/,
+            'El registro de internación debe proteger la fechaIngreso original en modificaciones');
+        assert.match(rulesContent, /request\.resource\.data\.pacienteDni\s*==\s*resource\.data\.pacienteDni/,
+            'El registro de internación debe proteger el pacienteDni original en modificaciones');
+        assert.match(rulesContent, /diff\.affectedKeys\(\)\.hasOnly\(\[\s*'medicoTratante',\s*'diagnosticoIngreso',\s*'pacienteCobertura',\s*'observacionesAlta',\s*'actualizadoEn'\s*\]\)/,
+            'Debe permitir editar médico y observaciones en estado activa');
+        assert.match(rulesContent, /diff\.affectedKeys\(\)\.hasOnly\(\[\s*'fechaAlta',\s*'altaPor',\s*'motivoAlta',\s*'observacionesAlta',\s*'estado',\s*'actualizadoEn'\s*\]\)/,
+            'Debe permitir dar el alta con transición de estado y campos específicos');
+
+        // 18. Quirófanos - Estructura física: Lectura staff, escritura exclusiva SuperAdmin
+        assert.match(rulesContent, /match \/quirofanos\/\{quirofanoId\}/,
+            'Debe existir la colección quirofanos en firestore.rules');
+        assert.match(rulesContent, /match \/quirofanos\/\{quirofanoId\}[\s\S]*?allow create:\s*if\s*isSuperAdmin\(\)\s*&&\s*isValidQuirofano\(request\.resource\.data\);/,
+            'Solo SuperAdmin debe poder crear salas de quirófano');
+        assert.match(rulesContent, /match \/quirofanos\/\{quirofanoId\}[\s\S]*?allow update:\s*if\s*isSuperAdmin\(\)/,
+            'Solo SuperAdmin debe poder modificar o desactivar salas de quirófano');
+        assert.match(rulesContent, /match \/quirofanos\/\{quirofanoId\}[\s\S]*?allow delete:\s*if\s*isSuperAdmin\(\);/,
+            'Solo SuperAdmin debe poder eliminar salas de quirófano');
+
+        // 19. Reservas de Quirófano: Validación temporal, estados según rol y autoría
+        assert.match(rulesContent, /match \/reservas_quirofano\/\{reservaId\}/,
+            'Debe existir la colección reservas_quirofano en firestore.rules');
+        assert.match(rulesContent, /function isValidReservaQuirofano\(data\)/,
+            'Debe existir la función de validación de reservas quirúrgicas');
+        assert.match(rulesContent, /match \/reservas_quirofano\/\{reservaId\}[\s\S]*?allow create:\s*if\s*false;/,
+            'La creación directa de reservas de quirófano debe estar denegada para todos los clientes (allow create: if false)');
+        assert.match(rulesContent, /match \/reservas_quirofano\/\{reservaId\}[\s\S]*?allow delete:\s*if\s*isSuperAdmin\(\);/,
+            'Solo SuperAdmin debe poder eliminar reservas de quirófano');
+        assert.match(rulesContent, /resource\.data\.creadoPor\.uid\s*==\s*request\.auth\.uid\s*&&\s*request\.resource\.data\.estado\s*==\s*'cancelado'/,
+            'Un médico autor solo puede cancelar su propia reserva quirúrgica');
+        assert.doesNotMatch(rulesContent, /!diff\.affectedKeys\(\)\.hasAny\(\[\s*'creadoPor'/,
+            'puedeActualizarReservaQuirofano no debe contener la cláusula redundante hasAny previa a hasOnly');
     });
 
     // Si está disponible el emulador en vivo, se ejecutan las pruebas de integración

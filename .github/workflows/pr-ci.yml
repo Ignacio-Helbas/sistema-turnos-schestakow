@@ -1,0 +1,40 @@
+name: CI de Pull Request (Validación Estática y Seguridad)
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feature/**
+      - mejoras/**
+
+# Principio de privilegio mínimo: solo lectura
+permissions:
+  contents: read
+
+jobs:
+  pr-security-audit:
+    name: Análisis Estático, Auditoría y Pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configurar Node.js (v20 LTS)
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.2.0
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: 1. Auditoría de Seguridad de Dependencias (npm audit)
+        run: |
+          npm audit --audit-level=high
+
+      - name: 2. Auditoría de Integridad en Cadena de Suministro (SRI)
+        run: |
+          node tools/audit-cdn-sri.js
+
+      - name: 3. Ejecución de Pruebas Unitarias y Reglas de Seguridad
+        run: |
+          node --test tests/calendario.test.js tests/centros.test.js tests/guardia.test.js tests/interconsultas-unit.test.js tests/metricas.test.js tests/qr-comprobante.test.js tests/firestore-rules.test.js tests/interconsultas-rules.test.js
