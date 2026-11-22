@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: 2. Configurar Java para Emulador de Firestore
-        uses: actions/setup-java@8a093e4344f653457e0f80bc6bc684f885f8386a # v4.2.1
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
