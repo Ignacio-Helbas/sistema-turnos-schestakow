@@ -16,7 +16,7 @@ try {
     rulesTesting = null;
 }
 
-const PROJECT_ID = 'demo-turnos-schestakow';
+const PROJECT_ID = 'demo-turnos-firestore-' + process.pid;
 const RULES_PATH = path.resolve(__dirname, '../firestore.rules');
 
 test('Matriz de Seguridad de Reglas de Firestore', async (t) => {

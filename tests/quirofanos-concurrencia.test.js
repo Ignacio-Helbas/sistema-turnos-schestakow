@@ -11,7 +11,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const HAS_EMULATOR = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
-const PROJECT_ID = 'demo-turnos-schestakow';
+const PROJECT_ID = 'demo-turnos-quirofanos-' + process.pid;
 const RULES_PATH = path.resolve(__dirname, '../firestore.rules');
 
 // Importar algoritmo de anti-colisión

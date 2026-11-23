@@ -23,7 +23,7 @@ if (!module.paths.includes(functionsModules)) {
 const HAS_EMULATOR = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 const SKIP_MSG = 'Omitido: Requiere emulador local de Firestore activo (FIRESTORE_EMULATOR_HOST no configurado). Para ejecutar esta suite dinámica con Java y Firebase CLI, utilice "npm run test:rules".';
 
-const PROJECT_ID = 'demo-turnos-schestakow';
+const PROJECT_ID = 'demo-turnos-rules-' + process.pid;
 const RULES_PATH = path.resolve(__dirname, '../firestore.rules');
 
 test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (suite) => {

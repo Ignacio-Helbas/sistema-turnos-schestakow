@@ -4,8 +4,6 @@ on:
   push:
     branches: 
       - main
-      - feature/internacion-quirofanos
-      - mejoras/revision-seguridad
   workflow_dispatch:
 
 # Principio de privilegio mínimo: permiso de solo lectura de repositorio
