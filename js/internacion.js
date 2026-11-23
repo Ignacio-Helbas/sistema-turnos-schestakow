@@ -203,12 +203,12 @@ export function renderizarMapaCamas() {
     let html = "";
     Object.values(habitaciones).forEach(hab => {
         html += `
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group">
+            <div class="habitacion-card-his bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group">
                 <div>
                     <!-- Cabecera de Habitación (Bahía arquitectónica) -->
-                    <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-100">
+                    <div class="habitacion-header flex items-center justify-between pb-2.5 mb-3 border-b border-slate-100">
                         <div class="flex items-center gap-2 min-w-0">
-                            <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-mono font-bold text-xs flex items-center justify-center border border-slate-200 shrink-0">
+                            <div class="habitacion-badge-id w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-mono font-bold text-xs flex items-center justify-center border border-slate-200 shrink-0">
                                 H${escaparHTML(hab.numero)}
                             </div>
                             <div class="min-w-0">
@@ -223,13 +223,13 @@ export function renderizarMapaCamas() {
                     </div>
 
                     <!-- Distribución tipo Selector de Asientos / Camas -->
-                    <div class="grid grid-cols-2 gap-2.5">
+                    <div class="habitacion-camas-grid grid grid-cols-2 gap-2.5">
                         ${hab.camas.map(cama => renderizarTarjetaCamaIndividual(cama)).join("")}
                     </div>
                 </div>
 
                 <!-- Pie de bahía con tipo de habitación -->
-                <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                <div class="habitacion-footer mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-medium">
                     <span>${escaparHTML(hab.tipo)}</span>
                     <span class="font-mono">Piso ${pisoSeleccionado}</span>
                 </div>
@@ -240,6 +240,13 @@ export function renderizarMapaCamas() {
     contenedor.innerHTML = html;
 }
 
+function formatearNombreMedico(medico) {
+    if (!medico || medico === 'Sin asignar' || medico === 'No asignado') return 'Sin asignar';
+    const limpio = medico.trim();
+    if (/^dr[a]?\.\s*/i.test(limpio)) return limpio;
+    return `Dr. ${limpio}`;
+}
+
 function renderizarTarjetaCamaIndividual(cama) {
     const esLibre = cama.estado === "libre";
     const esOcupada = cama.estado === "ocupada";
@@ -247,45 +254,51 @@ function renderizarTarjetaCamaIndividual(cama) {
 
     // Accesibilidad para Daltonismo: Cada estado combina Color + Icono de Forma Exclusiva + Texto Explícito
     let configEstado = {
+        claseSemantica: "cama-libre",
+        pillSemantica: "pill-libre",
         clasesContenedor: "border-emerald-300 bg-emerald-50/70 text-emerald-950 hover:bg-emerald-100/90 hover:border-emerald-500 shadow-2xs hover:shadow-md ring-1 ring-emerald-200/50 cursor-pointer",
+        badgePill: "bg-emerald-100/90 text-emerald-800 border-emerald-300/70",
         iconoForma: `
-            <span class="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs" style="width: 16px; height: 16px; min-width: 16px; min-height: 16px; display: inline-flex;" title="Estado: Disponible">
+            <span class="w-3.5 h-3.5 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs" style="width: 14px; height: 14px; min-width: 14px; min-height: 14px; display: inline-flex;" title="Estado: Disponible">
                 <svg class="w-2.5 h-2.5" width="10" height="10" style="width: 10px; height: 10px; display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
                 </svg>
             </span>
         `,
         textoEstado: "LIBRE",
-        badgeColor: "text-emerald-800",
         tooltip: `Cama ${cama.numeroCama} disponible. Clic para internar paciente nuevo.`
     };
 
     if (esOcupada) {
         configEstado = {
+            claseSemantica: "cama-ocupada",
+            pillSemantica: "pill-ocupada",
             clasesContenedor: "border-rose-300 bg-rose-50/80 text-rose-950 hover:border-rose-400 hover:bg-rose-100/70 shadow-2xs cursor-pointer ring-1 ring-rose-200/50",
+            badgePill: "bg-rose-100/90 text-rose-800 border-rose-300/70",
             iconoForma: `
-                <span class="w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-2xs" style="width: 16px; height: 16px; min-width: 16px; min-height: 16px; display: inline-flex;" title="Estado: Cama Ocupada">
+                <span class="w-3.5 h-3.5 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-2xs" style="width: 14px; height: 14px; min-width: 14px; min-height: 14px; display: inline-flex;" title="Estado: Cama Ocupada">
                     <svg class="w-2.5 h-2.5" width="10" height="10" style="width: 10px; height: 10px; display: block;" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
                     </svg>
                 </span>
             `,
             textoEstado: "OCUPADA",
-            badgeColor: "text-rose-800",
             tooltip: `Cama ocupada por ${cama.pacienteNombre || 'Paciente'} (DNI: ${cama.pacienteDni || '--'}). Clic para ver evolución o dar de alta.`
         };
     } else if (esMantenimiento) {
         configEstado = {
+            claseSemantica: "cama-mantenimiento",
+            pillSemantica: "pill-mantenimiento",
             clasesContenedor: "border-amber-300 bg-amber-50/75 text-amber-950 hover:border-amber-400 shadow-2xs ring-1 ring-amber-200/50 cursor-not-allowed opacity-90",
+            badgePill: "bg-amber-100/90 text-amber-800 border-amber-300/70",
             iconoForma: `
-                <span class="w-4 h-4 rounded-md bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-2xs" style="width: 16px; height: 16px; min-width: 16px; min-height: 16px; display: inline-flex;" title="Estado: Mantenimiento / Higiene">
+                <span class="w-3.5 h-3.5 rounded-md bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-2xs" style="width: 14px; height: 14px; min-width: 14px; min-height: 14px; display: inline-flex;" title="Estado: Mantenimiento / Higiene">
                     <svg class="w-2.5 h-2.5" width="10" height="10" style="width: 10px; height: 10px; display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                     </svg>
                 </span>
             `,
-            textoEstado: "MANTENIMIENTO",
-            badgeColor: "text-amber-800",
+            textoEstado: "MANT.",
             tooltip: `Cama ${cama.numeroCama} en desinfección o reparación técnica.`
         };
     }
@@ -295,25 +308,25 @@ function renderizarTarjetaCamaIndividual(cama) {
     if (esLibre) {
         cuerpoAsiento = `
             <div class="mt-2 text-center">
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] tracking-wide transition shadow-2xs w-full justify-center">
-                    <svg class="w-3 h-3" width="12" height="12" style="width: 12px; height: 12px; display: inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
-                    <span>+ Asignar</span>
+                <span class="btn-cama-asignar inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] tracking-wide transition shadow-2xs w-full justify-center">
+                    <svg class="w-3 h-3 shrink-0" width="12" height="12" style="width: 12px; height: 12px; display: inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                    <span>Asignar</span>
                 </span>
             </div>
         `;
     } else if (esOcupada) {
         cuerpoAsiento = `
-            <div class="mt-1.5 pt-1.5 border-t border-rose-200/60 text-left leading-tight">
-                <p class="font-bold text-slate-900 truncate text-[11px]">${escaparHTML(cama.pacienteNombre || 'Paciente')}</p>
-                <p class="text-[10px] text-slate-600 font-mono">DNI: ${escaparHTML(cama.pacienteDni || '--')}</p>
-                <p class="text-[9px] text-slate-500 truncate mt-0.5">Dr. ${escaparHTML(cama.medicoTratante || 'Sin asignar')}</p>
+            <div class="cama-paciente-info mt-1.5 pt-1.5 border-t border-rose-200/60 text-left leading-tight min-w-0">
+                <p class="cama-paciente-nombre font-bold text-slate-900 truncate text-[11px]" title="${escaparHTML(cama.pacienteNombre || 'Paciente')}">${escaparHTML(cama.pacienteNombre || 'Paciente')}</p>
+                <p class="cama-paciente-dni text-[10px] text-slate-600 font-mono truncate">DNI: ${escaparHTML(String(cama.pacienteDni || '--').trim())}</p>
+                <p class="cama-paciente-medico text-[9px] text-slate-500 truncate mt-0.5" title="${escaparHTML(formatearNombreMedico(cama.medicoTratante))}">${escaparHTML(formatearNombreMedico(cama.medicoTratante))}</p>
             </div>
         `;
     } else {
         cuerpoAsiento = `
-            <div class="mt-1.5 pt-1.5 border-t border-amber-200/60 text-center">
-                <p class="text-[9px] font-semibold text-amber-800 uppercase tracking-wide">En Desinfección</p>
-                <p class="text-[9px] text-slate-500 italic mt-0.5">No disponible</p>
+            <div class="cama-mantenimiento-info mt-1.5 pt-1.5 border-t border-amber-200/60 text-center min-w-0">
+                <p class="cama-mantenimiento-titulo text-[9px] font-bold text-amber-800 uppercase tracking-wider truncate">En Desinfección</p>
+                <p class="cama-mantenimiento-subtitulo text-[9px] text-slate-500 italic mt-0.5 truncate">No disponible</p>
             </div>
         `;
     }
@@ -324,17 +337,17 @@ function renderizarTarjetaCamaIndividual(cama) {
             role="button"
             tabindex="0"
             aria-label="Cama ${escaparHTML(cama.numeroCama)}, Habitación ${escaparHTML(cama.habitacion)}, ${configEstado.textoEstado}"
-            class="border rounded-xl p-2.5 transition-all select-none hover:scale-[1.02] active:scale-[0.98] ${configEstado.clasesContenedor} flex flex-col justify-between min-h-[92px]">
+            class="cama-card-his ${configEstado.claseSemantica} border rounded-xl p-2.5 transition-all select-none hover:scale-[1.02] active:scale-[0.98] ${configEstado.clasesContenedor} flex flex-col justify-between min-h-[92px]">
             
             <!-- Barra superior del asiento: Cabezal simbólico + Identificador + Icono accesible de forma -->
             <div>
                 <!-- Cabezal físico del asiento hospitalario -->
-                <div class="w-7 h-1 rounded-full mx-auto mb-1.5 opacity-30 bg-current"></div>
-                <div class="flex items-center justify-between gap-1">
-                    <span class="font-mono font-bold text-xs text-slate-900 tracking-tight">${escaparHTML(cama.numeroCama)}</span>
-                    <div class="flex items-center gap-1">
+                <div class="cama-cabezal-simbolico w-7 h-1 rounded-full mx-auto mb-1.5 opacity-30 bg-current"></div>
+                <div class="cama-header-fila flex items-center justify-between gap-1 min-w-0">
+                    <span class="cama-numero-texto font-mono font-bold text-xs text-slate-900 tracking-tight whitespace-nowrap shrink-0">${escaparHTML(cama.numeroCama)}</span>
+                    <div class="cama-pill-badge ${configEstado.pillSemantica} inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[9px] font-black tracking-wider shrink-0 ${configEstado.badgePill}" title="${escaparHTML(configEstado.tooltip)}">
                         ${configEstado.iconoForma}
-                        <span class="text-[9px] font-black tracking-wider ${configEstado.badgeColor}">${configEstado.textoEstado}</span>
+                        <span>${configEstado.textoEstado}</span>
                     </div>
                 </div>
             </div>
@@ -385,11 +398,11 @@ export function buscarPacienteInternado() {
                 <div>
                     <h5 class="font-bold text-slate-900 text-xs sm:text-sm">${escaparHTML(c.pacienteNombre)}</h5>
                     <p class="text-xs text-slate-600 font-mono">DNI: ${escaparHTML(c.pacienteDni)} • Cobertura: ${escaparHTML(c.pacienteCobertura || 'Sin obra social')}</p>
-                    <p class="text-[11px] text-slate-500 mt-0.5">Médico Tratante: <strong>Dr. ${escaparHTML(c.medicoTratante || 'No asignado')}</strong></p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Médico Tratante: <strong>${escaparHTML(formatearNombreMedico(c.medicoTratante))}</strong></p>
                 </div>
                 <div class="text-right shrink-0">
                     <span class="inline-block px-2.5 py-1 rounded-lg bg-[#002845] text-white font-bold text-xs">
-                        Piso ${c.piso} • Hab ${escaparHTML(c.habitacion)} • ${escaparHTML(b.numeroCama)}
+                        Piso ${c.piso} • Hab ${escaparHTML(c.habitacion)} • ${escaparHTML(c.numeroCama)}
                     </span>
                     <div class="mt-1">
                         <button type="button" onclick="window.localizarCamaEnMapa('${c.id}', ${c.piso})"
@@ -480,7 +493,7 @@ export function abrirModalAlta(cama) {
     if (elDni) elDni.textContent = cama.pacienteDni || "--";
     if (elUbicacion) elUbicacion.textContent = `Piso ${cama.piso} • Habitación ${cama.habitacion} • ${cama.numeroCama} (${cama.sector})`;
     if (elIngreso) elIngreso.textContent = cama.fechaIngreso ? cama.fechaIngreso.replace("T", " ").substring(0, 16) : "--";
-    if (elMedico) elMedico.textContent = cama.medicoTratante ? `Dr. ${cama.medicoTratante}` : "No especificado";
+    if (elMedico) elMedico.textContent = cama.medicoTratante ? formatearNombreMedico(cama.medicoTratante) : "No especificado";
     if (inputCamaId) inputCamaId.value = cama.id;
 
     document.getElementById("alta-motivo-select").value = "Alta Médica";

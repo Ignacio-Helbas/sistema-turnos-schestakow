@@ -739,15 +739,16 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     border-color: var(--his-border-subtle);
 }
 
-/* Listas desplegables estilizadas con flecha propia y aspecto nativo unificado */
+/* Listas desplegables estilizadas con flecha institucional y aspecto visual unificado */
 .select-his, select.input-his {
     width: 100%;
-    background-color: var(--his-surface);
+    background-color: #ffffff;
     border: 1px solid var(--his-border);
     border-radius: var(--his-radius-sm);
-    padding: 0.5rem 2.25rem 0.5rem 0.75rem;
+    padding: 0.5rem 2.25rem 0.5rem 0.75rem !important;
     min-height: 2.5rem;
     font-size: 0.875rem;
+    font-weight: 500;
     color: var(--his-text);
     cursor: pointer;
     outline: none;
@@ -757,12 +758,17 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23475569' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
     background-position: right 0.75rem center;
     background-repeat: no-repeat;
-    background-size: 1.25rem 1.25rem;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    background-size: 1.125rem 1.125rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.select-his:hover:not(:disabled), select.input-his:hover:not(:disabled) {
+    border-color: var(--his-border-strong);
+    background-color: #f8fafc;
 }
 .select-his:focus, select.input-his:focus {
     border-color: var(--his-primary);
     box-shadow: 0 0 0 2px var(--his-primary-light);
+    background-color: #ffffff;
 }
 .select-his:disabled, select.input-his:disabled {
     background-color: var(--his-bg);
@@ -770,6 +776,25 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
     cursor: not-allowed;
     border-color: var(--his-border-subtle);
     opacity: 0.75;
+}
+
+/* Variante compacta unificada para barras de herramientas y filtros */
+.select-his-sm {
+    min-height: 2rem !important;
+    height: 2rem !important;
+    padding: 0.25rem 2rem 0.25rem 0.625rem !important;
+    font-size: 0.75rem !important;
+    line-height: 1rem !important;
+    background-size: 1rem 1rem !important;
+    background-position: right 0.5rem center !important;
+    border-radius: 0.375rem !important;
+}
+
+.select-his option, select.input-his option {
+    background-color: #ffffff;
+    color: #0f172a;
+    font-size: 0.875rem;
+    padding: 0.5rem;
 }
 
 .label-his {
@@ -1073,5 +1098,266 @@ body[data-view="admin"] #btn-nav-admin { box-shadow: inset 0 -2px 0 var(--his-ad
 .subview-slide-in {
     animation: subviewFadeSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* --------------------------------------------------------------------------
+   6. MÓDULO DE INTERNACIÓN: BAHÍAS, HABITACIONES Y TARJETAS DE CAMAS
+   Garantiza contención tipográfica estricta e inmunidad ante fallos de CDN
+   -------------------------------------------------------------------------- */
+.habitacion-card-his {
+    background-color: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 1rem;
+    padding: 0.875rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.habitacion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.625rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.habitacion-badge-id {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.5rem;
+    background-color: #f1f5f9;
+    color: #334155;
+    font-family: var(--fuente-codigo);
+    font-weight: 700;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+.habitacion-camas-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.625rem;
+}
+
+.habitacion-footer {
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.cama-card-his {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 94px;
+    border-radius: 0.75rem;
+    padding: 0.625rem;
+    border-width: 1px;
+    border-style: solid;
+    transition: all 0.15s ease-in-out;
+    user-select: none;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+.cama-card-his:hover {
+    transform: scale(1.02);
+}
+.cama-card-his:active {
+    transform: scale(0.98);
+}
+
+.cama-card-his.cama-libre {
+    background-color: #ecfdf5;
+    border-color: #6ee7b7;
+    color: #022c22;
+}
+.cama-card-his.cama-libre:hover {
+    background-color: #d1fae5;
+    border-color: #10b981;
+}
+
+.cama-card-his.cama-ocupada {
+    background-color: #fff1f2;
+    border-color: #fda4af;
+    color: #4c0519;
+}
+.cama-card-his.cama-ocupada:hover {
+    background-color: #ffe4e6;
+    border-color: #fb7185;
+}
+
+.cama-card-his.cama-mantenimiento {
+    background-color: #fffbeb;
+    border-color: #fcd34d;
+    color: #451a03;
+    opacity: 0.92;
+    cursor: not-allowed;
+}
+
+.cama-cabezal-simbolico {
+    width: 1.75rem;
+    height: 0.25rem;
+    border-radius: 9999px;
+    margin: 0 auto 0.375rem auto;
+    opacity: 0.3;
+    background-color: currentColor;
+}
+
+.cama-header-fila {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.cama-numero-texto {
+    font-family: var(--fuente-codigo);
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #0f172a;
+    letter-spacing: -0.025em;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.cama-pill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: 9999px;
+    border-width: 1px;
+    border-style: solid;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.cama-pill-badge.pill-libre {
+    background-color: #d1fae5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+
+.cama-pill-badge.pill-ocupada {
+    background-color: #ffe4e6;
+    color: #9f1239;
+    border-color: #fecdd3;
+}
+
+.cama-pill-badge.pill-mantenimiento {
+    background-color: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+.btn-cama-asignar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    background-color: #059669;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.025em;
+    width: 100%;
+    box-sizing: border-box;
+    transition: background-color 0.15s ease;
+}
+.btn-cama-asignar:hover {
+    background-color: #047857;
+}
+
+.cama-paciente-info {
+    margin-top: 0.375rem;
+    padding-top: 0.375rem;
+    border-top: 1px solid rgba(254, 205, 211, 0.6);
+    text-align: left;
+    min-width: 0;
+    line-height: 1.25;
+}
+
+.cama-paciente-nombre {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin: 0;
+}
+
+.cama-paciente-dni {
+    font-size: 10px;
+    color: #475569;
+    font-family: var(--fuente-codigo);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin: 1px 0 0 0;
+}
+
+.cama-paciente-medico {
+    font-size: 9px;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin: 1px 0 0 0;
+}
+
+.cama-mantenimiento-info {
+    margin-top: 0.375rem;
+    padding-top: 0.375rem;
+    border-top: 1px solid rgba(253, 230, 138, 0.6);
+    text-align: center;
+    min-width: 0;
+    line-height: 1.25;
+}
+
+.cama-mantenimiento-titulo {
+    font-size: 9px;
+    font-weight: 700;
+    color: #92400e;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin: 0;
+}
+
+.cama-mantenimiento-subtitulo {
+    font-size: 9px;
+    color: #64748b;
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin: 1px 0 0 0;
+}
+
 
 

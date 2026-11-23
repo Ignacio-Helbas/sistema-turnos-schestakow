@@ -769,7 +769,7 @@
                 <div class="flex flex-wrap items-center gap-2.5 text-xs">
                     <div class="flex items-center gap-1.5">
                         <label for="internacion-filtro-sector" class="text-slate-500 font-semibold">Sector:</label>
-                        <select id="internacion-filtro-sector" onchange="window.filtrarSectorInternacion(this.value)" class="select-his py-1 px-2.5 text-xs bg-slate-50">
+                        <select id="internacion-filtro-sector" onchange="window.filtrarSectorInternacion(this.value)" class="select-his select-his-sm">
                             <option value="TODOS">Todos los sectores</option>
                             <option value="Terapia Intensiva (UTI)">Terapia Intensiva (UTI)</option>
                             <option value="Clínica Médica">Clínica Médica</option>
@@ -782,7 +782,7 @@
 
                     <div class="flex items-center gap-1.5">
                         <label for="internacion-filtro-estado" class="text-slate-500 font-semibold">Estado:</label>
-                        <select id="internacion-filtro-estado" onchange="window.filtrarEstadoInternacion(this.value)" class="select-his py-1 px-2.5 text-xs bg-slate-50">
+                        <select id="internacion-filtro-estado" onchange="window.filtrarEstadoInternacion(this.value)" class="select-his select-his-sm">
                             <option value="TODOS">Todas las camas</option>
                             <option value="libre">Solo Libres</option>
                             <option value="ocupada">Solo Ocupadas</option>
@@ -793,7 +793,7 @@
             </div>
 
             <!-- Mapa Visual de Habitaciones y Camas -->
-            <div id="internacion-mapa-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div id="internacion-mapa-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4.5">
                 <!-- Habitaciones inyectadas dinámicamente por internacion.js -->
             </div>
         </div>
@@ -841,7 +841,7 @@
                     <!-- Filtro Quirófano -->
                     <div>
                         <label for="quirofano-filtro-sala" class="label-his text-[11px] mb-1">Quirófano / Sala</label>
-                        <select id="quirofano-filtro-sala" onchange="window.filtrarQuirofano(this.value)" class="select-his py-1.5 text-xs bg-slate-50">
+                        <select id="quirofano-filtro-sala" onchange="window.filtrarQuirofano(this.value)" class="select-his select-his-sm">
                             <option value="TODOS">Todos los Quirófanos</option>
                         </select>
                     </div>
@@ -849,7 +849,7 @@
                     <!-- Filtro Cirujano -->
                     <div>
                         <label for="quirofano-filtro-cirujano" class="label-his text-[11px] mb-1">Cirujano</label>
-                        <select id="quirofano-filtro-cirujano" onchange="window.filtrarCirujanoQuirofano(this.value)" class="select-his py-1.5 text-xs bg-slate-50">
+                        <select id="quirofano-filtro-cirujano" onchange="window.filtrarCirujanoQuirofano(this.value)" class="select-his select-his-sm">
                             <option value="TODOS">Todos los Cirujanos</option>
                         </select>
                     </div>
@@ -857,7 +857,7 @@
                     <!-- Filtro Estado -->
                     <div>
                         <label for="quirofano-filtro-estado" class="label-his text-[11px] mb-1">Estado de Cirugía</label>
-                        <select id="quirofano-filtro-estado" onchange="window.filtrarEstadoQuirofano(this.value)" class="select-his py-1.5 text-xs bg-slate-50">
+                        <select id="quirofano-filtro-estado" onchange="window.filtrarEstadoQuirofano(this.value)" class="select-his select-his-sm">
                             <option value="TODOS">Todos los Estados</option>
                             <option value="confirmado">Confirmado</option>
                             <option value="en_curso">En Curso</option>
@@ -928,13 +928,13 @@
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Alcance</label>
-                                <select id="admin-select-alcance" onchange="cargarConfiguracionModulacion()" class="select-his text-xs">
+                                <select id="admin-select-alcance" onchange="cargarConfiguracionModulacion()" class="select-his select-his-sm">
                                     <option value="global">Todas las especialidades (Global)</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Duración (Minutos)</label>
-                                <select id="admin-select-duracion" class="select-his text-xs">
+                                <select id="admin-select-duracion" class="select-his select-his-sm">
                                     <option value="10">10 minutos</option>
                                     <option value="15" selected>15 minutos (Por Defecto)</option>
                                     <option value="20">20 minutos</option>
@@ -1089,7 +1089,7 @@
                         <!-- Filtro de Especialidad -->
                         <div>
                             <label class="block font-bold text-slate-600 mb-1">Especialidad</label>
-                            <select id="metricas-filtro-especialidad" onchange="actualizarVistaMetricas()" class="select-his text-xs">
+                            <select id="metricas-filtro-especialidad" onchange="actualizarVistaMetricas()" class="select-his select-his-sm">
                                 <option value="">Todas las Especialidades</option>
                             </select>
                         </div>
@@ -1251,7 +1251,7 @@
                             </div>
                             <div class="w-full sm:w-72">
                                 <label class="block text-xs font-bold text-slate-600 mb-1">Filtrar por Profesional</label>
-                                <select id="metricas-filtro-medico" onchange="actualizarVistaMetricas()" class="select-his text-xs">
+                                <select id="metricas-filtro-medico" onchange="actualizarVistaMetricas()" class="select-his select-his-sm">
                                     <option value="">Seleccione profesional</option>
                                 </select>
                             </div>
@@ -1306,7 +1306,7 @@
                             </div>
                             <div class="w-full sm:w-72">
                                 <label class="block text-xs font-bold text-slate-600 mb-1">Filtrar por Personal</label>
-                                <select id="metricas-filtro-recepcionista" onchange="actualizarVistaMetricas()" class="select-his text-xs">
+                                <select id="metricas-filtro-recepcionista" onchange="actualizarVistaMetricas()" class="select-his select-his-sm">
                                     <option value="">Todo el Personal</option>
                                 </select>
                             </div>
@@ -1358,11 +1358,11 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-slate-600 mb-1">Profesional A</label>
-                                    <select id="comparador-select-a" onchange="actualizarVistaMetricas()" class="select-his text-xs"></select>
+                                    <select id="comparador-select-a" onchange="actualizarVistaMetricas()" class="select-his select-his-sm"></select>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-slate-600 mb-1">Profesional B</label>
-                                    <select id="comparador-select-b" onchange="actualizarVistaMetricas()" class="select-his text-xs"></select>
+                                    <select id="comparador-select-b" onchange="actualizarVistaMetricas()" class="select-his select-his-sm"></select>
                                 </div>
                             </div>
                         </div>
@@ -1512,7 +1512,7 @@
                                 </div>
                                 <div>
                                     <label class="label-his text-[10.5px]" for="config-cama-sector">Sector</label>
-                                    <select id="config-cama-sector" class="select-his py-1.5 text-xs">
+                                    <select id="config-cama-sector" class="select-his select-his-sm">
                                         <option value="Clínica Médica">Clínica Médica</option>
                                         <option value="Terapia Intensiva (UTI)">Terapia Intensiva (UTI)</option>
                                         <option value="Cirugía General">Cirugía General</option>
@@ -1523,7 +1523,7 @@
                                 </div>
                                 <div>
                                     <label class="label-his text-[10.5px]" for="config-cama-tipo">Tipo</label>
-                                    <select id="config-cama-tipo" class="select-his py-1.5 text-xs">
+                                    <select id="config-cama-tipo" class="select-his select-his-sm">
                                         <option value="Compartida">Compartida</option>
                                         <option value="Individual">Individual</option>
                                     </select>
@@ -1567,7 +1567,7 @@
                                 </div>
                                 <div>
                                     <label class="label-his text-[10.5px]" for="bulk-cama-sector">Sector Asignado</label>
-                                    <select id="bulk-cama-sector" class="select-his py-1.5 text-xs" onchange="window.actualizarPreviewCamasMasivas()">
+                                    <select id="bulk-cama-sector" class="select-his select-his-sm" onchange="window.actualizarPreviewCamasMasivas()">
                                         <option value="Clínica Médica">Clínica Médica</option>
                                         <option value="Terapia Intensiva (UTI)">Terapia Intensiva (UTI)</option>
                                         <option value="Cirugía General">Cirugía General</option>
@@ -1578,7 +1578,7 @@
                                 </div>
                                 <div>
                                     <label class="label-his text-[10.5px]" for="bulk-cama-tipo">Tipo de Cama</label>
-                                    <select id="bulk-cama-tipo" class="select-his py-1.5 text-xs" onchange="window.actualizarPreviewCamasMasivas()">
+                                    <select id="bulk-cama-tipo" class="select-his select-his-sm" onchange="window.actualizarPreviewCamasMasivas()">
                                         <option value="Compartida">Compartida</option>
                                         <option value="Individual">Individual</option>
                                     </select>
@@ -2667,13 +2667,13 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="label-his" for="input-ic-especialidad-filtro">Filtrar por Especialidad</label>
-                        <select id="input-ic-especialidad-filtro" onchange="window.actualizarSelectColegasPorEspecialidad()" class="select-his text-xs">
+                        <select id="input-ic-especialidad-filtro" onchange="window.actualizarSelectColegasPorEspecialidad()" class="select-his select-his-sm">
                             <option value="">-- Todas las especialidades --</option>
                         </select>
                     </div>
                     <div>
                         <label class="label-his" for="input-ic-colega-destino">Profesional Destinatario <span class="text-red-600 font-bold">*</span></label>
-                        <select id="input-ic-colega-destino" class="select-his text-xs">
+                        <select id="input-ic-colega-destino" class="select-his select-his-sm">
                             <option value="">-- Seleccione profesional --</option>
                         </select>
                     </div>
@@ -2739,7 +2739,7 @@
                 </p>
                 <div>
                     <label class="label-his" for="select-agregar-colega-uid">Seleccionar Médico Destino <span class="text-red-600 font-bold">*</span></label>
-                    <select id="select-agregar-colega-uid" class="select-his text-xs">
+                    <select id="select-agregar-colega-uid" class="select-his select-his-sm">
                         <option value="">-- Seleccionar colega --</option>
                     </select>
                 </div>
