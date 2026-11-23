@@ -723,13 +723,6 @@
                     </div>
                     <p class="text-xs text-slate-500 mt-0.5">Monitoreo en tiempo real por piso y habitación, asignación de camas y altas hospitalarias</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button type="button" id="btn-admin-config-camas" onclick="window.renderizarTablaConfigCamasAdmin()" 
-                        class="hidden btn-his-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 shadow-2xs font-bold text-slate-700 bg-white hover:bg-slate-50 border-slate-300">
-                        <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        <span>Estructura de Camas</span>
-                    </button>
-                </div>
             </div>
 
             <!-- Barra de Búsqueda Rápida de Paciente Internado -->
@@ -903,17 +896,17 @@
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-end">
-                        <button id="btn-demo-foro" onclick="inyectarDemoCompletaForo()" class="btn-his-primary text-xs px-3.5 py-2 shadow-xs bg-emerald-700 hover:bg-emerald-800 border-emerald-600 flex items-center gap-1.5 font-bold" title="Carga turnos de hoy (en sala, atendidos), historias clínicas completas y métricas históricas de 2 meses para el foro">
-                            <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            <span>Presentación Foro (100% Funcional)</span>
+                        <button id="btn-demo-completo" onclick="window.sembrarEscenarioDemoCompleto()" class="btn-his-primary text-xs px-3.5 py-2 shadow-xs bg-emerald-700 hover:bg-emerald-800 border-emerald-600 flex items-center gap-1.5 font-bold cursor-pointer" title="Carga un escenario demo completo y coordinado para todos los módulos: catálogo médico, 8 turnos de hoy, 12 camas y 4 cirugías de quirófano">
+                            <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            <span>Cargar Escenario Demo Completo</span>
                         </button>
                         <button id="btn-cargar-dummies" onclick="inyectarMedicosDePrueba()" class="btn-his-secondary text-xs px-3.5 py-2 shadow-xs flex items-center gap-1.5 text-slate-900 bg-white hover:bg-slate-100 font-bold" title="Inyecta 28 profesionales con todas las especialidades para que el público general saque turnos en vivo en index.html">
                             <svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
                             <span>Inyectar Médicos (Público General)</span>
                         </button>
-                        <button id="btn-reset-db" onclick="limpiarBaseDeDatos()" class="btn-his-danger text-xs px-3.5 py-2 shadow-xs flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white border-red-700 font-bold" title="Borra todos los turnos, pacientes, historias y médicos inyectados. La cuenta del administrador en sesión queda conservada.">
+                        <button id="btn-limpiar-demo" onclick="window.limpiarDatosDemoConConfirmacion()" class="btn-his-danger text-xs px-3.5 py-2 shadow-xs flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white border-red-700 font-bold cursor-pointer" title="Borra todos los turnos, pacientes, camas y reservas de quirófano. La cuenta de administración y el historial de internaciones quedan conservados.">
                             <svg class="w-4 h-4 text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            <span>Limpiar Datos Inyectados</span>
+                            <span>Limpiar Datos Demo</span>
                         </button>
                     </div>
                 </div>
@@ -928,27 +921,79 @@
             <!-- SECCIÓN 1: GESTIÓN -->
             <div id="admin-sec-gestion" class="admin-section grid grid-cols-1 lg:grid-cols-4 gap-6">
                 
-                <div class="lg:col-span-1 card-his bg-white/95 backdrop-blur p-5 self-start">
-                    <h3 class="font-bold text-slate-900 text-sm mb-4 border-b border-slate-100 pb-2">Modulación de Turnos</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Alcance</label>
-                            <select id="admin-select-alcance" onchange="cargarConfiguracionModulacion()" class="select-his text-xs">
-                                <option value="global">Todas las especialidades (Global)</option>
-                            </select>
+                <div class="lg:col-span-1 space-y-5 self-start">
+                    <!-- Modulación de Turnos -->
+                    <div class="card-his bg-white/95 backdrop-blur p-5">
+                        <h3 class="font-bold text-slate-900 text-sm mb-4 border-b border-slate-100 pb-2">Modulación de Turnos</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Alcance</label>
+                                <select id="admin-select-alcance" onchange="cargarConfiguracionModulacion()" class="select-his text-xs">
+                                    <option value="global">Todas las especialidades (Global)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Duración (Minutos)</label>
+                                <select id="admin-select-duracion" class="select-his text-xs">
+                                    <option value="10">10 minutos</option>
+                                    <option value="15" selected>15 minutos (Por Defecto)</option>
+                                    <option value="20">20 minutos</option>
+                                    <option value="30">30 minutos</option>
+                                    <option value="45">45 minutos</option>
+                                    <option value="60">60 minutos</option>
+                                </select>
+                            </div>
+                            <button onclick="iniciarGuardadoModulacion()" class="btn-his-primary w-full py-2 text-xs shadow-xs">Aplicar Cambios</button>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Duración (Minutos)</label>
-                            <select id="admin-select-duracion" class="select-his text-xs">
-                                <option value="10">10 minutos</option>
-                                <option value="15" selected>15 minutos (Por Defecto)</option>
-                                <option value="20">20 minutos</option>
-                                <option value="30">30 minutos</option>
-                                <option value="45">45 minutos</option>
-                                <option value="60">60 minutos</option>
-                            </select>
+                    </div>
+
+                    <!-- Configuración de Estructura Hospitalaria (Exclusivo Administración) -->
+                    <div class="card-his bg-white/95 backdrop-blur p-5 border border-slate-200/90 shadow-2xs">
+                        <div class="flex items-center gap-2 mb-2 border-b border-slate-100 pb-2">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-xs sm:text-sm">Estructura Hospitalaria</h3>
+                                <p class="text-[10px] text-slate-500">Pisos, habitaciones y camas</p>
+                            </div>
                         </div>
-                        <button onclick="iniciarGuardadoModulacion()" class="btn-his-primary w-full py-2 text-xs shadow-xs">Aplicar Cambios</button>
+                        <p class="text-xs text-slate-600 mb-3.5 leading-relaxed">
+                            Gestione la infraestructura física de internación mediante carga individual o mediante el asistente de generación masiva en batch.
+                        </p>
+                        <button type="button" id="btn-admin-config-camas" onclick="window.abrirModalConfigCamasAdmin()" 
+                            class="btn-his-primary w-full py-2 text-xs flex items-center justify-center gap-2 shadow-xs font-bold cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <span>Configurar Estructura de Camas</span>
+                        </button>
+                    </div>
+
+                    <!-- Escenario de Demostración Hospitalaria -->
+                    <div class="card-his bg-white/95 backdrop-blur p-5 border border-slate-200/90 shadow-2xs">
+                        <div class="flex items-center gap-2 mb-2 border-b border-slate-100 pb-2">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-xs sm:text-sm">Escenario Demo</h3>
+                                <p class="text-[10px] text-slate-500">Siembra integral y limpieza</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-600 mb-3.5 leading-relaxed">
+                            Inyecte en batch datos coordinados de turnos, camas ocupadas/libres y quirófanos, o devuelva la base a estado limpio.
+                        </p>
+                        <div class="space-y-2">
+                            <button type="button" id="btn-admin-sembrar-demo" onclick="window.sembrarEscenarioDemoCompleto()" 
+                                class="btn-his-primary w-full py-2 text-xs flex items-center justify-center gap-2 shadow-xs font-bold bg-emerald-700 hover:bg-emerald-800 border-emerald-600 cursor-pointer">
+                                <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                <span>Cargar Escenario Demo Completo</span>
+                            </button>
+                            <button type="button" id="btn-admin-limpiar-demo" onclick="window.limpiarDatosDemoConConfirmacion()" 
+                                class="btn-his-secondary w-full py-2 text-xs flex items-center justify-center gap-2 shadow-xs font-bold text-red-700 hover:bg-red-50 border-red-200 cursor-pointer">
+                                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                <span>Limpiar Datos Demo</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1411,6 +1456,179 @@
                         <button onclick="cerrarModalInfoMetrica()" class="btn-his-primary text-xs px-4 py-1.5">
                             Entendido
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====================================================================== -->
+            <!-- MODAL CONFIGURACIÓN DE CAMAS (EXCLUSIVO ADMINISTRACIÓN) -->
+            <!-- ====================================================================== -->
+            <div id="modal-config-cama" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
+                <div class="card-his bg-white max-w-3xl w-full overflow-hidden shadow-2xl p-0 border border-slate-200 max-h-[90vh] flex flex-col">
+                    <div class="bg-slate-900 text-white p-4 flex items-center justify-between shrink-0">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm text-white">Estructura Física de Internación</h3>
+                                <p class="text-xs text-slate-400">Configuración institucional de pisos, habitaciones y camas</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="cerrarModal('modal-config-cama')" class="text-slate-400 hover:text-white p-1 cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <div class="p-5 space-y-4 overflow-y-auto text-xs flex-1">
+                        <!-- Pestañas de Navegación: Individual vs Masivo -->
+                        <div class="flex border-b border-slate-200 gap-2">
+                            <button type="button" id="tab-cama-individual-btn" onclick="window.cambiarTabConfigCamas('individual')"
+                                class="pb-2.5 px-3 font-bold text-xs border-b-2 border-indigo-600 text-indigo-600 transition cursor-pointer">
+                                Carga Individual
+                            </button>
+                            <button type="button" id="tab-cama-masiva-btn" onclick="window.cambiarTabConfigCamas('masiva')"
+                                class="pb-2.5 px-3 font-bold text-xs border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition cursor-pointer flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                <span>Asistente Masivo de Estructura</span>
+                            </button>
+                        </div>
+
+                        <!-- Formulario Agregar Nueva Cama (Individual) -->
+                        <div id="panel-cama-individual" class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <h4 class="font-bold text-slate-800 mb-2.5 text-xs uppercase tracking-wider">Agregar Nueva Cama Individual</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
+                                <div>
+                                    <label class="label-his text-[10.5px]" for="config-cama-piso">Piso</label>
+                                    <input type="number" id="config-cama-piso" min="1" max="15" value="1" class="input-his py-1.5 text-xs">
+                                </div>
+                                <div>
+                                    <label class="label-his text-[10.5px]" for="config-cama-hab">Habitación</label>
+                                    <input type="text" id="config-cama-hab" placeholder="Ej: 105" class="input-his py-1.5 text-xs">
+                                </div>
+                                <div>
+                                    <label class="label-his text-[10.5px]" for="config-cama-nombre">Identificador Cama</label>
+                                    <input type="text" id="config-cama-nombre" placeholder="Ej: Cama 1" class="input-his py-1.5 text-xs">
+                                </div>
+                                <div>
+                                    <label class="label-his text-[10.5px]" for="config-cama-sector">Sector</label>
+                                    <select id="config-cama-sector" class="select-his py-1.5 text-xs">
+                                        <option value="Clínica Médica">Clínica Médica</option>
+                                        <option value="Terapia Intensiva (UTI)">Terapia Intensiva (UTI)</option>
+                                        <option value="Cirugía General">Cirugía General</option>
+                                        <option value="Traumatología">Traumatología</option>
+                                        <option value="Pediatría">Pediatría</option>
+                                        <option value="Maternidad">Maternidad</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="label-his text-[10.5px]" for="config-cama-tipo">Tipo</label>
+                                    <select id="config-cama-tipo" class="select-his py-1.5 text-xs">
+                                        <option value="Compartida">Compartida</option>
+                                        <option value="Individual">Individual</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-3 flex justify-end">
+                                <button type="button" onclick="window.guardarNuevaCamaAdmin()" class="btn-his-primary text-xs font-bold py-1.5 px-4 cursor-pointer">
+                                    + Guardar Cama Individual
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Formulario Asistente Masivo (Masivo) -->
+                        <div id="panel-cama-masiva" class="bg-indigo-50/40 p-4 rounded-xl border border-indigo-200/80 hidden space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="font-bold text-indigo-950 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                                        <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                        <span>Generación Masiva de Estructura Hospitalaria</span>
+                                    </h4>
+                                    <p class="text-[11px] text-slate-600 mt-0.5">Defina los parámetros para crear automáticamente pisos completos con habitaciones y camas en batch.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-2.5">
+                                <div>
+                                    <label class="label-his text-[10.5px]" for="bulk-cama-piso">Piso</label>
+                                    <input type="number" id="bulk-cama-piso" min="1" max="15" value="1" class="input-his py-1.5 text-xs font-bold" oninput="window.actualizarPreviewCamasMasivas()">
+                                </div>
+                                <div>
+                                    <label class="label-his text-[10.5px]" for="bulk-cama-habs">Cant. Habitaciones</label>
+                                    <input type="number" id="bulk-cama-habs" min="1" max="50" value="4" class="input-his py-1.5 text-xs font-bold" oninput="window.actualizarPreviewCamasMasivas()">
+                                </div>
+                                <div>
+                                    <label class="label-his text-[10.5px]" for="bulk-cama-por-hab">Camas por Hab.</label>
+                                    <input type="number" id="bulk-cama-por-hab" min="1" max="10" value="2" class="input-his py-1.5 text-xs font-bold" oninput="window.actualizarPreviewCamasMasivas()">
+                                </div>
+                                <div>
+                                    <label class="label-his text-[10.5px]" for="bulk-cama-hab-inicio" title="Número inicial para las habitaciones de este piso">Hab. Inicial (Opc.)</label>
+                                    <input type="number" id="bulk-cama-hab-inicio" placeholder="Automático" class="input-his py-1.5 text-xs" oninput="window.actualizarPreviewCamasMasivas()">
+                                </div>
+                                <div>
+                                    <label class="label-his text-[10.5px]" for="bulk-cama-sector">Sector Asignado</label>
+                                    <select id="bulk-cama-sector" class="select-his py-1.5 text-xs" onchange="window.actualizarPreviewCamasMasivas()">
+                                        <option value="Clínica Médica">Clínica Médica</option>
+                                        <option value="Terapia Intensiva (UTI)">Terapia Intensiva (UTI)</option>
+                                        <option value="Cirugía General">Cirugía General</option>
+                                        <option value="Traumatología">Traumatología</option>
+                                        <option value="Pediatría">Pediatría</option>
+                                        <option value="Maternidad">Maternidad</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="label-his text-[10.5px]" for="bulk-cama-tipo">Tipo de Cama</label>
+                                    <select id="bulk-cama-tipo" class="select-his py-1.5 text-xs" onchange="window.actualizarPreviewCamasMasivas()">
+                                        <option value="Compartida">Compartida</option>
+                                        <option value="Individual">Individual</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Caja de Previsualización en Tiempo Real -->
+                            <div id="bulk-cama-preview" class="bg-white p-3.5 rounded-lg border border-indigo-100 shadow-2xs">
+                                <!-- Generado dinámicamente por actualizarPreviewCamasMasivas() -->
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                                <span class="text-[11px] text-slate-500 italic flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5 text-emerald-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                    Protección activa: Camas existentes no serán sobreescritas ni duplicadas.
+                                </span>
+                                <button type="button" id="btn-ejecutar-bulk-camas" onclick="window.ejecutarCargaMasivaCamasAdmin()"
+                                    class="btn-his-primary text-xs font-bold py-1.5 px-4 cursor-pointer flex items-center justify-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                    <span>Generar Estructura en Batch</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tabla de Camas Registradas -->
+                        <div>
+                            <h4 class="font-bold text-slate-800 mb-2 text-xs uppercase tracking-wider">Camas Registradas en el Hospital</h4>
+                            <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                                <table class="w-full text-left">
+                                    <thead class="bg-slate-100 text-slate-700 text-[11px] uppercase font-bold border-b border-slate-200">
+                                        <tr>
+                                            <th class="py-2 px-3">Piso</th>
+                                            <th class="py-2 px-3">Hab.</th>
+                                            <th class="py-2 px-3">Cama</th>
+                                            <th class="py-2 px-3">Sector</th>
+                                            <th class="py-2 px-3">Tipo</th>
+                                            <th class="py-2 px-3">Estado</th>
+                                            <th class="py-2 px-3 text-right">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-admin-camas-body">
+                                        <tr><td colspan="7" class="text-center py-4 text-slate-400">Cargando camas...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-3.5 border-t border-slate-200 flex justify-end shrink-0">
+                        <button type="button" onclick="cerrarModal('modal-config-cama')" class="btn-his-secondary text-xs">Cerrar</button>
                     </div>
                 </div>
             </div>
@@ -2673,99 +2891,6 @@
     </div>
 
     <!-- ====================================================================== -->
-    <!-- MODAL CONFIGURACIÓN DE CAMAS (EXCLUSIVO ADMINISTRACIÓN) -->
-    <!-- ====================================================================== -->
-    <div id="modal-config-cama" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
-        <div class="card-his bg-white max-w-3xl w-full overflow-hidden shadow-2xl p-0 border border-slate-200 max-h-[90vh] flex flex-col">
-            <div class="bg-slate-900 text-white p-4 flex items-center justify-between shrink-0">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center">
-                        <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-sm text-white">Estructura Física de Internación</h3>
-                        <p class="text-xs text-slate-400">Configuración institucional de pisos, habitaciones y camas</p>
-                    </div>
-                </div>
-                <button type="button" onclick="cerrarModal('modal-config-cama')" class="text-slate-400 hover:text-white p-1 cursor-pointer">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-
-            <div class="p-5 space-y-4 overflow-y-auto text-xs flex-1">
-                <!-- Formulario Agregar Nueva Cama -->
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <h4 class="font-bold text-slate-800 mb-2.5 text-xs uppercase tracking-wider">Agregar Nueva Cama</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
-                        <div>
-                            <label class="label-his text-[10.5px]" for="config-cama-piso">Piso</label>
-                            <input type="number" id="config-cama-piso" min="1" max="15" value="1" class="input-his py-1.5 text-xs">
-                        </div>
-                        <div>
-                            <label class="label-his text-[10.5px]" for="config-cama-hab">Habitación</label>
-                            <input type="text" id="config-cama-hab" placeholder="Ej: 105" class="input-his py-1.5 text-xs">
-                        </div>
-                        <div>
-                            <label class="label-his text-[10.5px]" for="config-cama-nombre">Identificador Cama</label>
-                            <input type="text" id="config-cama-nombre" placeholder="Ej: Cama 1" class="input-his py-1.5 text-xs">
-                        </div>
-                        <div>
-                            <label class="label-his text-[10.5px]" for="config-cama-sector">Sector</label>
-                            <select id="config-cama-sector" class="select-his py-1.5 text-xs">
-                                <option value="Clínica Médica">Clínica Médica</option>
-                                <option value="Terapia Intensiva (UTI)">Terapia Intensiva (UTI)</option>
-                                <option value="Cirugía General">Cirugía General</option>
-                                <option value="Traumatología">Traumatología</option>
-                                <option value="Pediatría">Pediatría</option>
-                                <option value="Maternidad">Maternidad</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="label-his text-[10.5px]" for="config-cama-tipo">Tipo</label>
-                            <select id="config-cama-tipo" class="select-his py-1.5 text-xs">
-                                <option value="Compartida">Compartida</option>
-                                <option value="Individual">Individual</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mt-3 flex justify-end">
-                        <button type="button" onclick="window.guardarNuevaCamaAdmin()" class="btn-his-primary text-xs font-bold py-1.5 px-4 cursor-pointer">
-                            + Guardar Cama
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Tabla de Camas Registradas -->
-                <div>
-                    <h4 class="font-bold text-slate-800 mb-2 text-xs uppercase tracking-wider">Camas Registradas en el Hospital</h4>
-                    <div class="overflow-x-auto border border-slate-200 rounded-xl">
-                        <table class="w-full text-left">
-                            <thead class="bg-slate-100 text-slate-700 text-[11px] uppercase font-bold border-b border-slate-200">
-                                <tr>
-                                    <th class="py-2 px-3">Piso</th>
-                                    <th class="py-2 px-3">Hab.</th>
-                                    <th class="py-2 px-3">Cama</th>
-                                    <th class="py-2 px-3">Sector</th>
-                                    <th class="py-2 px-3">Tipo</th>
-                                    <th class="py-2 px-3">Estado</th>
-                                    <th class="py-2 px-3 text-right">Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-admin-camas-body">
-                                <tr><td colspan="7" class="text-center py-4 text-slate-400">Cargando camas...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-slate-50 p-3.5 border-t border-slate-200 flex justify-end shrink-0">
-                <button type="button" onclick="cerrarModal('modal-config-cama')" class="btn-his-secondary text-xs">Cerrar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ====================================================================== -->
     <!-- MODAL NUEVA RESERVA DE QUIRÓFANO (MÓDULO QUIRÓFANOS) -->
     <!-- ====================================================================== -->
     <div id="modal-nueva-reserva-quirofano" role="dialog" aria-modal="true" class="modal fixed inset-0 modal-overlay items-center justify-center z-50 hidden p-4">
@@ -3017,8 +3142,9 @@
             </div>
 
             <div class="bg-slate-50 p-3.5 border-t border-slate-200 flex justify-between items-center shrink-0">
-                <button type="button" onclick="window.sembrarQuirofanosInicialConConfirmacion()" class="btn-his-secondary text-xs text-teal-700 border-teal-300 hover:bg-teal-50">
-                    📋 Cargar Estructura de Ejemplo
+                <button type="button" onclick="window.sembrarQuirofanosInicialConConfirmacion()" class="btn-his-secondary text-xs text-teal-700 border-teal-300 hover:bg-teal-50 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                    <span>Cargar Estructura de Ejemplo</span>
                 </button>
                 <button type="button" onclick="cerrarModal('modal-config-quirofanos-admin')" class="btn-his-secondary text-xs">Cerrar</button>
             </div>

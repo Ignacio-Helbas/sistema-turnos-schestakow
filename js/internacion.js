@@ -667,6 +667,313 @@ export async function confirmarAltaPaciente() {
 // 5. CONFIGURACIÓN DE ESTRUCTURA FÍSICA (ADMINISTRACIÓN)
 // =============================================================================
 
+export async function abrirModalConfigCamasAdmin() {
+    await renderizarTablaConfigCamasAdmin();
+    actualizarPreviewCamasMasivas();
+    abrirModal("modal-config-cama");
+}
+
+export function cambiarTabConfigCamas(tab) {
+    const tabIndiv = document.getElementById("tab-cama-individual-btn");
+    const tabMasiv = document.getElementById("tab-cama-masiva-btn");
+    const panelIndiv = document.getElementById("panel-cama-individual");
+    const panelMasiv = document.getElementById("panel-cama-masiva");
+
+    if (tab === "masiva") {
+        tabIndiv?.classList.remove("border-indigo-600", "text-indigo-600");
+        tabIndiv?.classList.add("border-transparent", "text-slate-500");
+        tabMasiv?.classList.remove("border-transparent", "text-slate-500");
+        tabMasiv?.classList.add("border-indigo-600", "text-indigo-600");
+
+        panelIndiv?.classList.add("hidden");
+        panelMasiv?.classList.remove("hidden");
+        actualizarPreviewCamasMasivas();
+    } else {
+        tabMasiv?.classList.remove("border-indigo-600", "text-indigo-600");
+        tabMasiv?.classList.add("border-transparent", "text-slate-500");
+        tabIndiv?.classList.remove("border-transparent", "text-slate-500");
+        tabIndiv?.classList.add("border-indigo-600", "text-indigo-600");
+
+        panelMasiv?.classList.add("hidden");
+        panelIndiv?.classList.remove("hidden");
+    }
+}
+
+export function actualizarPreviewCamasMasivas() {
+    const previewEl = document.getElementById("bulk-cama-preview");
+    if (!previewEl) return;
+
+    const pisoEl = document.getElementById("bulk-cama-piso");
+    const habsEl = document.getElementById("bulk-cama-habs");
+    const camasPorHabEl = document.getElementById("bulk-cama-por-hab");
+    const habInicioEl = document.getElementById("bulk-cama-hab-inicio");
+    const sectorEl = document.getElementById("bulk-cama-sector");
+    const tipoEl = document.getElementById("bulk-cama-tipo");
+    const btnEjecutar = document.getElementById("btn-ejecutar-bulk-camas");
+
+    const piso = Math.max(1, parseInt(pisoEl?.value, 10) || 1);
+    const cantHabs = Math.max(0, parseInt(habsEl?.value, 10) || 0);
+    const camasPorHab = Math.max(0, parseInt(camasPorHabEl?.value, 10) || 0);
+    const customInicio = habInicioEl?.value?.trim();
+    const habInicio = customInicio ? parseInt(customInicio, 10) : (piso * 100 + 1);
+    const sector = sectorEl?.value || "Clínica Médica";
+    const tipo = tipoEl?.value || (camasPorHab === 1 ? "Individual" : "Compartida");
+
+    // Sincronizar placeholder de hab-inicio
+    if (habInicioEl && !customInicio) {
+        habInicioEl.placeholder = `Ej: ${piso * 100 + 1}`;
+    }
+
+    if (cantHabs <= 0 || camasPorHab <= 0) {
+        previewEl.innerHTML = `
+            <div class="text-center py-3 text-slate-400">
+                <p class="font-medium text-xs">Configure cantidad de habitaciones y camas por habitación para calcular la estructura.</p>
+            </div>
+        `;
+        if (btnEjecutar) {
+            btnEjecutar.disabled = true;
+            btnEjecutar.classList.add("opacity-50", "cursor-not-allowed");
+        }
+        return;
+    }
+
+    const habitaciones = [];
+    let camasNuevasCount = 0;
+    let camasDuplicadasCount = 0;
+    const listaNumerosHab = [];
+
+    for (let i = 0; i < cantHabs; i++) {
+        const numHab = String(habInicio + i);
+        listaNumerosHab.push(numHab);
+        let nuevasEnHab = 0;
+        let duplicadasEnHab = 0;
+
+        for (let c = 1; c <= camasPorHab; c++) {
+            const nomCama = `Cama ${c}`;
+            const idCama = `P${piso}_H${numHab}_Cama${c}`;
+            const yaExiste = camasCache.some(item => item.activo && (
+                item.id === idCama ||
+                (item.piso === piso && String(item.habitacion) === numHab && String(item.numeroCama).toLowerCase() === nomCama.toLowerCase())
+            ));
+
+            if (yaExiste) {
+                duplicadasEnHab++;
+                camasDuplicadasCount++;
+            } else {
+                nuevasEnHab++;
+                camasNuevasCount++;
+            }
+        }
+
+        habitaciones.push({
+            numero: numHab,
+            nuevas: nuevasEnHab,
+            duplicadas: duplicadasEnHab,
+            total: camasPorHab
+        });
+    }
+
+    const stringHabitaciones = listaNumerosHab.join(", ");
+
+    let badgesHtml = "";
+    habitaciones.forEach(h => {
+        let estadoClase = "bg-emerald-50 text-emerald-800 border-emerald-200";
+        let icono = `<svg class="w-3 h-3 text-emerald-600 inline shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>`;
+        let detalle = `${h.nuevas} nuevas`;
+
+        if (h.nuevas === 0) {
+            estadoClase = "bg-slate-100 text-slate-500 border-slate-200";
+            icono = `<svg class="w-3 h-3 text-slate-400 inline shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+            detalle = "ya existe";
+        } else if (h.duplicadas > 0) {
+            estadoClase = "bg-amber-50 text-amber-800 border-amber-200";
+            icono = `<svg class="w-3 h-3 text-amber-600 inline shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
+            detalle = `${h.nuevas} nuevas, ${h.duplicadas} exist.`;
+        }
+
+        badgesHtml += `
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[11px] font-mono ${estadoClase}" title="Habitación ${h.numero}: ${detalle}">
+                ${icono}
+                <strong class="font-bold">Hab. ${h.numero}</strong>
+                <span class="text-[9.5px] opacity-80">(${detalle})</span>
+            </span>
+        `;
+    });
+
+    previewEl.innerHTML = `
+        <div class="space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-indigo-100 text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-bold text-[11px]">Piso ${piso}</span>
+                    <span class="text-slate-600">Sector: <strong class="text-slate-800">${escaparHTML(sector)}</strong></span>
+                    <span class="text-slate-400">|</span>
+                    <span class="text-slate-600">Tipo: <strong class="text-slate-800">${escaparHTML(tipo)}</strong></span>
+                </div>
+                <div class="flex items-center gap-3 font-semibold text-xs">
+                    <span class="text-slate-600"><span class="font-bold text-indigo-600">${cantHabs}</span> habitaciones</span>
+                    <span class="text-emerald-700"><span class="font-bold text-emerald-800">${camasNuevasCount}</span> camas a crear</span>
+                    ${camasDuplicadasCount > 0 ? `<span class="text-amber-700 font-bold">(${camasDuplicadasCount} omitidas por existir)</span>` : ''}
+                </div>
+            </div>
+
+            <!-- Listado Explícito de Habitaciones Requerido -->
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                        Habitaciones a generar (${cantHabs}):
+                    </span>
+                    <span class="text-[10px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                        ${escaparHTML(stringHabitaciones)}
+                    </span>
+                </div>
+                <div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1.5 bg-slate-50/70 rounded border border-slate-100">
+                    ${badgesHtml}
+                </div>
+            </div>
+
+            ${camasDuplicadasCount > 0 ? `
+                <div class="bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1.5 rounded-lg text-[11px] flex items-center gap-2">
+                    <svg class="w-4 h-4 shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <span><strong>Atención:</strong> Se detectaron ${camasDuplicadasCount} camas que ya existen en el Piso ${piso}. Serán omitidas automáticamente del batch para no sobrescribir datos ni desvincular pacientes.</span>
+                </div>
+            ` : ''}
+
+            ${camasNuevasCount === 0 ? `
+                <div class="bg-slate-100 border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-[11px]">
+                    Todas las camas para este rango de habitaciones ya están dadas de alta. No hay nuevas camas que generar.
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    if (btnEjecutar) {
+        btnEjecutar.disabled = (camasNuevasCount === 0);
+        if (camasNuevasCount === 0) {
+            btnEjecutar.classList.add("opacity-50", "cursor-not-allowed");
+            btnEjecutar.title = "Todas las camas ya existen en el sistema";
+        } else {
+            btnEjecutar.classList.remove("opacity-50", "cursor-not-allowed");
+            btnEjecutar.title = `Generar ${camasNuevasCount} camas en Piso ${piso}`;
+        }
+    }
+}
+
+export async function ejecutarCargaMasivaCamasAdmin() {
+    const sesion = obtenerSesionActual();
+    if (!sesion || !esRolAdministracion(sesion.rol)) {
+        mostrarAlerta("Acceso Denegado", "Solo Administración puede configurar la estructura de camas.");
+        return;
+    }
+
+    const piso = Number(document.getElementById("bulk-cama-piso")?.value || 1);
+    const cantHabs = Number(document.getElementById("bulk-cama-habs")?.value || 0);
+    const camasPorHab = Number(document.getElementById("bulk-cama-por-hab")?.value || 0);
+    const customInicio = document.getElementById("bulk-cama-hab-inicio")?.value?.trim();
+    const habInicio = customInicio ? Number(customInicio) : (piso * 100 + 1);
+    const sector = document.getElementById("bulk-cama-sector")?.value;
+    const tipo = document.getElementById("bulk-cama-tipo")?.value || (camasPorHab === 1 ? "Individual" : "Compartida");
+
+    if (piso < 1 || cantHabs < 1 || camasPorHab < 1 || !sector) {
+        mostrarAlerta("Campos Incompletos", "Por favor indique un piso válido (>= 1), cantidad de habitaciones (>= 1), camas por habitación (>= 1) y sector.");
+        return;
+    }
+
+    const camasAGenerar = [];
+    const duplicadosOmitidos = [];
+    const listaHabitaciones = [];
+
+    for (let i = 0; i < cantHabs; i++) {
+        const numHab = (habInicio + i).toString();
+        listaHabitaciones.push(numHab);
+        for (let b = 1; b <= camasPorHab; b++) {
+            const nomCama = `Cama ${b}`;
+            const idCama = `P${piso}_H${numHab}_Cama${b}`;
+            
+            const yaExiste = camasCache.some(c => c.activo && (
+                c.id === idCama ||
+                (c.piso === piso && String(c.habitacion) === numHab && String(c.numeroCama).toLowerCase() === nomCama.toLowerCase())
+            ));
+
+            if (yaExiste) {
+                duplicadosOmitidos.push({ piso, habitacion: numHab, numeroCama: nomCama });
+            } else {
+                camasAGenerar.push({
+                    id: idCama,
+                    piso: piso,
+                    habitacion: numHab,
+                    numeroCama: nomCama,
+                    sector: sector,
+                    tipo: tipo
+                });
+            }
+        }
+    }
+
+    if (camasAGenerar.length === 0) {
+        mostrarAlerta("Sin Camas Nuevas", `Todas las ${duplicadosOmitidos.length} camas calculadas para el Piso ${piso} (Habitaciones: ${listaHabitaciones.join(', ')}) ya existen en el sistema. No se generaron duplicados.`);
+        return;
+    }
+
+    const resumenHab = listaHabitaciones.length <= 10 
+        ? listaHabitaciones.join(", ") 
+        : `${listaHabitaciones.slice(0, 8).join(", ")} ... y ${listaHabitaciones.length - 8} más`;
+
+    const textoConfirmacion = `¿Confirma la creación masiva de ${camasAGenerar.length} camas en el Piso ${piso}?\n\n` +
+        `• Habitaciones (${listaHabitaciones.length}): ${resumenHab}\n` +
+        `• Camas por habitación: ${camasPorHab}\n` +
+        `• Sector: ${sector} | Tipo: ${tipo}\n` +
+        (duplicadosOmitidos.length > 0 ? `• Omitidas por existir previamente: ${duplicadosOmitidos.length} camas\n` : "");
+
+    const confirma = await pedirConfirmacion(
+        "Confirmar Estructura Masiva",
+        textoConfirmacion,
+        `Sí, Generar ${camasAGenerar.length} Camas`
+    );
+    if (!confirma) return;
+
+    return await ejecutarUnaVez(`bulk-camas-piso-${piso}`, async () => {
+        try {
+            const CHUNK_SIZE = 400;
+            for (let i = 0; i < camasAGenerar.length; i += CHUNK_SIZE) {
+                const chunk = camasAGenerar.slice(i, i + CHUNK_SIZE);
+                const batch = writeBatch(db);
+                chunk.forEach(c => {
+                    const ref = doc(db, "camas", c.id);
+                    batch.set(ref, {
+                        piso: c.piso,
+                        habitacion: c.habitacion,
+                        numeroCama: c.numeroCama,
+                        sector: c.sector,
+                        tipo: c.tipo,
+                        estado: "libre",
+                        activo: true,
+                        pacienteNombre: null,
+                        pacienteDni: null,
+                        medicoTratante: null,
+                        fechaIngreso: null,
+                        internacionId: null,
+                        creadoEn: serverTimestamp(),
+                        actualizadoEn: serverTimestamp()
+                    });
+                });
+                await batch.commit();
+            }
+
+            mostrarToast(`Se generaron exitosamente ${camasAGenerar.length} camas en Piso ${piso}.` + 
+                (duplicadosOmitidos.length > 0 ? ` (${duplicadosOmitidos.length} duplicados omitidos)` : ""));
+            
+            await cargarCamasHospital();
+            seleccionarPisoInternacion(piso);
+            renderizarMapaCamas();
+            renderizarTablaConfigCamasAdmin();
+            actualizarPreviewCamasMasivas();
+        } catch (err) {
+            console.error("Error en carga masiva de camas:", err);
+            mostrarAlerta("Error", "No se pudo completar la carga masiva de camas: " + (err.message || "Error de red"));
+        }
+    });
+}
+
 export async function guardarNuevaCamaAdmin() {
     const piso = Number(document.getElementById("config-cama-piso")?.value || 1);
     const hab = document.getElementById("config-cama-hab")?.value.trim();
@@ -766,6 +1073,7 @@ export async function renderizarTablaConfigCamasAdmin() {
     });
 
     contenedor.innerHTML = html;
+    actualizarPreviewCamasMasivas();
 }
 
 export async function eliminarCamaAdmin(camaId) {
@@ -888,3 +1196,7 @@ window.guardarNuevaCamaAdmin = guardarNuevaCamaAdmin;
 window.eliminarCamaAdmin = eliminarCamaAdmin;
 window.renderizarTablaConfigCamasAdmin = renderizarTablaConfigCamasAdmin;
 window.sembrarEstructuraCamasInicial = sembrarEstructuraCamasInicial;
+window.abrirModalConfigCamasAdmin = abrirModalConfigCamasAdmin;
+window.cambiarTabConfigCamas = cambiarTabConfigCamas;
+window.actualizarPreviewCamasMasivas = actualizarPreviewCamasMasivas;
+window.ejecutarCargaMasivaCamasAdmin = ejecutarCargaMasivaCamasAdmin;

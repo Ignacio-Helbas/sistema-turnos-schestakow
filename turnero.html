@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Schestakow - Cartelera de Llamado en Sala de Espera</title>
+    
+    <!-- Estilos base con Tailwind Play CDN y estilos institucionales -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/estilos.css">
+    
+    <style>
+        @keyframes pulso-llamado {
+            0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); border-color: rgba(56, 189, 248, 1); }
+            50% { box-shadow: 0 0 40px 10px rgba(56, 189, 248, 0.3); border-color: rgba(56, 189, 248, 0.8); }
+            100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); border-color: rgba(56, 189, 248, 0.4); }
+        }
+        .animacion-nuevo-llamado {
+            animation: pulso-llamado 3s ease-in-out infinite;
+        }
+        .text-glow {
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col bg-slate-950 text-slate-100 overflow-hidden font-sans select-none">
+
+    <!-- BARRA SUPERIOR INSTITUCIONAL (CABECERA TV) -->
+    <header class="bg-slate-900/90 border-b border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between shrink-0 shadow-lg">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-sky-950 border border-sky-800 flex items-center justify-center shrink-0">
+                <svg class="w-7 h-7 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black text-white tracking-wide">Hospital Teodoro J. Schestakow</h1>
+                <p class="text-xs sm:text-sm text-sky-300 font-medium">Cartelera de Llamado &bull; Sala de Espera General</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4 mt-2 sm:mt-0">
+            <!-- Botón de Activación de Audio / Kiosco -->
+            <button id="btn-activar-audio" onclick="activarAudioYKiosco()" 
+                class="px-3.5 py-2 rounded-lg bg-sky-900/80 hover:bg-sky-800 text-sky-200 border border-sky-700 text-xs font-bold flex items-center gap-2 transition cursor-pointer shadow-xs">
+                <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+                </svg>
+                <span id="texto-estado-audio">Activar Sonido y Pantalla Completa</span>
+            </button>
+
+            <!-- Reloj Digital Oficial -->
+            <div class="text-right pl-3 border-l border-slate-800">
+                <div id="reloj-hora" class="text-xl sm:text-2xl font-black font-mono text-white tracking-wider leading-none">--:--:--</div>
+                <div id="reloj-fecha" class="text-[11px] text-slate-400 font-medium mt-1">Cargando fecha...</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ÁREA PRINCIPAL: DIVISIÓN LLAMADO ACTUAL VS HISTORIAL RECIENTE -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 min-h-0 overflow-hidden">
+
+        <!-- COLUMNA PRINCIPAL (LLAMADO ACTUAL - 8 COLUMNAS) -->
+        <section class="lg:col-span-8 flex flex-col justify-center">
+            <div id="tarjeta-llamado-principal" class="bg-slate-900/90 border-2 border-slate-800 rounded-3xl p-8 sm:p-12 flex flex-col justify-between h-full shadow-2xl relative transition-all duration-500">
+                
+                <!-- Encabezado de la Tarjeta -->
+                <div class="flex justify-between items-center border-b border-slate-800/80 pb-4">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-3.5 h-3.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-xs sm:text-sm font-bold uppercase tracking-widest text-emerald-400 font-mono">Llamado Actual</span>
+                    </div>
+                    <div id="principal-hora" class="text-xs sm:text-sm font-mono text-slate-400">
+                        Aguardando pacientes
+                    </div>
+                </div>
+
+                <!-- Cuerpo Central: Nombre y Destino -->
+                <div class="my-auto py-6 text-center space-y-6">
+                    <div class="space-y-2">
+                        <p class="text-xs sm:text-sm uppercase tracking-widest font-semibold text-slate-400">Paciente</p>
+                        <h2 id="principal-paciente" class="text-4xl sm:text-6xl md:text-7xl font-black text-white uppercase tracking-tight text-glow break-words">
+                            Sala de Espera
+                        </h2>
+                    </div>
+
+                    <div class="inline-block pt-2">
+                        <div id="principal-consultorio" class="text-3xl sm:text-5xl md:text-6xl font-black text-sky-300 bg-sky-950/80 border-2 border-sky-400/80 py-4 px-8 rounded-2xl shadow-xl inline-block">
+                            Atención Médica
+                        </div>
+                    </div>
+
+                    <div class="space-y-1 pt-2">
+                        <p id="principal-medico" class="text-lg sm:text-2xl font-bold text-slate-200">
+                            Por favor permanezca atento al timbre de aviso
+                        </p>
+                        <p id="principal-especialidad" class="text-sm sm:text-lg text-slate-400 font-medium">
+                            Hospital Teodoro J. Schestakow &bull; San Rafael, Mendoza
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Pie de Tarjeta: Orientación al Paciente -->
+                <div class="border-t border-slate-800/80 pt-4 flex justify-between items-center text-xs text-slate-500">
+                    <span>Diríjase al consultorio indicado cuando escuche el timbre</span>
+                    <span class="font-mono">Sistema HIS Schestakow</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- COLUMNA LATERAL (ÚLTIMOS LLAMADOS PREVIOS - 4 COLUMNAS) -->
+        <section class="lg:col-span-4 flex flex-col h-full bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 shadow-xl">
+            <div class="flex items-center gap-2 border-b border-slate-800 pb-3 mb-4">
+                <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h3 class="font-bold text-sm uppercase tracking-wider text-slate-300">Llamados Anteriores</h3>
+            </div>
+
+            <!-- Lista de llamados previos -->
+            <div id="contenedor-historial-llamados" class="space-y-3 flex-1 overflow-y-auto pr-1">
+                <div class="p-4 rounded-xl bg-slate-950/40 border border-slate-800/60 text-center text-xs text-slate-500 py-10">
+                    Aún no se han registrado llamados anteriores en esta sesión.
+                </div>
+            </div>
+
+            <!-- Recordatorio Institucional de Privacidad -->
+            <div class="mt-4 pt-3 border-t border-slate-800/60 text-[11px] text-slate-500 text-center">
+                Protección de datos conforme a Ley 25.326 y Ley 26.529
+            </div>
+        </section>
+    </main>
+
+    <!-- BARRA INFERIOR DE NOTIFICACIÓN DE SALUD / TICKET CINTILLO -->
+    <footer class="bg-slate-950 border-t border-slate-800/80 px-6 py-2.5 text-xs text-slate-400 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>Cartelera sincronizada en tiempo real</span>
+        </div>
+        <div>
+            <span>Conserve su orden de citación y prepare su documento para ingresar a consulta</span>
+        </div>
+    </footer>
+
+    <!-- SCRIPT DE LÓGICA DE CARTELERA, AUDIO SYNTH Y FIRESTORE REALTIME -->
+    <script type="module">
+        import {
+            db,
+            collection,
+            query,
+            orderBy,
+            limit,
+            onSnapshot
+        } from "./js/firebase.js";
+
+        import { escaparHTML } from "./js/ui.js";
+
+        // =========================================================================
+        // 1. RELOJ DIGITAL INSTITUCIONAL
+        // =========================================================================
+        function actualizarReloj() {
+            const ahora = new Date();
+            const elemHora = document.getElementById('reloj-hora');
+            const elemFecha = document.getElementById('reloj-fecha');
+
+            if (elemHora) {
+                elemHora.textContent = ahora.toLocaleTimeString('es-AR', { hour12: false });
+            }
+            if (elemFecha) {
+                elemFecha.textContent = ahora.toLocaleDateString('es-AR', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+            }
+        }
+        setInterval(actualizarReloj, 1000);
+        actualizarReloj();
+
+        // =========================================================================
+        // 2. SINTETIZADOR WEB AUDIO API (CHIME HOSPITALARIO SIN ARCHIVOS EXTERNOS)
+        // =========================================================================
+        let audioCtx = null;
+        let audioHabilitado = false;
+        let ultimoIdLlamado = null;
+
+        window.activarAudioYKiosco = async function() {
+            try {
+                if (!audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new AudioContextClass();
+                }
+                if (audioCtx.state === 'suspended') {
+                    await audioCtx.resume();
+                }
+                audioHabilitado = true;
+
+                // Actualizar botón en cabecera
+                const btn = document.getElementById('btn-activar-audio');
+                const txt = document.getElementById('texto-estado-audio');
+                if (btn && txt) {
+                    txt.textContent = "Audio y Pantalla Activos";
+                    btn.className = "px-3.5 py-2 rounded-lg bg-emerald-950/80 text-emerald-300 border border-emerald-700 text-xs font-bold flex items-center gap-2 shadow-xs";
+                }
+
+                // Solicitar pantalla completa opcional si el navegador lo permite
+                if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                }
+
+                // Reproducir un suave chime de prueba de confirmación
+                tocarChimeHospitalario();
+            } catch (err) {
+                console.warn("No se pudo inicializar audio de la cartelera:", err);
+            }
+        };
+
+        function tocarChimeHospitalario() {
+            if (!audioHabilitado || !audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const now = audioCtx.currentTime;
+
+                // Tono 1: Mi5 (659.25 Hz)
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(659.25, now);
+                gain1.gain.setValueAtTime(0.001, now);
+                gain1.gain.exponentialRampToValueAtTime(0.3, now + 0.05);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.5);
+
+                // Tono 2: Sol#5 (830.61 Hz) con decaimiento armónico suave
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(830.61, now + 0.25);
+                gain2.gain.setValueAtTime(0.001, now + 0.25);
+                gain2.gain.exponentialRampToValueAtTime(0.35, now + 0.32);
+                gain2.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.start(now + 0.25);
+                osc2.stop(now + 1.2);
+            } catch (e) {
+                console.error("Error al emitir chime de audio:", e);
+            }
+        }
+
+        // =========================================================================
+        // 3. SUSCRIPCIÓN EN TIEMPO REAL A FIRESTORE (/llamador_turnos)
+        // =========================================================================
+        function formatearHoraCorta(timestamp) {
+            if (!timestamp) return "";
+            try {
+                let d;
+                if (timestamp.toDate) d = timestamp.toDate();
+                else if (typeof timestamp === 'string') d = new Date(timestamp);
+                else d = new Date(timestamp);
+                return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+            } catch (_) {
+                return "";
+            }
+        }
+
+        function renderizarLlamados(docs) {
+            if (!docs || docs.length === 0) return;
+
+            const principal = docs[0].data();
+            const idPrincipal = docs[0].id;
+
+            // Detección de nuevo llamado para chime y animación de pulso
+            if (idPrincipal !== ultimoIdLlamado) {
+                if (ultimoIdLlamado !== null) {
+                    tocarChimeHospitalario();
+                }
+                ultimoIdLlamado = idPrincipal;
+
+                const tarjeta = document.getElementById('tarjeta-llamado-principal');
+                if (tarjeta) {
+                    tarjeta.classList.remove('animacion-nuevo-llamado');
+                    void tarjeta.offsetWidth; // Forzar reflow para reiniciar animación
+                    tarjeta.classList.add('animacion-nuevo-llamado');
+                    setTimeout(() => {
+                        tarjeta.classList.remove('animacion-nuevo-llamado');
+                    }, 15000);
+                }
+            }
+
+            // Renderizar llamado principal
+            const elemPaciente = document.getElementById('principal-paciente');
+            const elemConsultorio = document.getElementById('principal-consultorio');
+            const elemMedico = document.getElementById('principal-medico');
+            const elemEspecialidad = document.getElementById('principal-especialidad');
+            const elemHora = document.getElementById('principal-hora');
+
+            if (elemPaciente) elemPaciente.textContent = principal.pacienteNombre || 'Paciente';
+            if (elemConsultorio) elemConsultorio.textContent = principal.consultorio || 'Consultorio';
+            if (elemMedico) elemMedico.textContent = principal.medico || 'Médico de Guardia';
+            if (elemEspecialidad) elemEspecialidad.textContent = principal.especialidad || 'Atención General';
+            if (elemHora) elemHora.textContent = "Hora del llamado: " + (formatearHoraCorta(principal.llamadoEn) || principal.horario || '');
+
+            // Renderizar lista de llamados anteriores (docs 1 a 4)
+            const historialContainer = document.getElementById('contenedor-historial-llamados');
+            if (!historialContainer) return;
+
+            const anteriores = docs.slice(1);
+            if (anteriores.length === 0) {
+                historialContainer.innerHTML = `
+                    <div class="p-4 rounded-xl bg-slate-950/40 border border-slate-800/60 text-center text-xs text-slate-500 py-10">
+                        Aún no se han registrado llamados anteriores en esta sesión.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = "";
+            anteriores.forEach(docSnap => {
+                const item = docSnap.data();
+                const horaStr = formatearHoraCorta(item.llamadoEn) || item.horario || "";
+                html += `
+                    <div class="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/90 flex items-center justify-between gap-3 shadow-md hover:border-slate-700 transition">
+                        <div class="min-w-0 flex-1">
+                            <h4 class="font-bold text-sm text-white uppercase truncate">${escaparHTML(item.pacienteNombre || 'Paciente')}</h4>
+                            <p class="text-xs text-sky-400 font-bold">${escaparHTML(item.consultorio || 'Consultorio')}</p>
+                            <p class="text-[11px] text-slate-400 truncate">${escaparHTML(item.medico || '')} &bull; ${escaparHTML(item.especialidad || '')}</p>
+                        </div>
+                        <div class="shrink-0 text-right">
+                            <span class="text-xs font-mono font-bold px-2 py-1 bg-slate-800 text-slate-300 rounded-lg border border-slate-700">
+                                ${escaparHTML(horaStr)}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+            historialContainer.innerHTML = html;
+        }
+
+        // Suscribirse a los últimos 5 llamados en Firestore
+        try {
+            const q = query(
+                collection(db, "llamador_turnos"),
+                orderBy("llamadoEn", "desc"),
+                limit(5)
+            );
+
+            onSnapshot(q, (snapshot) => {
+                if (!snapshot.empty) {
+                    renderizarLlamados(snapshot.docs);
+                }
+            }, (error) => {
+                console.error("Error en observador de llamador:", error);
+            });
+        } catch (e) {
+            console.error("Error al configurar listener de cartelera:", e);
+        }
+    </script>
+</body>
+</html>

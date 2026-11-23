@@ -963,6 +963,21 @@ export async function llamarPaciente(idDoc) {
             });
         }
 
+        // Proyección pública hacia la Cartelera TV de Sala de Espera (/llamador_turnos)
+        try {
+            await setDoc(doc(db, "llamador_turnos", idDoc), {
+                pacienteNombre: turnoData.pacienteNombre || "Paciente",
+                consultorio: `Consultorio ${sesionActual.consultorio || '1'}`,
+                medico: sesionActual.nombre || turnoData.medico || "Médico de Guardia",
+                especialidad: turnoData.especialidad || "Clínica Médica",
+                horario: turnoData.horario || "00:00",
+                llamadoEn: serverTimestamp(),
+                estado: "llamando"
+            });
+        } catch (errLlamador) {
+            console.warn("Aviso al emitir llamado en cartelera TV:", errLlamador);
+        }
+
         if (sesionActual && pacienteId) {
             await setDoc(doc(db, "pacientes", pacienteId, "acceso", sesionActual.uid), {
                 medicoUid: sesionActual.uid,

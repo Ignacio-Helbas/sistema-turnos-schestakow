@@ -11,6 +11,7 @@ import {
     getDocs,
     doc,
     getDoc,
+    setDoc,
     updateDoc,
     deleteDoc,
     writeBatch,
@@ -195,6 +196,7 @@ export async function generarAgendaRecepcion() {
                         ` : (turno.estado === "En Espera" ? `
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 <span class="badge-his badge-his-espera text-[11px]">En Sala</span>
+                                <button onclick="llamarPacienteRecepcion('${turno.idDoc}')" class="btn-his-secondary text-xs px-2 py-1" title="Llamar a ventanilla / box de recepción">Llamar a Box</button>
                                 <button onclick="imprimirComprobanteTurnoRecepcion('${turno.idDoc}', '${pacNomEsc}', '${pacDniEsc}', '${hsStr}', '${codEsc}')" class="btn-his-text text-xs px-2 py-1 text-slate-700 hover:text-slate-900 border border-slate-200 rounded" title="Imprimir comprobante institucional">Comprobante</button>
                                 <button onclick="cancelarTurnoRecepcion('${turno.idDoc}')" class="btn-his-danger text-xs px-2 py-1">Liberar</button>
                             </div>
@@ -594,6 +596,33 @@ export function descargarExcelRecepcion() {
     XLSX.writeFile(wb, `Agenda_${medicoSeleccionadoRecepcion}_${fechaRecepcionSeleccionada}.xlsx`);
 }
 
+export async function llamarPacienteRecepcion(idDoc) {
+    try {
+        const sesionActual = obtenerSesionActual();
+        if (!sesionActual || (!esRolRecepcion(sesionActual.rol) && !esRolAdministracion(sesionActual.rol))) {
+            mostrarAlerta("Permiso Denegado", "Solo personal de Recepción o Administración puede llamar pacientes a ventanilla.");
+            return;
+        }
+        const snap = await getDoc(doc(db, "turnos", idDoc));
+        if (!snap.exists()) return;
+        const turnoData = snap.data();
+        await setDoc(doc(db, "llamador_turnos", idDoc), {
+            pacienteNombre: turnoData.pacienteNombre || "Paciente",
+            consultorio: "Recepción / Box 1",
+            medico: sesionActual.nombre || "Recepción Central",
+            especialidad: "Admisión Hospitalaria",
+            horario: turnoData.horario || "00:00",
+            llamadoEn: serverTimestamp(),
+            estado: "llamando"
+        });
+        if (typeof mostrarToast === 'function') {
+            mostrarToast("Llamado Emitido", `Se notificó a ${turnoData.pacienteNombre} en la Cartelera TV`);
+        }
+    } catch (err) {
+        console.error("Error al emitir llamado desde recepción:", err);
+    }
+}
+
 // Exponer en window para manejadores inline del DOM
 window.actualizarMedicosRecepcion = actualizarMedicosRecepcion;
 window.buscarAgendaRecepcion = buscarAgendaRecepcion;
@@ -611,3 +640,4 @@ window.reprogramarTurnoRecepcion = reprogramarTurnoRecepcion;
 window.imprimirComprobanteTurnoRecepcion = imprimirComprobanteTurnoRecepcion;
 window.filtrarAgendaRecepcionPorDni = filtrarAgendaRecepcionPorDni;
 window.filtrarAgendaPorEstado = filtrarAgendaPorEstado;
+window.llamarPacienteRecepcion = llamarPacienteRecepcion;

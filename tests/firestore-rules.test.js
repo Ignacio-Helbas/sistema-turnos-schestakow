@@ -155,6 +155,20 @@ test('Matriz de Seguridad de Reglas de Firestore', async (t) => {
             'Un médico autor solo puede cancelar su propia reserva quirúrgica');
         assert.doesNotMatch(rulesContent, /!diff\.affectedKeys\(\)\.hasAny\(\[\s*'creadoPor'/,
             'puedeActualizarReservaQuirofano no debe contener la cláusula redundante hasAny previa a hasOnly');
+
+        // 20. Cartelera TV / Llamador de Sala (/llamador_turnos)
+        assert.match(rulesContent, /match \/llamador_turnos\/\{llamadoId\}/,
+            'Debe existir la colección llamador_turnos en firestore.rules');
+        assert.match(rulesContent, /function isValidLlamador\(data\)/,
+            'Debe existir la función de validación isValidLlamador');
+        assert.match(rulesContent, /data\.estado in \['llamando',\s*'atendiendo',\s*'finalizado'\];/,
+            'isValidLlamador solo debe permitir los estados llamando, atendiendo y finalizado (sin cancelado)');
+        assert.match(rulesContent, /allow create:\s*if\s*\(isSuperAdmin\(\)\s*\|\|\s*isRecepcion\(\)\s*\|\|\s*isMedico\(\)\s*\|\|\s*isEnfermeria\(\)\)\s*&&\s*isValidLlamador\(request\.resource\.data\);/,
+            'allow create en llamador_turnos debe verificar roles de staff y validar el esquema completo');
+        assert.match(rulesContent, /allow update:\s*if\s*\(isSuperAdmin\(\)\s*\|\|\s*isRecepcion\(\)\s*\|\|\s*isMedico\(\)\s*\|\|\s*isEnfermeria\(\)\)\s*&&\s*isValidLlamador\(request\.resource\.data\)\s*&&\s*request\.resource\.data\.diff\(resource\.data\)\.affectedKeys\(\)\.hasOnly\(\['estado',\s*'llamadoEn'\]\);/,
+            'allow update en llamador_turnos debe separar create de update y restringir las claves modificables únicamente a estado y llamadoEn');
+        assert.match(rulesContent, /match \/llamador_turnos\/\{llamadoId\}[\s\S]*?allow delete:\s*if\s*isSuperAdmin\(\)\s*\|\|\s*isRecepcion\(\);/,
+            'allow delete en llamador_turnos debe mantenerse para SuperAdmin o Recepción');
     });
 
     // Si está disponible el emulador en vivo, se ejecutan las pruebas de integración

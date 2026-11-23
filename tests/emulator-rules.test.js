@@ -1353,4 +1353,96 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
             })
         );
     });
+
+    // Caso 37: Cartelera TV / Llamador de Turnos (/llamador_turnos)
+    await suite.test('37. Cartelera TV / Llamador de Turnos (/llamador_turnos): create, update restringido y delete', async () => {
+        const unauthedDb = testEnv.unauthenticatedContext().firestore();
+
+        // 1. Configurar usuario médico y recepción en /usuarios
+        await testEnv.withSecurityRulesDisabled(async (context) => {
+            const db = context.firestore();
+            await db.collection('usuarios').doc('medico_llamador').set({
+                rol: 'Médico',
+                activo: true
+            });
+            await db.collection('usuarios').doc('recep_llamador').set({
+                rol: 'Recepción',
+                activo: true
+            });
+        });
+
+        const medDb = testEnv.authenticatedContext('medico_llamador').firestore();
+        const recepDb = testEnv.authenticatedContext('recep_llamador').firestore();
+
+        const docId = 'llamado_demo_1';
+        const docRefMed = medDb.collection('llamador_turnos').doc(docId);
+        const docRefAnon = unauthedDb.collection('llamador_turnos').doc(docId);
+        const docRefRecep = recepDb.collection('llamador_turnos').doc(docId);
+
+        const payloadValido = {
+            pacienteNombre: 'Juan Perez',
+            consultorio: 'Consultorio 1',
+            medico: 'Dr. Lopez',
+            especialidad: 'Clínica Médica',
+            horario: '10:30',
+            llamadoEn: serverTimestamp(),
+            estado: 'llamando'
+        };
+
+        // Anónimo NO puede crear en /llamador_turnos
+        await assertFails(docRefAnon.set(payloadValido));
+
+        // Creación con estado 'cancelado' DEBE FALLAR (ya no es un estado permitido en isValidLlamador)
+        await assertFails(
+            docRefMed.set({
+                ...payloadValido,
+                estado: 'cancelado'
+            })
+        );
+
+        // Médico PUEDE crear con datos válidos y estado 'llamando'
+        await assertSucceeds(docRefMed.set(payloadValido));
+
+        // Lectura pública permitida para TV / kiosco anónimo
+        await assertSucceeds(docRefAnon.get());
+
+        // Update de sólo 'estado' y 'llamadoEn' por staff DEBE SER EXITOSO
+        await assertSucceeds(
+            docRefMed.update({
+                estado: 'atendiendo',
+                llamadoEn: serverTimestamp()
+            })
+        );
+
+        // Update de sólo 'estado' ('finalizado') DEBE SER EXITOSO
+        await assertSucceeds(
+            docRefMed.update({
+                estado: 'finalizado'
+            })
+        );
+
+        // Update intentando modificar datos inmutables (ej: pacienteNombre o consultorio) DEBE FALLAR
+        await assertFails(
+            docRefMed.update({
+                pacienteNombre: 'Atacante Hacker',
+                estado: 'atendiendo'
+            })
+        );
+
+        await assertFails(
+            docRefMed.update({
+                consultorio: 'Consultorio 99'
+            })
+        );
+
+        // Anónimo NO puede actualizar
+        await assertFails(
+            docRefAnon.update({
+                estado: 'finalizado'
+            })
+        );
+
+        // Recepción PUEDE eliminar documento
+        await assertSucceeds(docRefRecep.delete());
+    });
 });

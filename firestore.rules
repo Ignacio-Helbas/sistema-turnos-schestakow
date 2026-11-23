@@ -182,6 +182,17 @@ service cloud.firestore {
     //   - creadoEn: timestamp
     //   - actualizadoEn: timestamp
     //
+    // Collection: llamador_turnos/{llamadoId}
+    // Document ID: Identificador del llamado en sala
+    // Fields:
+    //   - pacienteNombre: string (2-100 caracteres)
+    //   - consultorio: string (1-50 caracteres)
+    //   - medico: string (2-100 caracteres)
+    //   - especialidad: string (1-100 caracteres)
+    //   - horario: string (formato HH:MM)
+    //   - llamadoEn: timestamp
+    //   - estado: string ('llamando', 'atendiendo', 'finalizado', 'cancelado')
+    //
     // ===============================================================
 
     // =========================================================================
@@ -990,6 +1001,40 @@ service cloud.firestore {
       allow create: if puedeCrearReservaQuirofano();
       allow update: if puedeActualizarReservaQuirofano();
       allow delete: if isSuperAdmin();
+    }
+
+    // ==========================================
+    // REGLAS: CARTELERA TV / LLAMADOR DE SALA (/llamador_turnos)
+    // ==========================================
+    function isValidLlamador(data) {
+      let allowedKeys = [
+        'pacienteNombre', 'consultorio', 'medico', 'especialidad',
+        'horario', 'llamadoEn', 'estado'
+      ];
+      return data.keys().hasOnly(allowedKeys)
+        && data.pacienteNombre is string && data.pacienteNombre.size() >= 2 && data.pacienteNombre.size() <= 100
+        && data.consultorio is string && data.consultorio.size() >= 1 && data.consultorio.size() <= 50
+        && data.medico is string && data.medico.size() >= 2 && data.medico.size() <= 100
+        && data.especialidad is string && data.especialidad.size() >= 1 && data.especialidad.size() <= 100
+        && data.horario is string && data.horario.matches('^[0-9]{2}:[0-9]{2}$')
+        && (data.llamadoEn == request.time || data.llamadoEn is timestamp)
+        && data.estado in ['llamando', 'atendiendo', 'finalizado'];
+    }
+
+    // NOTA DE PRIVACIDAD Y DERECHOS DEL PACIENTE (Ley 26.529 / Ley 25.326):
+    // El campo 'especialidad' se transmite en la proyección pública para orientación del paciente en sala.
+    // DECISIÓN ARQUITECTÓNICA:
+    // Por defecto se muestra la especialidad declarada. Para especialidades sensibles (ej. Salud Mental,
+    // Infectología, Oncología), el frontend del llamador/turnero puede enmascarar o generalizar el texto
+    // a "Atención Médica" o "Consultorio General". La implementación de una lista de exclusión/ofuscación
+    // configurable por Administración queda formalmente asentada como evolución para una sesión futura.
+    match /llamador_turnos/{llamadoId} {
+      allow read: if true; // Lectura pública para pantallas TV / turneros desatendidos
+      allow create: if (isSuperAdmin() || isRecepcion() || isMedico() || isEnfermeria()) && isValidLlamador(request.resource.data);
+      allow update: if (isSuperAdmin() || isRecepcion() || isMedico() || isEnfermeria())
+        && isValidLlamador(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'llamadoEn']);
+      allow delete: if isSuperAdmin() || isRecepcion();
     }
 
     // ==========================================

@@ -1132,6 +1132,612 @@ export async function inyectarDemoCompletaForo() {
     }
 }
 
+// =========================================================================
+// SEMBRADOR DE ESCENARIO DEMO EN 1 CLIC (TODOS LOS MÓDULOS COORDINADOS)
+// =========================================================================
+export async function sembrarEscenarioDemoCompleto() {
+    const sesionActual = obtenerSesionActual();
+    if (!sesionActual || !esRolAdministracion(sesionActual.rol)) {
+        mostrarAlerta("Acceso Denegado", "Solo Administración puede sembrar el escenario demostrativo hospitalario.");
+        return;
+    }
+
+    const confirma = await pedirConfirmacion(
+        "Cargar Escenario Demo Completo",
+        "Esta acción sembrará en batch datos coordinados para todos los módulos: médicos del catálogo, 8 turnos del día, 12 camas de internación y 4 cirugías de quirófano con cirujanos vinculados. ¿Desea continuar?",
+        "Sí, Cargar Escenario Demo"
+    );
+    if (!confirma) return;
+
+    abrirModal('modal-progreso');
+    const barra = document.getElementById('progreso-barra');
+    const texto = document.getElementById('progreso-texto');
+
+    try {
+        if (texto) texto.innerText = "Preparando catálogo médico y perfil administrativo...";
+        if (barra) barra.style.width = '15%';
+
+        // 1. Conservar o asegurar el perfil del admin actual
+        if (sesionActual?.uid) {
+            await setDoc(doc(db, "usuarios", sesionActual.uid), {
+                nombre: sesionActual.nombre || "Administrador",
+                correo: sesionActual.correo,
+                rol: "Administración",
+                activo: true,
+                actualizadoEn: serverTimestamp()
+            }, { merge: true });
+        }
+
+        // 2. Personal médico base en medicos_publicos con UIDs definidos
+        const medicosBase = [
+            { uid: "med_demo_1", nom: "Dr. Esteban Quiroga", esp: "Clínica Médica", mat: "44019" },
+            { uid: "med_demo_2", nom: "Dr. Carlos San Martín", esp: "Cardiología", mat: "10293" },
+            { uid: "med_demo_3", nom: "Dra. María Antonieta", esp: "Pediatría", mat: "22019" },
+            { uid: "med_demo_4", nom: "Dra. Sofía Castro", esp: "Neurología", mat: "80291" },
+            { uid: "med_demo_5", nom: "Dr. Ricardo Silva", esp: "Traumatología y Ortopedia", mat: "33918" }
+        ];
+
+        const batchMedicos = writeBatch(db);
+        medicosBase.forEach(m => {
+            batchMedicos.set(doc(db, "medicos_publicos", m.uid), {
+                medicoUid: m.uid,
+                nombre: m.nom,
+                especialidad: m.esp,
+                matricula: m.mat,
+                activo: true
+            }, { merge: true });
+        });
+        await batchMedicos.commit();
+
+        if (texto) texto.innerText = "Sembrando 8 turnos coordinados del día...";
+        if (barra) barra.style.width = '35%';
+
+        const hoyStr = new Date().toISOString().split('T')[0];
+
+        // 3. 8 Turnos con estados y canales exactos según firestore.rules
+        const turnosDemo = [
+            {
+                id: `TURNO_DEMO_${hoyStr}_1`,
+                dni: "30123456",
+                paciente: "Carlos Gómez",
+                celular: "2604112233",
+                email: "carlos.gomez@demo.hospital",
+                horario: "08:00",
+                medico: "Dr. Esteban Quiroga",
+                medicoUid: "med_demo_1",
+                especialidad: "Clínica Médica",
+                canal: "Web",
+                estado: "Atendido",
+                codigo: "CG800W"
+            },
+            {
+                id: `TURNO_DEMO_${hoyStr}_2`,
+                dni: "28987654",
+                paciente: "María Rodríguez",
+                celular: "2604223344",
+                email: "maria.rodriguez@demo.hospital",
+                horario: "08:30",
+                medico: "Dr. Carlos San Martín",
+                medicoUid: "med_demo_2",
+                especialidad: "Cardiología",
+                canal: "Presencial",
+                estado: "Atendido",
+                codigo: "MR830P"
+            },
+            {
+                id: `TURNO_DEMO_${hoyStr}_3`,
+                dni: "35111222",
+                paciente: "Juan Pablo Rossi",
+                celular: "2604334455",
+                email: "juanpablo.rossi@demo.hospital",
+                horario: "09:00",
+                medico: "Dr. Esteban Quiroga",
+                medicoUid: "med_demo_1",
+                especialidad: "Clínica Médica",
+                canal: "Web",
+                estado: "En Consultorio",
+                codigo: "JR900W"
+            },
+            {
+                id: `TURNO_DEMO_${hoyStr}_4`,
+                dni: "42333444",
+                paciente: "Lucía Fernández",
+                celular: "2604556677",
+                email: "lucia.fernandez@demo.hospital",
+                horario: "09:30",
+                medico: "Dra. María Antonieta",
+                medicoUid: "med_demo_3",
+                especialidad: "Pediatría",
+                canal: "Presencial",
+                estado: "En Espera",
+                codigo: "LF930P"
+            },
+            {
+                id: `TURNO_DEMO_${hoyStr}_5`,
+                dni: "24555666",
+                paciente: "Roberto Benítez",
+                celular: "2604778899",
+                email: "roberto.benitez@demo.hospital",
+                horario: "10:00",
+                medico: "Dr. Ricardo Silva",
+                medicoUid: "med_demo_5",
+                especialidad: "Traumatología y Ortopedia",
+                canal: "Telefónico",
+                estado: "En Espera",
+                codigo: "RB100T"
+            },
+            {
+                id: `TURNO_DEMO_${hoyStr}_6`,
+                dni: "38999000",
+                paciente: "Florencia Morales",
+                celular: "2604889900",
+                email: "florencia.morales@demo.hospital",
+                horario: "10:30",
+                medico: "Dr. Esteban Quiroga",
+                medicoUid: "med_demo_1",
+                especialidad: "Clínica Médica",
+                canal: "Presencial",
+                estado: "Confirmado Presencial",
+                codigo: "FM103P"
+            },
+            {
+                id: `TURNO_DEMO_${hoyStr}_7`,
+                dni: "33123789",
+                paciente: "Marcos Medina",
+                celular: "2604667788",
+                email: "marcos.medina@demo.hospital",
+                horario: "11:00",
+                medico: "Dr. Carlos San Martín",
+                medicoUid: "med_demo_2",
+                especialidad: "Cardiología",
+                canal: "Web",
+                estado: "Confirmado",
+                codigo: "MM110W"
+            },
+            {
+                id: `TURNO_DEMO_${hoyStr}_8`,
+                dni: "45678912",
+                paciente: "Valentina Ortiz",
+                celular: "2604332211",
+                email: "valentina.ortiz@demo.hospital",
+                horario: "11:30",
+                medico: "Dra. María Antonieta",
+                medicoUid: "med_demo_3",
+                especialidad: "Pediatría",
+                canal: "Telefónico",
+                estado: "Cancelado",
+                codigo: "VO113T"
+            }
+        ];
+
+        const batchTurnos = writeBatch(db);
+        turnosDemo.forEach(t => {
+            const ref = doc(db, "turnos", t.id);
+            batchTurnos.set(ref, {
+                especialidad: t.especialidad,
+                medico: t.medico,
+                medicoUid: t.medicoUid,
+                fecha: hoyStr,
+                horario: t.horario,
+                pacienteNombre: t.paciente,
+                pacienteDni: t.dni,
+                pacienteCelular: t.celular,
+                pacienteEmail: t.email,
+                codigoConfirmacion: t.codigo,
+                canal: t.canal,
+                estado: t.estado,
+                creadoEn: serverTimestamp(),
+                creadoPor: sesionActual.uid,
+                esDemo: true
+            });
+        });
+        await batchTurnos.commit();
+
+        if (texto) texto.innerText = "Sembrando 12 camas hospitalarias (Pisos 1 y 2)...";
+        if (barra) barra.style.width = '60%';
+
+        // 4. 12 Camas hospitalarias: 6 libres, 4 ocupadas (con pacientes internados), 2 en mantenimiento
+        const camasDemo = [
+            // Piso 1: Clínica Médica (Hab. 101, 102, 103)
+            {
+                id: "cama_p1_h101_c1", piso: 1, habitacion: "101", numeroCama: "Cama 1",
+                sector: "Clínica Médica", tipo: "Compartida", estado: "ocupada", activo: true,
+                pacienteNombre: "Carlos Gómez", pacienteDni: "30123456",
+                medicoTratante: "Dr. Esteban Quiroga", fechaIngreso: `${hoyStr}T08:00:00.000Z`,
+                internacionId: "INT_DEMO_1"
+            },
+            {
+                id: "cama_p1_h101_c2", piso: 1, habitacion: "101", numeroCama: "Cama 2",
+                sector: "Clínica Médica", tipo: "Compartida", estado: "libre", activo: true
+            },
+            {
+                id: "cama_p1_h102_c1", piso: 1, habitacion: "102", numeroCama: "Cama 1",
+                sector: "Clínica Médica", tipo: "Compartida", estado: "ocupada", activo: true,
+                pacienteNombre: "Lucía Fernández", pacienteDni: "42333444",
+                medicoTratante: "Dr. Esteban Quiroga", fechaIngreso: `${hoyStr}T09:15:00.000Z`,
+                internacionId: "INT_DEMO_2"
+            },
+            {
+                id: "cama_p1_h102_c2", piso: 1, habitacion: "102", numeroCama: "Cama 2",
+                sector: "Clínica Médica", tipo: "Compartida", estado: "ocupada", activo: true,
+                pacienteNombre: "Florencia Morales", pacienteDni: "38999000",
+                medicoTratante: "Dr. Esteban Quiroga", fechaIngreso: `${hoyStr}T07:45:00.000Z`,
+                internacionId: "INT_DEMO_3"
+            },
+            {
+                id: "cama_p1_h103_c1", piso: 1, habitacion: "103", numeroCama: "Cama 1",
+                sector: "Clínica Médica", tipo: "Compartida", estado: "libre", activo: true
+            },
+            {
+                id: "cama_p1_h103_c2", piso: 1, habitacion: "103", numeroCama: "Cama 2",
+                sector: "Clínica Médica", tipo: "Compartida", estado: "mantenimiento", activo: true
+            },
+            // Piso 2: Terapia Intensiva (UTI) (Hab. 201, 202, 203)
+            {
+                id: "cama_p2_h201_c1", piso: 2, habitacion: "201", numeroCama: "Cama 1",
+                sector: "Terapia Intensiva (UTI)", tipo: "Individual", estado: "ocupada", activo: true,
+                pacienteNombre: "Juan Pablo Rossi", pacienteDni: "35111222",
+                medicoTratante: "Dr. Carlos San Martín", fechaIngreso: `${hoyStr}T06:30:00.000Z`,
+                internacionId: "INT_DEMO_4"
+            },
+            {
+                id: "cama_p2_h201_c2", piso: 2, habitacion: "201", numeroCama: "Cama 2",
+                sector: "Terapia Intensiva (UTI)", tipo: "Individual", estado: "libre", activo: true
+            },
+            {
+                id: "cama_p2_h202_c1", piso: 2, habitacion: "202", numeroCama: "Cama 1",
+                sector: "Terapia Intensiva (UTI)", tipo: "Individual", estado: "libre", activo: true
+            },
+            {
+                id: "cama_p2_h202_c2", piso: 2, habitacion: "202", numeroCama: "Cama 2",
+                sector: "Terapia Intensiva (UTI)", tipo: "Individual", estado: "libre", activo: true
+            },
+            {
+                id: "cama_p2_h203_c1", piso: 2, habitacion: "203", numeroCama: "Cama 1",
+                sector: "Terapia Intensiva (UTI)", tipo: "Individual", estado: "mantenimiento", activo: true
+            },
+            {
+                id: "cama_p2_h203_c2", piso: 2, habitacion: "203", numeroCama: "Cama 2",
+                sector: "Terapia Intensiva (UTI)", tipo: "Individual", estado: "libre", activo: true
+            }
+        ];
+
+        const batchCamas = writeBatch(db);
+        camasDemo.forEach(c => {
+            const data = {
+                piso: c.piso,
+                habitacion: c.habitacion,
+                numeroCama: c.numeroCama,
+                sector: c.sector,
+                tipo: c.tipo,
+                estado: c.estado,
+                activo: c.activo,
+                creadoEn: serverTimestamp(),
+                actualizadoEn: serverTimestamp()
+            };
+            if (c.pacienteNombre) {
+                data.pacienteNombre = c.pacienteNombre;
+                data.pacienteDni = c.pacienteDni;
+                data.medicoTratante = c.medicoTratante;
+                data.fechaIngreso = c.fechaIngreso;
+                data.internacionId = c.internacionId;
+            }
+            batchCamas.set(doc(db, "camas", c.id), data);
+        });
+        await batchCamas.commit();
+
+        if (texto) texto.innerText = "Sembrando quirófanos y 4 cirugías programadas...";
+        if (barra) barra.style.width = '80%';
+
+        // 5. 3 Quirófanos y 4 cirugías con cirujanoUid vinculados a los médicos reales
+        const quirofanosDemo = [
+            {
+                id: "Q1",
+                nombre: "Quirófano 1 - Cirugía General",
+                especialidadPrincipal: "Cirugía General",
+                equipamiento: "Torre laparoscópica HD, electrobisturí monopolar/bipolar",
+                activo: true,
+                orden: 1
+            },
+            {
+                id: "Q2",
+                nombre: "Quirófano 2 - Traumatología",
+                especialidadPrincipal: "Traumatología",
+                equipamiento: "Arco en C radioscópico, mesa ortopédica radiolúcida",
+                activo: true,
+                orden: 2
+            },
+            {
+                id: "Q3",
+                nombre: "Quirófano 3 - Ambulatoria e Infantil",
+                especialidadPrincipal: "Pediatría y Ambulatoria",
+                equipamiento: "Mesa pediátrica, monitor multiparamétrico neonatal",
+                activo: true,
+                orden: 3
+            }
+        ];
+
+        const batchQuirofanos = writeBatch(db);
+        quirofanosDemo.forEach(q => {
+            batchQuirofanos.set(doc(db, "quirofanos", q.id), {
+                nombre: q.nombre,
+                especialidadPrincipal: q.especialidadPrincipal,
+                equipamiento: q.equipamiento,
+                activo: q.activo,
+                orden: q.orden,
+                creadoEn: serverTimestamp()
+            });
+        });
+
+        // 4 Cirugías coordinadas usando los cirujanos del catálogo sembrado:
+        const cirugiasDemo = [
+            {
+                id: `RES_DEMO_${hoyStr}_1`,
+                quirofanoId: "Q1",
+                quirofanoNombre: "Quirófano 1 - Cirugía General",
+                fecha: hoyStr,
+                horaInicio: "08:00",
+                horaFin: "10:00",
+                duracionMinutos: 120,
+                pacienteNombre: "Roberto Benítez",
+                pacienteDni: "24555666",
+                cirujanoNombre: "Dr. Ricardo Silva",
+                cirujanoUid: "med_demo_5",
+                especialidad: "Traumatología y Ortopedia",
+                procedimiento: "Osteosíntesis de Fémur con Placa Bloqueada",
+                tipoAnestesia: "Raquídea",
+                observaciones: "Intervención matutina finalizada con éxito.",
+                estado: "finalizado"
+            },
+            {
+                id: `RES_DEMO_${hoyStr}_2`,
+                quirofanoId: "Q1",
+                quirofanoNombre: "Quirófano 1 - Cirugía General",
+                fecha: hoyStr,
+                horaInicio: "10:30",
+                horaFin: "12:30",
+                duracionMinutos: 120,
+                pacienteNombre: "Carlos Gómez",
+                pacienteDni: "30123456",
+                cirujanoNombre: "Dr. Esteban Quiroga",
+                cirujanoUid: "med_demo_1",
+                especialidad: "Clínica Médica",
+                procedimiento: "Laparoscopía Diagnóstica de Urgencia",
+                tipoAnestesia: "General",
+                observaciones: "Paciente internado en Cama 101. En curso.",
+                estado: "en_curso"
+            },
+            {
+                id: `RES_DEMO_${hoyStr}_3`,
+                quirofanoId: "Q1",
+                quirofanoNombre: "Quirófano 1 - Cirugía General",
+                fecha: hoyStr,
+                horaInicio: "13:30",
+                horaFin: "15:30",
+                duracionMinutos: 120,
+                pacienteNombre: "Juan Pablo Rossi",
+                pacienteDni: "35111222",
+                cirujanoNombre: "Dr. Carlos San Martín",
+                cirujanoUid: "med_demo_2",
+                especialidad: "Cardiología",
+                procedimiento: "Implante de Marcapasos Definitivo Bicameral",
+                tipoAnestesia: "Local y Sedación",
+                observaciones: "Paciente de UTI Cama 201 confirmado para la tarde.",
+                estado: "confirmado"
+            },
+            {
+                id: `RES_DEMO_${hoyStr}_4`,
+                quirofanoId: "Q2",
+                quirofanoNombre: "Quirófano 2 - Traumatología",
+                fecha: hoyStr,
+                horaInicio: "09:00",
+                horaFin: "10:30",
+                duracionMinutos: 90,
+                pacienteNombre: "Lucía Fernández",
+                pacienteDni: "42333444",
+                cirujanoNombre: "Dra. María Antonieta",
+                cirujanoUid: "med_demo_3",
+                especialidad: "Pediatría",
+                procedimiento: "Hernioplastia Umbilical Pediátrica",
+                tipoAnestesia: "General",
+                observaciones: "Paciente pediátrica en ayunas, reservado.",
+                estado: "reservado"
+            }
+        ];
+
+        cirugiasDemo.forEach(c => {
+            batchQuirofanos.set(doc(db, "reservas_quirofano", c.id), {
+                quirofanoId: c.quirofanoId,
+                quirofanoNombre: c.quirofanoNombre,
+                fecha: c.fecha,
+                horaInicio: c.horaInicio,
+                horaFin: c.horaFin,
+                duracionMinutos: c.duracionMinutos,
+                pacienteNombre: c.pacienteNombre,
+                pacienteDni: c.pacienteDni,
+                cirujanoNombre: c.cirujanoNombre,
+                cirujanoUid: c.cirujanoUid,
+                especialidad: c.especialidad,
+                procedimiento: c.procedimiento,
+                tipoAnestesia: c.tipoAnestesia,
+                observaciones: c.observaciones,
+                estado: c.estado,
+                creadoPor: {
+                    uid: sesionActual.uid,
+                    nombre: sesionActual.nombre || "Administrador",
+                    rol: sesionActual.rol || "Administración"
+                },
+                creadoEn: serverTimestamp(),
+                actualizadoEn: serverTimestamp()
+            });
+        });
+        await batchQuirofanos.commit();
+
+        // 6. Sembrar llamados activos en la Cartelera TV de Sala de Espera
+        const batchLlamador = writeBatch(db);
+        batchLlamador.set(doc(db, "llamador_turnos", `TURNO_DEMO_${hoyStr}_3`), {
+            pacienteNombre: "Juan Pablo Rossi",
+            consultorio: "Consultorio 1",
+            medico: "Dr. Esteban Quiroga",
+            especialidad: "Clínica Médica",
+            horario: "09:00",
+            llamadoEn: serverTimestamp(),
+            estado: "llamando"
+        });
+        batchLlamador.set(doc(db, "llamador_turnos", `TURNO_DEMO_${hoyStr}_2`), {
+            pacienteNombre: "María Rodríguez",
+            consultorio: "Consultorio 2",
+            medico: "Dr. Carlos San Martín",
+            especialidad: "Cardiología",
+            horario: "08:30",
+            llamadoEn: serverTimestamp(),
+            estado: "atendiendo"
+        });
+        await batchLlamador.commit();
+
+        if (texto) texto.innerText = "Sincronizando interfaces y módulos clínicos...";
+        if (barra) barra.style.width = '100%';
+
+        // 7. Actualización reactiva de las vistas activas
+        await cargarEspecialistasFirebase().catch(() => {});
+        if (typeof window.cargarCamasHospital === 'function') {
+            await window.cargarCamasHospital().catch(() => {});
+        }
+        if (typeof window.cargarQuirofanosHospital === 'function') {
+            await window.cargarQuirofanosHospital().catch(() => {});
+        }
+        if (typeof window.cargarReservasPorFecha === 'function') {
+            await window.cargarReservasPorFecha(hoyStr).catch(() => {});
+        }
+        cargarUsuariosAdmin('init');
+        cargarMetricas(true);
+
+        const inputFechaRec = document.getElementById('input-fecha-recepcion')?.value;
+        if (inputFechaRec && typeof generarAgendaRecepcion === 'function') {
+            generarAgendaRecepcion();
+        }
+        if (document.body.dataset.view === 'doctor' && typeof cargarAgendaMedico === 'function') {
+            cargarAgendaMedico();
+        }
+
+        cerrarModal('modal-progreso');
+
+        mostrarExito(
+            "Escenario Demo Completo Cargado",
+            "Se inyectaron en batch los médicos del catálogo, 8 turnos de hoy, 12 camas hospitalarias y 4 cirugías de quirófano coordinadas."
+        );
+    } catch (err) {
+        console.error("Error al sembrar escenario demo completo:", err);
+        cerrarModal('modal-progreso');
+        mostrarAlerta("Error al Sembrar Escenario", "No se pudo cargar el escenario de demostración: " + err.message);
+    }
+}
+
+// =========================================================================
+// LIMPIADOR DE DATOS DEMO (CON PRESERVACIÓN DE INMUTABILIDAD CLÍNICA)
+// =========================================================================
+export async function limpiarDatosDemoConConfirmacion() {
+    const sesionActual = obtenerSesionActual();
+    if (!sesionActual || !esRolAdministracion(sesionActual.rol)) {
+        mostrarAlerta("Acceso Denegado", "Solo Administración puede limpiar los datos demostrativos.");
+        return;
+    }
+
+    const confirma = await pedirConfirmacion(
+        "Confirmar Limpieza de Datos Demo",
+        "Esta acción eliminará todos los turnos del día, pacientes de prueba, camas hospitalarias y reservas quirúrgicas. El historial clínico de internaciones y la cuenta del Administrador se mantendrán intactos. ¿Desea proceder?",
+        "Sí, Limpiar Datos"
+    );
+    if (!confirma) return;
+
+    abrirModal('modal-progreso');
+    const barra = document.getElementById('progreso-barra');
+    const texto = document.getElementById('progreso-texto');
+
+    try {
+        const BATCH_SIZE = 400;
+
+        if (texto) texto.innerText = "Borrando turnos de prueba...";
+        if (barra) barra.style.width = '20%';
+        const turnosSnap = await getDocs(collection(db, "turnos")).catch(() => ({ docs: [] }));
+        for (let i = 0; i < turnosSnap.docs.length; i += BATCH_SIZE) {
+            const batch = writeBatch(db);
+            turnosSnap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
+
+        if (texto) texto.innerText = "Borrando camas hospitalarias...";
+        if (barra) barra.style.width = '40%';
+        const camasSnap = await getDocs(collection(db, "camas")).catch(() => ({ docs: [] }));
+        for (let i = 0; i < camasSnap.docs.length; i += BATCH_SIZE) {
+            const batch = writeBatch(db);
+            camasSnap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
+
+        if (texto) texto.innerText = "Borrando reservas y salas de quirófano...";
+        if (barra) barra.style.width = '60%';
+        const reservasSnap = await getDocs(collection(db, "reservas_quirofano")).catch(() => ({ docs: [] }));
+        for (let i = 0; i < reservasSnap.docs.length; i += BATCH_SIZE) {
+            const batch = writeBatch(db);
+            reservasSnap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
+
+        const quirofanosSnap = await getDocs(collection(db, "quirofanos")).catch(() => ({ docs: [] }));
+        for (let i = 0; i < quirofanosSnap.docs.length; i += BATCH_SIZE) {
+            const batch = writeBatch(db);
+            quirofanosSnap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
+
+        if (texto) texto.innerText = "Borrando catálogo médico de prueba...";
+        if (barra) barra.style.width = '80%';
+        const medicosPubSnap = await getDocs(collection(db, "medicos_publicos")).catch(() => ({ docs: [] }));
+        for (let i = 0; i < medicosPubSnap.docs.length; i += BATCH_SIZE) {
+            const batch = writeBatch(db);
+            medicosPubSnap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
+
+        const llamadorSnap = await getDocs(collection(db, "llamador_turnos")).catch(() => ({ docs: [] }));
+        for (let i = 0; i < llamadorSnap.docs.length; i += BATCH_SIZE) {
+            const batch = writeBatch(db);
+            llamadorSnap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
+
+        // Refrescar cachés e interfaces
+        if (texto) texto.innerText = "Restableciendo módulos...";
+        if (barra) barra.style.width = '100%';
+
+        await cargarEspecialistasFirebase().catch(() => {});
+        if (typeof window.cargarCamasHospital === 'function') {
+            await window.cargarCamasHospital().catch(() => {});
+        }
+        if (typeof window.cargarQuirofanosHospital === 'function') {
+            await window.cargarQuirofanosHospital().catch(() => {});
+        }
+        const hoyStr = new Date().toISOString().split('T')[0];
+        if (typeof window.cargarReservasPorFecha === 'function') {
+            await window.cargarReservasPorFecha(hoyStr).catch(() => {});
+        }
+        cargarUsuariosAdmin('init');
+        cargarMetricas(true);
+
+        cerrarModal('modal-progreso');
+
+        mostrarExito(
+            "Limpieza de Datos Completada",
+            "La base de datos volvió a estado limpio. El historial clínico de internaciones y la cuenta del Administrador se conservaron inalterados."
+        );
+    } catch (err) {
+        console.error("Error al limpiar datos demo:", err);
+        cerrarModal('modal-progreso');
+        mostrarAlerta("Error al Limpiar Datos", "No se pudo completar la limpieza: " + err.message);
+    }
+}
+
 // Exponer en window para manejadores inline del DOM
 window.abrirModalUsuarioNulo = abrirModalUsuarioNulo;
 window.cargarUsuariosAdmin = cargarUsuariosAdmin;
@@ -1149,5 +1755,7 @@ window.ejecutarLimpiezaYDescarga = ejecutarLimpiezaYDescarga;
 window.limpiarBaseDeDatos = limpiarBaseDeDatos;
 window.inyectarMedicosDePrueba = inyectarMedicosDePrueba;
 window.inyectarDemoCompletaForo = inyectarDemoCompletaForo;
+window.sembrarEscenarioDemoCompleto = sembrarEscenarioDemoCompleto;
+window.limpiarDatosDemoConConfirmacion = limpiarDatosDemoConConfirmacion;
 window.generarTurnosHistoricosDemo = generarTurnosHistoricosDemo;
 window.cargarAuditoriaAdmin = cargarAuditoriaAdmin;
