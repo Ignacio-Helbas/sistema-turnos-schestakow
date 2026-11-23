@@ -16,9 +16,7 @@ import {
     query,
     where,
     orderBy,
-    serverTimestamp,
-    functionsInstancia,
-    httpsCallable
+    serverTimestamp
 } from "./firebase.js";
 
 import {
@@ -645,8 +643,25 @@ export async function guardarReservaQuirofano() {
         const quirofanoNombre = salaObj ? salaObj.nombre : quirofanoId;
 
         try {
-            const fnReservar = httpsCallable(functionsInstancia, "reservarQuirofano");
-            await fnReservar({
+            // 1. Verificación anti-colisión fresca contra Firestore
+            const qColision = query(
+                collection(db, "reservas_quirofano"),
+                where("quirofanoId", "==", quirofanoId),
+                where("fecha", "==", fecha)
+            );
+            const snapshotExistentes = await getDocs(qColision);
+            for (const docSnap of snapshotExistentes.docs) {
+                const r = docSnap.data();
+                if (r.estado === "cancelado") continue;
+                if (haySuperposicion(horaInicio, horaFin, r.horaInicio, r.horaFin)) {
+                    const colisionError = new Error(`El quirófano ya está reservado en ese horario (${r.horaInicio} - ${r.horaFin} por ${r.cirujanoNombre || "otro profesional"}).`);
+                    colisionError.code = "already-exists";
+                    throw colisionError;
+                }
+            }
+
+            // 2. Creación directa mediante SDK cliente de Firestore (Spark Plan)
+            const payloadReserva = {
                 quirofanoId,
                 quirofanoNombre,
                 fecha,
@@ -661,8 +676,18 @@ export async function guardarReservaQuirofano() {
                 procedimiento,
                 tipoAnestesia,
                 observaciones,
-                estado
-            });
+                estado,
+                creadoPor: {
+                    uid: sesion.uid,
+                    nombre: sesion.nombre || sesion.correo || "Personal Hospital",
+                    rol: sesion.rol,
+                    email: sesion.correo || ""
+                },
+                creadoEn: serverTimestamp(),
+                actualizadoEn: serverTimestamp()
+            };
+
+            await addDoc(collection(db, "reservas_quirofano"), payloadReserva);
 
             cerrarModal("modal-nueva-reserva-quirofano");
             mostrarExito("Cirugía Agendada", `La reserva para el paciente ${pacienteNombre} se registró exitosamente.`);

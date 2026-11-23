@@ -73,6 +73,9 @@ export async function cargarCamasHospital() {
             return String(a.numeroCama).localeCompare(String(b.numeroCama), undefined, { numeric: true });
         });
 
+        renderizarPisosSelector();
+        renderizarMapaCamas();
+
         return camasCache;
     } catch (err) {
         console.error("Error al cargar camas del hospital:", err);
@@ -200,26 +203,35 @@ export function renderizarMapaCamas() {
     let html = "";
     Object.values(habitaciones).forEach(hab => {
         html += `
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-md transition flex flex-col justify-between">
+            <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group">
                 <div>
-                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
-                        <div class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full ${hab.tipo === 'Individual' ? 'bg-indigo-600' : 'bg-sky-600'}"></span>
-                            <h4 class="font-bold text-slate-900 text-sm">Habitación ${escaparHTML(hab.numero)}</h4>
+                    <!-- Cabecera de Habitación (Bahía arquitectónica) -->
+                    <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-100">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-mono font-bold text-xs flex items-center justify-center border border-slate-200 shrink-0">
+                                H${escaparHTML(hab.numero)}
+                            </div>
+                            <div class="min-w-0">
+                                <h4 class="font-bold text-slate-900 text-xs sm:text-sm truncate leading-tight">Habitación ${escaparHTML(hab.numero)}</h4>
+                                <p class="text-[10px] text-slate-500 font-medium truncate">${escaparHTML(hab.sector)}</p>
+                            </div>
                         </div>
-                        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                            ${escaparHTML(hab.sector)}
+                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/80 shrink-0">
+                            <svg class="w-3 h-3 text-slate-400" width="12" height="12" style="width: 12px; height: 12px; display: inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                            ${hab.camas.length} ${hab.camas.length === 1 ? 'cama' : 'camas'}
                         </span>
                     </div>
 
+                    <!-- Distribución tipo Selector de Asientos / Camas -->
                     <div class="grid grid-cols-2 gap-2.5">
                         ${hab.camas.map(cama => renderizarTarjetaCamaIndividual(cama)).join("")}
                     </div>
                 </div>
 
-                <div class="mt-3 pt-2 border-t border-slate-50 flex items-center justify-between text-[11px] text-slate-500">
+                <!-- Pie de bahía con tipo de habitación -->
+                <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-medium">
                     <span>${escaparHTML(hab.tipo)}</span>
-                    <span>${hab.camas.length} cama${hab.camas.length > 1 ? 's' : ''}</span>
+                    <span class="font-mono">Piso ${pisoSeleccionado}</span>
                 </div>
             </div>
         `;
@@ -229,42 +241,106 @@ export function renderizarMapaCamas() {
 }
 
 function renderizarTarjetaCamaIndividual(cama) {
+    const esLibre = cama.estado === "libre";
     const esOcupada = cama.estado === "ocupada";
     const esMantenimiento = cama.estado === "mantenimiento";
 
-    let colorBorde = "border-emerald-300 bg-emerald-50/60 text-emerald-950";
-    let badgeEstado = '<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>';
-    let textoEstado = "Libre";
+    // Accesibilidad para Daltonismo: Cada estado combina Color + Icono de Forma Exclusiva + Texto Explícito
+    let configEstado = {
+        clasesContenedor: "border-emerald-300 bg-emerald-50/70 text-emerald-950 hover:bg-emerald-100/90 hover:border-emerald-500 shadow-2xs hover:shadow-md ring-1 ring-emerald-200/50 cursor-pointer",
+        iconoForma: `
+            <span class="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs" style="width: 16px; height: 16px; min-width: 16px; min-height: 16px; display: inline-flex;" title="Estado: Disponible">
+                <svg class="w-2.5 h-2.5" width="10" height="10" style="width: 10px; height: 10px; display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </span>
+        `,
+        textoEstado: "LIBRE",
+        badgeColor: "text-emerald-800",
+        tooltip: `Cama ${cama.numeroCama} disponible. Clic para internar paciente nuevo.`
+    };
 
     if (esOcupada) {
-        colorBorde = "border-rose-300 bg-rose-50/70 text-rose-950 shadow-2xs";
-        badgeEstado = '<span class="inline-block w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>';
-        textoEstado = "Ocupada";
+        configEstado = {
+            clasesContenedor: "border-rose-300 bg-rose-50/80 text-rose-950 hover:border-rose-400 hover:bg-rose-100/70 shadow-2xs cursor-pointer ring-1 ring-rose-200/50",
+            iconoForma: `
+                <span class="w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-2xs" style="width: 16px; height: 16px; min-width: 16px; min-height: 16px; display: inline-flex;" title="Estado: Cama Ocupada">
+                    <svg class="w-2.5 h-2.5" width="10" height="10" style="width: 10px; height: 10px; display: block;" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                    </svg>
+                </span>
+            `,
+            textoEstado: "OCUPADA",
+            badgeColor: "text-rose-800",
+            tooltip: `Cama ocupada por ${cama.pacienteNombre || 'Paciente'} (DNI: ${cama.pacienteDni || '--'}). Clic para ver evolución o dar de alta.`
+        };
     } else if (esMantenimiento) {
-        colorBorde = "border-amber-300 bg-amber-50/60 text-amber-950";
-        badgeEstado = '<span class="inline-block w-2 h-2 rounded-full bg-amber-500"></span>';
-        textoEstado = "Mantenimiento";
+        configEstado = {
+            clasesContenedor: "border-amber-300 bg-amber-50/75 text-amber-950 hover:border-amber-400 shadow-2xs ring-1 ring-amber-200/50 cursor-not-allowed opacity-90",
+            iconoForma: `
+                <span class="w-4 h-4 rounded-md bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-2xs" style="width: 16px; height: 16px; min-width: 16px; min-height: 16px; display: inline-flex;" title="Estado: Mantenimiento / Higiene">
+                    <svg class="w-2.5 h-2.5" width="10" height="10" style="width: 10px; height: 10px; display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </span>
+            `,
+            textoEstado: "MANTENIMIENTO",
+            badgeColor: "text-amber-800",
+            tooltip: `Cama ${cama.numeroCama} en desinfección o reparación técnica.`
+        };
     }
 
-    const pacienteInfo = esOcupada ? `
-        <div class="mt-1.5 pt-1.5 border-t border-rose-200/60 text-left">
-            <p class="font-bold text-slate-900 truncate text-[11px]">${escaparHTML(cama.pacienteNombre || 'Paciente')}</p>
-            <p class="text-[10px] text-slate-600 font-mono">DNI: ${escaparHTML(cama.pacienteDni || '--')}</p>
-            <p class="text-[10px] text-slate-500 truncate">Dr. ${escaparHTML(cama.medicoTratante || 'Sin asignar')}</p>
-            <p class="text-[9px] text-rose-800 font-semibold mt-0.5">Ingreso: ${cama.fechaIngreso ? cama.fechaIngreso.split("T")[0] : '--'}</p>
-        </div>
-    ` : `
-        <p class="text-[10px] text-slate-500 mt-1 italic">Disponible para internación</p>
-    `;
+    // Cuerpo de información del asiento clínico
+    let cuerpoAsiento = "";
+    if (esLibre) {
+        cuerpoAsiento = `
+            <div class="mt-2 text-center">
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] tracking-wide transition shadow-2xs w-full justify-center">
+                    <svg class="w-3 h-3" width="12" height="12" style="width: 12px; height: 12px; display: inline-block;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                    <span>+ Asignar</span>
+                </span>
+            </div>
+        `;
+    } else if (esOcupada) {
+        cuerpoAsiento = `
+            <div class="mt-1.5 pt-1.5 border-t border-rose-200/60 text-left leading-tight">
+                <p class="font-bold text-slate-900 truncate text-[11px]">${escaparHTML(cama.pacienteNombre || 'Paciente')}</p>
+                <p class="text-[10px] text-slate-600 font-mono">DNI: ${escaparHTML(cama.pacienteDni || '--')}</p>
+                <p class="text-[9px] text-slate-500 truncate mt-0.5">Dr. ${escaparHTML(cama.medicoTratante || 'Sin asignar')}</p>
+            </div>
+        `;
+    } else {
+        cuerpoAsiento = `
+            <div class="mt-1.5 pt-1.5 border-t border-amber-200/60 text-center">
+                <p class="text-[9px] font-semibold text-amber-800 uppercase tracking-wide">En Desinfección</p>
+                <p class="text-[9px] text-slate-500 italic mt-0.5">No disponible</p>
+            </div>
+        `;
+    }
 
     return `
         <div onclick="window.abrirDetalleCama('${cama.id}')"
-            class="border rounded-xl p-2.5 transition cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${colorBorde}">
-            <div class="flex items-center justify-between">
-                <span class="font-mono font-bold text-xs">${escaparHTML(cama.numeroCama)}</span>
-                <span class="flex items-center gap-1 text-[10px] font-semibold">${badgeEstado} ${textoEstado}</span>
+            title="${escaparHTML(configEstado.tooltip)}"
+            role="button"
+            tabindex="0"
+            aria-label="Cama ${escaparHTML(cama.numeroCama)}, Habitación ${escaparHTML(cama.habitacion)}, ${configEstado.textoEstado}"
+            class="border rounded-xl p-2.5 transition-all select-none hover:scale-[1.02] active:scale-[0.98] ${configEstado.clasesContenedor} flex flex-col justify-between min-h-[92px]">
+            
+            <!-- Barra superior del asiento: Cabezal simbólico + Identificador + Icono accesible de forma -->
+            <div>
+                <!-- Cabezal físico del asiento hospitalario -->
+                <div class="w-7 h-1 rounded-full mx-auto mb-1.5 opacity-30 bg-current"></div>
+                <div class="flex items-center justify-between gap-1">
+                    <span class="font-mono font-bold text-xs text-slate-900 tracking-tight">${escaparHTML(cama.numeroCama)}</span>
+                    <div class="flex items-center gap-1">
+                        ${configEstado.iconoForma}
+                        <span class="text-[9px] font-black tracking-wider ${configEstado.badgeColor}">${configEstado.textoEstado}</span>
+                    </div>
+                </div>
             </div>
-            ${pacienteInfo}
+
+            <!-- Datos clínicos o botón de acción directa -->
+            ${cuerpoAsiento}
         </div>
     `;
 }
@@ -797,6 +873,9 @@ export async function sembrarEstructuraCamasInicial() {
 // =============================================================================
 // EXPOSICIÓN GLOBAL EN WINDOW
 // =============================================================================
+window.inicializarModuloInternacion = inicializarModuloInternacion;
+window.cargarCamasHospital = cargarCamasHospital;
+window.renderizarMapaCamas = renderizarMapaCamas;
 window.seleccionarPisoInternacion = seleccionarPisoInternacion;
 window.filtrarSectorInternacion = filtrarSectorInternacion;
 window.filtrarEstadoInternacion = filtrarEstadoInternacion;

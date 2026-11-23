@@ -129,44 +129,37 @@ export {
 };
 
 // ==========================================
-// GESTIÓN DE SESIÓN CON CUSTOM CLAIMS
+// GESTIÓN DE SESIÓN
 // ==========================================
 export async function iniciarSesionFirebase(correo, password) {
     const correoFinal = (correo || "").trim();
     const credencial = await signInWithEmailAndPassword(auth, correoFinal, password);
     const user = credencial.user;
 
-    const tokenResult = await user.getIdTokenResult(true);
-    let rol = tokenResult.claims.rol;
-
-    let perfil = {};
     const perfilSnap = await getDoc(doc(db, "usuarios", user.uid));
-    if (perfilSnap.exists()) {
-        perfil = perfilSnap.data();
-        if (perfil.activo === false) {
-            await signOut(auth);
-            throw new Error("USUARIO_INACTIVO");
-        }
-        if (!rol) {
-            rol = perfil.rol;
-            if (rol === "Administración") {
-                try {
-                    const fnAsignar = httpsCallable(functionsInstancia, "asignarRolAdminInicial");
-                    await fnAsignar();
-                    const refreshed = await user.getIdTokenResult(true);
-                    rol = refreshed.claims.rol || rol;
-                } catch (e) {
-                    console.warn("No se pudo autoasignar claim inicial:", e);
-                }
-            }
-        }
+    if (!perfilSnap.exists()) {
+        await signOut(auth);
+        throw new Error("USUARIO_NO_REGISTRADO");
+    }
+
+    const perfil = perfilSnap.data() || {};
+    if (perfil.activo === false) {
+        await signOut(auth);
+        throw new Error("USUARIO_INACTIVO");
+    }
+
+    const rol = perfil.rol;
+    if (!rol) {
+        await signOut(auth);
+        throw new Error("USUARIO_SIN_ROL");
     }
 
     return {
         uid: user.uid,
         correo: user.email,
         nombre: perfil.nombre || user.displayName || user.email,
-        rol: rol || perfil.rol || "Recepción"
+        rol: rol,
+        permisosAdicionales: Array.isArray(perfil.permisosAdicionales) ? perfil.permisosAdicionales : []
     };
 }
 

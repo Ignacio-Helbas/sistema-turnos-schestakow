@@ -298,33 +298,55 @@ export function inicializarAuth(onSessionReady) {
             return;
         }
 
-        let rol = "Recepción";
+        let rol = "";
         let nombre = user.displayName || user.email;
         let permisosAdicionales = [];
 
         try {
-            try {
-                const tokenResult = await user.getIdTokenResult();
-                if (tokenResult && tokenResult.claims) {
-                    if (tokenResult.claims.rol) rol = tokenResult.claims.rol;
-                    if (Array.isArray(tokenResult.claims.permisosAdicionales)) {
-                        permisosAdicionales = tokenResult.claims.permisosAdicionales;
-                    }
-                }
-            } catch (_) {}
-
             const docRef = doc(db, "usuarios", user.uid);
             const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                if (data.rol) rol = data.rol;
-                if (data.nombre) nombre = data.nombre;
-                if (Array.isArray(data.permisosAdicionales) && permisosAdicionales.length === 0) {
-                    permisosAdicionales = data.permisosAdicionales;
-                }
+            if (!docSnap.exists()) {
+                console.error("Acceso denegado: Usuario autenticado sin perfil institucional en /usuarios/" + user.uid);
+                sessionStorage.removeItem('hospital_sesion_activa');
+                sesionActual = null;
+                try { await signOut(auth); } catch (_) {}
+                mostrarAlerta("Acceso Denegado", "Su cuenta no cuenta con un perfil institucional registrado en el hospital o fue dada de baja. Comuníquese con la Administración.");
+                mostrarPantallaLogin();
+                return;
             }
+
+            const data = docSnap.data() || {};
+            if (data.activo === false) {
+                console.warn("Acceso denegado: Usuario inactivo en /usuarios/" + user.uid);
+                sessionStorage.removeItem('hospital_sesion_activa');
+                sesionActual = null;
+                try { await signOut(auth); } catch (_) {}
+                mostrarAlerta("Cuenta Inactiva", "Su usuario institucional se encuentra desactivado. Comuníquese con la Administración.");
+                mostrarPantallaLogin();
+                return;
+            }
+
+            rol = data.rol || "";
+            if (!rol) {
+                console.error("Acceso denegado: Usuario sin rol asignado en /usuarios/" + user.uid);
+                sessionStorage.removeItem('hospital_sesion_activa');
+                sesionActual = null;
+                try { await signOut(auth); } catch (_) {}
+                mostrarAlerta("Acceso Denegado", "Su cuenta no tiene un rol válido asignado en el sistema.");
+                mostrarPantallaLogin();
+                return;
+            }
+
+            nombre = data.nombre || user.displayName || user.email;
+            permisosAdicionales = Array.isArray(data.permisosAdicionales) ? data.permisosAdicionales : [];
         } catch (e) {
-            console.warn("No se pudo leer perfil desde Firestore:", e);
+            console.error("Error al leer perfil desde Firestore:", e);
+            sessionStorage.removeItem('hospital_sesion_activa');
+            sesionActual = null;
+            try { await signOut(auth); } catch (_) {}
+            mostrarAlerta("Error de Conexión", "No se pudo validar el perfil institucional.");
+            mostrarPantallaLogin();
+            return;
         }
 
         sesionActual = {
