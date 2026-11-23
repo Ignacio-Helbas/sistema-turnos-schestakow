@@ -16,7 +16,7 @@ try {
     rulesTesting = null;
 }
 
-const PROJECT_ID = 'demo-turnos-schestakow';
+const PROJECT_ID = 'demo-turnos-firestore-' + process.pid;
 const RULES_PATH = path.resolve(__dirname, '../firestore.rules');
 
 test('Matriz de Seguridad de Reglas de Firestore', async (t) => {
@@ -147,8 +147,8 @@ test('Matriz de Seguridad de Reglas de Firestore', async (t) => {
             'Debe existir la colección reservas_quirofano en firestore.rules');
         assert.match(rulesContent, /function isValidReservaQuirofano\(data\)/,
             'Debe existir la función de validación de reservas quirúrgicas');
-        assert.match(rulesContent, /match \/reservas_quirofano\/\{reservaId\}[\s\S]*?allow create:\s*if\s*false;/,
-            'La creación directa de reservas de quirófano debe estar denegada para todos los clientes (allow create: if false)');
+        assert.match(rulesContent, /allow create:\s*if\s*puedeCrearReservaQuirofano\(\);/,
+            'La creación de reservas de quirófano debe regirse por puedeCrearReservaQuirofano()');
         assert.match(rulesContent, /match \/reservas_quirofano\/\{reservaId\}[\s\S]*?allow delete:\s*if\s*isSuperAdmin\(\);/,
             'Solo SuperAdmin debe poder eliminar reservas de quirófano');
         assert.match(rulesContent, /resource\.data\.creadoPor\.uid\s*==\s*request\.auth\.uid\s*&&\s*request\.resource\.data\.estado\s*==\s*'cancelado'/,

@@ -46,8 +46,10 @@ test('Matriz de UI y Permisos Adicionales de Personal', async (t) => {
         assert.match(adminJs, /Enfermería/);
         assert.match(adminJs, /permisosLabels/);
 
-        // Sincronización mediante Cloud Function administrarUsuarioStaff
-        assert.match(adminJs, /administrarUsuarioStaff/);
+        // En plan gratuito (Spark), NO debe haber llamadas a Cloud Functions (administrarUsuarioStaff)
+        assert.doesNotMatch(adminJs, /administrarUsuarioStaff/);
+        assert.doesNotMatch(adminJs, /functionsInstancia/);
+        assert.doesNotMatch(adminJs, /httpsCallable/);
 
         // Normalización de roles legados en editarUsuarioAdmin
         assert.match(adminJs, /esRolAdministracion\(rolNormalizado\)/);
@@ -58,8 +60,11 @@ test('Matriz de UI y Permisos Adicionales de Personal', async (t) => {
         // Uso de funciones centralizadas para matrícula y especialidad
         assert.match(adminJs, /esRolMedico\(rol\)\s*\|\|\s*esRolEnfermeria\(rol\)/);
 
-        // Rollback de Auth si falla setDoc en nuevo usuario
-        assert.match(adminJs, /administrarUsuarioStaff.*eliminar:\s*true/s);
+        // Aviso honesto si falla setDoc en nuevo usuario (aviso de cuenta huérfana en consola de Auth)
+        assert.match(adminJs, /eliminar manualmente la cuenta huérfana desde la consola de Firebase Authentication/);
+
+        // Aviso honesto en confirmación de eliminación de usuario
+        assert.match(adminJs, /deberá dar de baja la cuenta manualmente en la consola de Firebase Authentication/);
 
         // Desactivación de catálogo público si rol cambia a no-Médico
         assert.match(adminJs, /if\s*\(id\s*&&\s*!esRolMedico\(rol\)\)\s*\{[\s\S]*?medicos_publicos[\s\S]*?activo:\s*false/);
@@ -89,18 +94,18 @@ test('Matriz de UI y Permisos Adicionales de Personal', async (t) => {
         assert.match(panelJs, /viewName === 'quirofanos'/);
     });
 
-    await t.test('4. js/quirofanos.js crea reservas exclusivamente vía Cloud Function reservarQuirofano', () => {
+    await t.test('4. js/quirofanos.js crea reservas directamente con SDK Firestore de cliente (Spark plan)', () => {
         const quirofanosJs = fs.readFileSync(path.resolve(__dirname, '../js/quirofanos.js'), 'utf8');
 
-        // Debe importar httpsCallable y functionsInstancia
-        assert.match(quirofanosJs, /httpsCallable/);
-        assert.match(quirofanosJs, /functionsInstancia/);
+        // NO debe importar httpsCallable ni functionsInstancia
+        assert.doesNotMatch(quirofanosJs, /functionsInstancia/);
+        assert.doesNotMatch(quirofanosJs, /httpsCallable/);
 
-        // Debe llamar a la Cloud Function reservarQuirofano
-        assert.match(quirofanosJs, /httpsCallable\(functionsInstancia,\s*"reservarQuirofano"\)/);
+        // Debe escribir directamente en reservas_quirofano mediante addDoc
+        assert.match(quirofanosJs, /addDoc\(collection\(db,\s*"reservas_quirofano"\)/);
 
-        // NO debe escribir directamente en reservas_quirofano mediante addDoc
-        assert.doesNotMatch(quirofanosJs, /addDoc\(collection\(db,\s*"reservas_quirofano"\)/);
+        // Debe aplicar validación anti-colisión en cliente
+        assert.match(quirofanosJs, /haySuperposicion/);
     });
 
     await t.test('5. js/internacion.js restringe controles según rol y permisos', () => {

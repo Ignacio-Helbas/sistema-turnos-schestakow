@@ -21,9 +21,7 @@ import {
     limit,
     startAfter,
     sendPasswordResetEmail,
-    crearCuentaAuthSecundaria,
-    functionsInstancia,
-    httpsCallable
+    crearCuentaAuthSecundaria
 } from "./firebase.js";
 
 import {
@@ -314,7 +312,7 @@ export async function guardarUsuarioAdminFirebase() {
                     return;
                 }
 
-                // Punto 4: si setDoc falla después de crear la cuenta Auth, intentar rollback
+                // Si setDoc falla después de crear la cuenta Auth (sin Cloud Function no hay rollback automático)
                 try {
                     await setDoc(doc(db, "usuarios", uidFinal), {
                         ...payload,
@@ -323,16 +321,15 @@ export async function guardarUsuarioAdminFirebase() {
                     });
                 } catch (dbErr) {
                     console.error("Error al crear perfil Firestore:", dbErr);
-                    try {
-                        const fnAdminStaff = httpsCallable(functionsInstancia, 'administrarUsuarioStaff');
-                        await fnAdminStaff({ id: uidFinal, eliminar: true });
-                    } catch (_) { /* rollback best-effort */ }
-                    mostrarAlerta("Error al Registrar", "No se pudo crear el perfil. La cuenta de autenticación fue revertida. Puede reintentar el alta.");
+                    mostrarAlerta(
+                        "Error al Registrar Perfil",
+                        "La cuenta de autenticación fue creada, pero no se pudo generar el perfil en la base de datos. Como el sistema opera en plan gratuito sin Cloud Functions, debe eliminar manualmente la cuenta huérfana desde la consola de Firebase Authentication antes de volver a intentar con este correo."
+                    );
                     return;
                 }
             }
 
-            // Punto 5: si el rol cambió a no-Médico en edición, marcar medicos_publicos como inactivo
+            // Si el rol cambió a no-Médico en edición, marcar medicos_publicos como inactivo
             if (id && !esRolMedico(rol)) {
                 await setDoc(doc(db, "medicos_publicos", id), { activo: false }, { merge: true }).catch(() => {});
             }
@@ -344,24 +341,6 @@ export async function guardarUsuarioAdminFirebase() {
                     especialidad: esp,
                     activo: true
                 }, { merge: true });
-            }
-
-            // Sincronizar Custom Claims en Auth mediante Cloud Function si está disponible
-            try {
-                const fnAdminStaff = httpsCallable(functionsInstancia, 'administrarUsuarioStaff');
-                await fnAdminStaff({
-                    id: uidFinal,
-                    nombre: nom,
-                    rol: rol,
-                    permisosAdicionales: permisosAdicionales,
-                    correo: cor,
-                    tel: tel,
-                    matricula: (esRolMedico(rol) || esRolEnfermeria(rol)) ? mat : '',
-                    especialidad: esRolMedico(rol) ? esp : '',
-                    activo: true
-                });
-            } catch (claimErr) {
-                console.warn("Aviso al sincronizar custom claims:", claimErr?.message || claimErr);
             }
 
             mostrarExito(
@@ -380,39 +359,22 @@ export async function guardarUsuarioAdminFirebase() {
 }
 
 export async function eliminarUsuarioAdmin(id) {
-    const confirmado = await pedirConfirmacion("¿Eliminar Usuario?", "Esta acción quitará el perfil de la tabla administrativa y revocará el acceso de inicio de sesión del usuario.", "Sí, eliminar");
+    const confirmado = await pedirConfirmacion(
+        "¿Eliminar Usuario?",
+        "Esta acción eliminará el perfil del usuario en la base de datos. Recuerde que para revocar el inicio de sesión de forma permanente, deberá dar de baja la cuenta manualmente en la consola de Firebase Authentication.",
+        "Sí, eliminar perfil"
+    );
     if (!confirmado) return;
 
     try {
-        // 1. Eliminar documento del usuario en Firestore
+        // 1. Eliminar documento del usuario en Firestore (baja física directa en plan gratuito)
         await deleteDoc(doc(db, "usuarios", id));
         await deleteDoc(doc(db, "medicos_publicos", id)).catch(() => {});
 
-        // 2. Eliminar cuenta en Firebase Authentication vía Cloud Function para revocar acceso
-        let falloAuth = null;
-        try {
-            const fnAdminStaff = httpsCallable(functionsInstancia, 'administrarUsuarioStaff');
-            await fnAdminStaff({ id: id, eliminar: true });
-        } catch (authErr) {
-            console.warn("Aviso al eliminar cuenta de Auth:", authErr?.message || authErr);
-            const detalle = String(authErr?.message || authErr?.code || '');
-            const yaInexistente = detalle.includes('user-not-found') || detalle.includes('not-found');
-            if (!yaInexistente) {
-                falloAuth = authErr;
-            }
-        }
-
-        if (falloAuth) {
-            mostrarAlerta(
-                "Perfil Eliminado con Advertencia",
-                "El perfil del usuario fue removido de la base de datos, pero no se pudo dar de baja automáticamente la cuenta en Authentication. Por favor, verifique y revoque el acceso manualmente en la consola de Firebase."
-            );
-        } else {
-            mostrarExito(
-                "Usuario Eliminado",
-                "El perfil y las credenciales de acceso fueron removidos del sistema."
-            );
-        }
+        mostrarExito(
+            "Perfil Eliminado",
+            "El perfil fue removido de la base de datos. Si desea revocar el acceso definitivamente, recuerde eliminar la cuenta en la consola de Firebase Authentication."
+        );
         cargarUsuariosAdmin('init');
         cargarEspecialistasFirebase();
     } catch (error) {

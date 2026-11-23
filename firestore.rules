@@ -247,6 +247,18 @@ service cloud.firestore {
       return isStaff() && rol in ['Enfermería', 'Enfermeria', 'Enfermero', 'Enfermera'];
     }
 
+    function isCoordinadorQuirofanoDoc(userDoc) {
+      return isSuperAdminDoc(userDoc) || (
+        (isMedicoDoc(userDoc) || isEnfermeriaDoc(userDoc)) && hasPermisoAdicional(userDoc, 'coordinaQuirofano')
+      );
+    }
+
+    function isAnestesiaDoc(userDoc) {
+      return isSuperAdminDoc(userDoc) || (
+        isMedicoDoc(userDoc) && hasPermisoAdicional(userDoc, 'anestesia')
+      );
+    }
+
     // =========================================================================
     // WRAPPERS RETROCOMPATIBLES (0 ARGUMENTOS)
     // =========================================================================
@@ -388,6 +400,19 @@ service cloud.firestore {
       return isStaff() && (
         isSuperAdminDoc(userDoc) || isRecepcionDoc(userDoc) || isMedicoDoc(userDoc) || isEnfermeriaDoc(userDoc)
       );
+    }
+
+    function puedeCrearReservaQuirofano() {
+      let userDoc = getUserData();
+      return isStaff()
+        && isValidReservaQuirofano(request.resource.data)
+        && (
+          ((isSuperAdminDoc(userDoc) || isRecepcionDoc(userDoc) || isCoordinadorQuirofanoDoc(userDoc))
+            && request.resource.data.estado in ['confirmado', 'reservado'])
+          || ((isMedicoDoc(userDoc) || isAnestesiaDoc(userDoc))
+            && request.resource.data.estado == 'reservado'
+            && request.resource.data.creadoPor.uid == request.auth.uid)
+        );
     }
 
     // Punto 4: Restricción estricta de diff.affectedKeys().hasOnly() en transiciones de estado
@@ -949,18 +974,21 @@ service cloud.firestore {
         && (!('actualizadoEn' in data) || data.actualizadoEn == request.time || data.actualizadoEn is timestamp);
     }
 
+    // =========================================================================
+    // COLECCIÓN: reservas_quirofano
+    // NOTA ARQUITECTÓNICA (Plan Spark / Arquitectura Serverless Pura):
+    // La prevención de solapamiento y doble-reserva horaria (anti-colisión)
+    // es responsabilidad exclusiva del cliente (js/quirofanos.js).
+    // Las reglas de seguridad de Firestore operan sobre cada documento de forma
+    // aislada y no pueden consultar otros documentos ni rangos horarios durante
+    // una creación (allow create).
+    // Esta regla garantiza autenticación, integridad del esquema (isValidReservaQuirofano)
+    // y la matriz estricta de roles y estados iniciales permitidos.
+    // =========================================================================
     match /reservas_quirofano/{reservaId} {
-      // Lectura por personal clínico y administrativo
       allow read: if puedeLeerReservaQuirofano();
-
-      // Denegación absoluta de creación directa por cliente (incluso para Administración).
-      // Toda creación debe pasar obligatoriamente por la Cloud Function reservarQuirofano().
-      allow create: if false;
-
-      // Transición operativa de estados con restricción de affectedKeys (Punto 4)
+      allow create: if puedeCrearReservaQuirofano();
       allow update: if puedeActualizarReservaQuirofano();
-
-      // Eliminación física exclusiva SuperAdmin
       allow delete: if isSuperAdmin();
     }
 

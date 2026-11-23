@@ -545,9 +545,15 @@ export function switchView(viewName) {
     }
 
     document.body.dataset.view = viewName;
-    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(el => {
+        el.classList.remove('active');
+        el.classList.add('hidden');
+    });
     const target = document.getElementById('view-' + viewName);
-    if (target) target.classList.add('active');
+    if (target) {
+        target.classList.add('active');
+        target.classList.remove('hidden');
+    }
 
     const mobSub = document.getElementById('mobile-header-subtitle');
     if (mobSub) {

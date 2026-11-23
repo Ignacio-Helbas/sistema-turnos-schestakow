@@ -23,7 +23,7 @@ if (!module.paths.includes(functionsModules)) {
 const HAS_EMULATOR = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 const SKIP_MSG = 'Omitido: Requiere emulador local de Firestore activo (FIRESTORE_EMULATOR_HOST no configurado). Para ejecutar esta suite dinámica con Java y Firebase CLI, utilice "npm run test:rules".';
 
-const PROJECT_ID = 'demo-turnos-schestakow';
+const PROJECT_ID = 'demo-turnos-rules-' + process.pid;
 const RULES_PATH = path.resolve(__dirname, '../firestore.rules');
 
 test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (suite) => {
@@ -825,11 +825,12 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
         }));
     });
 
-    // Caso 24: Creación directa de reservas de quirófano denegada para todos los roles (anti-colisión)
-    await suite.test('24. Creación directa de reservas de quirófano denegada para todos los roles incluyendo SuperAdmin (anti-colisión)', async () => {
+    // Caso 24: Creación directa de reservas de quirófano regida por puedeCrearReservaQuirofano
+    await suite.test('24. Creación de reservas de quirófano regida por puedeCrearReservaQuirofano (matriz de roles y estados)', async () => {
         const medUid = 'med_cirujano_reserva';
         const recepUid = 'recep_reserva_quirofano';
         const adminUid = 'admin_reserva_quirofano';
+        const enfermUid = 'enferm_reserva_quirofano';
 
         await testEnv.withSecurityRulesDisabled(async (context) => {
             const db = context.firestore();
@@ -843,6 +844,10 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
             });
             await db.collection('usuarios').doc(adminUid).set({
                 rol: 'Administración',
+                activo: true
+            });
+            await db.collection('usuarios').doc(enfermUid).set({
+                rol: 'Enfermería',
                 activo: true
             });
         });
@@ -875,21 +880,77 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
         const medDb = testEnv.authenticatedContext(medUid).firestore();
         const recepDb = testEnv.authenticatedContext(recepUid).firestore();
         const adminDb = testEnv.authenticatedContext(adminUid).firestore();
+        const enfermDb = testEnv.authenticatedContext(enfermUid).firestore();
 
-        // Intento directo por Médico (debe ser denegado; debe usar Cloud Function reservarQuirofano)
-        await assertFails(medDb.collection('reservas_quirofano').doc('res_med_directa').set(reservaPayload));
+        // 1. assertSucceeds para Médico creando en 'reservado' con su propio UID
+        await assertSucceeds(medDb.collection('reservas_quirofano').doc('res_med_reservado').set(reservaPayload));
 
-        // Intento directo por Recepción (debe ser denegado; debe usar Cloud Function reservarQuirofano)
-        await assertFails(recepDb.collection('reservas_quirofano').doc('res_recep_directa').set(reservaPayload));
+        // 2. assertFails para Médico creando en 'confirmado'
+        await assertFails(medDb.collection('reservas_quirofano').doc('res_med_confirmado').set({
+            ...reservaPayload,
+            estado: 'confirmado'
+        }));
 
-        // Intento directo por SuperAdmin / Administración (debe ser denegado; toda reserva requiere Cloud Function)
-        await assertFails(adminDb.collection('reservas_quirofano').doc('res_admin_directa').set({
+        // 3. assertFails para Médico creando con UID ajeno
+        await assertFails(medDb.collection('reservas_quirofano').doc('res_med_uid_ajeno').set({
+            ...reservaPayload,
+            creadoPor: {
+                uid: 'otro_uid_medico',
+                nombre: 'Dr. Otro',
+                rol: 'Médico'
+            }
+        }));
+
+        // 4. assertSucceeds para Recepción y SuperAdmin creando en 'reservado' o 'confirmado'
+        await assertSucceeds(recepDb.collection('reservas_quirofano').doc('res_recep_reservado').set({
+            ...reservaPayload,
+            creadoPor: {
+                uid: recepUid,
+                nombre: 'Recepción',
+                rol: 'Recepción'
+            }
+        }));
+        await assertSucceeds(recepDb.collection('reservas_quirofano').doc('res_recep_confirmado').set({
+            ...reservaPayload,
+            estado: 'confirmado',
+            creadoPor: {
+                uid: recepUid,
+                nombre: 'Recepción',
+                rol: 'Recepción'
+            }
+        }));
+        await assertSucceeds(adminDb.collection('reservas_quirofano').doc('res_admin_reservado').set({
             ...reservaPayload,
             creadoPor: {
                 uid: adminUid,
                 nombre: 'SuperAdmin',
                 rol: 'Administración'
             }
+        }));
+        await assertSucceeds(adminDb.collection('reservas_quirofano').doc('res_admin_confirmado').set({
+            ...reservaPayload,
+            estado: 'confirmado',
+            creadoPor: {
+                uid: adminUid,
+                nombre: 'SuperAdmin',
+                rol: 'Administración'
+            }
+        }));
+
+        // 5. assertFails para Enfermería base sin 'coordinaQuirofano'
+        await assertFails(enfermDb.collection('reservas_quirofano').doc('res_enferm_base').set({
+            ...reservaPayload,
+            creadoPor: {
+                uid: enfermUid,
+                nombre: 'Enfermero Base',
+                rol: 'Enfermería'
+            }
+        }));
+
+        // 6. assertFails para payload inválido (ej: DNI no numérico / formato inválido)
+        await assertFails(medDb.collection('reservas_quirofano').doc('res_payload_invalido').set({
+            ...reservaPayload,
+            pacienteDni: 'dni_invalido'
         }));
     });
 
@@ -1083,23 +1144,8 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
         assert.strictEqual(resRes.creadoPor.uid, adminUid);
     });
 
-    // Caso 27: Ciclo completo - Creación con Cloud Function y posterior actualización con SDK de cliente
-    await suite.test('27. Ciclo completo: Creación con Cloud Function y posterior actualización con SDK de cliente (Recepción confirma)', async () => {
-        let procesarReservaQuirofano;
-        try {
-            const functionsPath = path.resolve(__dirname, '../functions/index.js');
-            const funcs = require(functionsPath);
-            procesarReservaQuirofano = funcs.procesarReservaQuirofano;
-        } catch (e) {
-            assert.fail('No se pudo cargar procesarReservaQuirofano de functions/index.js: ' + e.message);
-        }
-
-        const admin = require('firebase-admin');
-        if (admin.apps.length === 0) {
-            admin.initializeApp({ projectId: 'demo-turnos-schestakow' });
-        }
-        const adminDb = admin.firestore();
-
+    // Caso 27: Ciclo completo - Creación por Médico con SDK de cliente y posterior actualización por Recepción
+    await suite.test('27. Ciclo completo: Creación por Médico con SDK de cliente y posterior actualización por Recepción (Recepción confirma)', async () => {
         const medUid = 'med_cirujano_ciclo';
         const recepUid = 'recep_ciclo_quirofano';
 
@@ -1116,17 +1162,6 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
             });
         });
 
-        const contextMedico = {
-            auth: {
-                uid: medUid,
-                token: {
-                    rol: 'Médico',
-                    name: 'Dr. Cirujano Ciclo',
-                    email: 'cirujano_ciclo@schestakow.ar'
-                }
-            }
-        };
-
         const reservaData = {
             quirofanoId: 'Q_CICLO',
             quirofanoNombre: 'Quirófano 1 - Central',
@@ -1142,21 +1177,28 @@ test('Reglas de Seguridad en Emulador de Firestore (Suite Dinámica)', async (su
             procedimiento: 'Colecistectomía laparoscópica',
             tipoAnestesia: 'General',
             observaciones: 'Paciente sin antecedentes alérgicos',
-            estado: 'reservado'
+            estado: 'reservado',
+            creadoPor: {
+                uid: medUid,
+                nombre: 'Dr. Cirujano Ciclo',
+                rol: 'Médico'
+            },
+            creadoEn: serverTimestamp(),
+            actualizadoEn: serverTimestamp()
         };
 
-        // 2. Crear reserva usando la Cloud Function (Admin SDK)
-        const nuevaRes = await procesarReservaQuirofano(reservaData, contextMedico, adminDb);
-        assert.ok(nuevaRes.id, 'La Cloud Function debe retornar el ID de la reserva creada');
-        assert.strictEqual(nuevaRes.estado, 'reservado');
+        // 2. Crear reserva usando el contexto autenticado del médico (SDK de cliente sujeto a firestore.rules)
+        const medDb = testEnv.authenticatedContext(medUid).firestore();
+        const reservaId = 'res_ciclo_quirofano_01';
+        await assertSucceeds(
+            medDb.collection('reservas_quirofano').doc(reservaId).set(reservaData)
+        );
 
         // 3. Obtener contexto autenticado de Recepción con SDK de Cliente (sujeto a firestore.rules)
         const recepDb = testEnv.authenticatedContext(recepUid).firestore();
-        const resRef = recepDb.collection('reservas_quirofano').doc(nuevaRes.id);
+        const resRef = recepDb.collection('reservas_quirofano').doc(reservaId);
 
         // 4. Intentar update legítimo por Recepción: pasar a 'confirmado' con su timestamp
-        // Si isValidReservaQuirofano() no coincide con los tipos y campos escritos por la función,
-        // este assertSucceeds fallará y expondrá el desajuste exacto
         await assertSucceeds(
             resRef.update({
                 estado: 'confirmado',
